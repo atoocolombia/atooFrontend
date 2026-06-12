@@ -1,10 +1,16 @@
-/** Normaliza VITE_API_URL: sin barra final ni sufijos /api o /api/v1 duplicados. */
+/** Normaliza VITE_API_URL: protocolo https, sin barra final ni sufijos /api duplicados. */
 function normalizeApiBase(raw: string): string {
-  return raw
+  let base = raw
     .trim()
     .replace(/\/+$/, '')
     .replace(/\/api\/v1$/i, '')
     .replace(/\/api$/i, '');
+
+  if (base && !/^https?:\/\//i.test(base)) {
+    base = `https://${base}`;
+  }
+
+  return base;
 }
 
 const API_BASE = normalizeApiBase(import.meta.env.VITE_API_URL ?? '');
@@ -83,7 +89,7 @@ export async function registerUser(input: {
   if (!res.ok) {
     const hint =
       res.status === 404
-        ? ` (URL llamada: ${url}. Revisa que VITE_API_URL sea solo el dominio de Railway, sin /api al final.)`
+        ? ` (URL llamada: ${url}. Revisa VITE_API_URL: debe ser https://atoobackend-production.up.railway.app sin /api al final.)`
         : '';
     throw new ApiError((await parseErrorResponse(res)) + hint, res.status);
   }
