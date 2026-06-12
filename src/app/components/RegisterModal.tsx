@@ -3,6 +3,7 @@ import { X, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useTheme } from '../contexts/ThemeContext';
+import { ApiError, registerUser } from '../../lib/api';
 
 interface RegisterModalProps {
   isOpen: boolean;
@@ -23,30 +24,47 @@ export function RegisterModal({ isOpen, onClose, onSwitchToLogin }: RegisterModa
   const [errors, setErrors] = useState({
     passwordMatch: '',
     passwordStrength: '',
+    api: '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validar que las contraseñas coincidan
     if (formData.password !== formData.confirmPassword) {
-      setErrors({ ...errors, passwordMatch: 'Las contraseñas no coinciden' });
+      setErrors({ passwordMatch: 'Las contraseñas no coinciden', passwordStrength: '', api: '' });
       return;
     }
 
     // Validar fortaleza de contraseña
     if (formData.password.length < 8) {
-      setErrors({ ...errors, passwordStrength: 'La contraseña debe tener al menos 8 caracteres' });
+      setErrors({ passwordMatch: '', passwordStrength: 'La contraseña debe tener al menos 8 caracteres', api: '' });
       return;
     }
 
-    // Aquí iría la lógica de registro
-    console.log('Register attempt:', formData);
-    setErrors({ passwordMatch: '', passwordStrength: '' });
-    
-    // Redirigir a la página de solicitud
-    onClose();
-    navigate('/solicitud');
+    setIsSubmitting(true);
+    setErrors({ passwordMatch: '', passwordStrength: '', api: '' });
+
+    try {
+      const user = await registerUser({
+        email: formData.email,
+        password: formData.password,
+        userType: 'USER',
+      });
+
+      sessionStorage.setItem('atooUser', JSON.stringify(user));
+      onClose();
+      navigate('/solicitud');
+    } catch (err) {
+      const message =
+        err instanceof ApiError
+          ? err.message
+          : 'No se pudo completar el registro. Inténtalo de nuevo.';
+      setErrors({ passwordMatch: '', passwordStrength: '', api: message });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSocialRegister = (provider: string) => {
@@ -60,7 +78,7 @@ export function RegisterModal({ isOpen, onClose, onSwitchToLogin }: RegisterModa
   const handleChange = (field: string, value: string) => {
     setFormData({ ...formData, [field]: value });
     // Limpiar errores cuando el usuario empieza a escribir
-    setErrors({ passwordMatch: '', passwordStrength: '' });
+    setErrors({ passwordMatch: '', passwordStrength: '', api: '' });
   };
 
   return (
@@ -281,11 +299,15 @@ export function RegisterModal({ isOpen, onClose, onSwitchToLogin }: RegisterModa
             </div>
 
             {/* Submit Button */}
+            {errors.api && (
+              <p className="text-red-500 text-sm">{errors.api}</p>
+            )}
             <button
               type="submit"
-              className="w-full py-3 bg-[#1A1FE8] text-white rounded-lg hover:bg-[#1217C8] transition-colors font-semibold shadow-[0_0_20px_rgba(26,31,232,0.3)] hover:shadow-[0_0_30px_rgba(26,31,232,0.5)]"
+              disabled={isSubmitting}
+              className="w-full py-3 bg-[#1A1FE8] text-white rounded-lg hover:bg-[#1217C8] transition-colors font-semibold shadow-[0_0_20px_rgba(26,31,232,0.3)] hover:shadow-[0_0_30px_rgba(26,31,232,0.5)] disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Crear Cuenta
+              {isSubmitting ? 'Creando cuenta...' : 'Crear Cuenta'}
             </button>
           </form>
 
