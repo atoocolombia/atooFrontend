@@ -1,4 +1,21 @@
-const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
+/** Normaliza VITE_API_URL: sin barra final ni sufijos /api o /api/v1 duplicados. */
+function normalizeApiBase(raw: string): string {
+  return raw
+    .trim()
+    .replace(/\/+$/, '')
+    .replace(/\/api\/v1$/i, '')
+    .replace(/\/api$/i, '');
+}
+
+const API_BASE = normalizeApiBase(import.meta.env.VITE_API_URL ?? '');
+
+function apiUrl(path: string): string {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  if (!API_BASE) {
+    return normalizedPath;
+  }
+  return `${API_BASE}${normalizedPath}`;
+}
 
 export type UserType = 'USER' | 'ADVISOR' | 'ADMIN' | 'ANALYST';
 
@@ -43,9 +60,11 @@ export async function registerUser(input: {
     );
   }
 
+  const url = apiUrl('/api/v1/auth/register');
+
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}/api/v1/auth/register`, {
+    res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -62,7 +81,11 @@ export async function registerUser(input: {
   }
 
   if (!res.ok) {
-    throw new ApiError(await parseErrorResponse(res), res.status);
+    const hint =
+      res.status === 404
+        ? ` (URL llamada: ${url}. Revisa que VITE_API_URL sea solo el dominio de Railway, sin /api al final.)`
+        : '';
+    throw new ApiError((await parseErrorResponse(res)) + hint, res.status);
   }
 
   return (await res.json()) as RegisteredUser;
