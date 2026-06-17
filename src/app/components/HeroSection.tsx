@@ -10,6 +10,9 @@ const fallbackPosterDark =
 const fallbackPosterLight =
   'https://images.unsplash.com/photo-1522770450359-3de04ff5c9e2?w=1920&fit=crop&auto=format';
 
+const HERO_CONTENT_MASK =
+  'radial-gradient(ellipse 92% 82% at 50% 50%, black 38%, transparent 80%)';
+
 export function HeroSection() {
   const { theme } = useTheme();
   const fallbackPoster = theme === 'dark' ? fallbackPosterDark : fallbackPosterLight;
@@ -84,13 +87,30 @@ export function HeroSection() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 py-24">
-        <div
-          className={`max-w-3xl mx-auto text-center rounded-3xl px-6 py-10 sm:px-10 sm:py-12 border backdrop-blur-md ${
-            theme === 'dark'
-              ? 'bg-[#06071A]/40 border-white/10 shadow-[0_8px_40px_rgba(0,0,0,0.35)]'
-              : 'bg-white/55 border-white/60 shadow-[0_8px_40px_rgba(0,0,0,0.08)]'
-          }`}
-        >
+        <div className="relative max-w-3xl mx-auto text-center px-6 py-10 sm:px-10 sm:py-12">
+          {/* Halo difuminado — sin bordes duros, se funde con el video */}
+          <div
+            aria-hidden
+            className={`pointer-events-none absolute inset-0 -z-10 backdrop-blur-xl ${
+              theme === 'dark' ? 'bg-[#06071A]/50' : 'bg-white/55'
+            }`}
+            style={{
+              maskImage: HERO_CONTENT_MASK,
+              WebkitMaskImage: HERO_CONTENT_MASK,
+            }}
+          />
+          <div
+            aria-hidden
+            className={`pointer-events-none absolute inset-0 -z-10 ${
+              theme === 'dark' ? 'bg-[#06071A]/30' : 'bg-white/35'
+            }`}
+            style={{
+              maskImage:
+                'radial-gradient(ellipse 100% 95% at 50% 50%, black 25%, transparent 72%)',
+              WebkitMaskImage:
+                'radial-gradient(ellipse 100% 95% at 50% 50%, black 25%, transparent 72%)',
+            }}
+          />
 
           <div className={`inline-flex items-center gap-2 px-4 py-2 border rounded-full text-sm mb-8 backdrop-blur-md ${
             theme === 'dark'
