@@ -1,26 +1,15 @@
-import { Check, ArrowRight, Zap } from 'lucide-react';
+import { useState } from 'react';
+import { Check, ArrowRight, Zap, Info } from 'lucide-react';
+import { useNavigate } from 'react-router';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { VehicleDetailModal } from './VehicleDetailModal';
 import { useTheme } from '../contexts/ThemeContext';
-
-const vehicles = [
-  {
-    name: 'Carro NAMMI',
-    image: 'https://images.unsplash.com/photo-1611953070713-6e5fb4b97b66?w=800&fit=crop&auto=format',
-    features: ['Aire acondicionado', 'Bluetooth', 'Cámara reversa', '4 puertas', 'Bajo consumo'],
-    badge: 'Más Popular',
-    popular: true,
-  },
-  {
-    name: 'Camioneta',
-    image: 'https://images.unsplash.com/photo-1649793395985-967862a3b73f?w=800&fit=crop&auto=format',
-    features: ['Amplio espacio de carga', 'Tracción 4x4', 'Ideal para mudanzas', 'Mayor capacidad', 'Resistente'],
-    badge: null,
-    popular: false,
-  },
-];
+import { catalogVehicles, formatCop, type CatalogVehicle } from '../data/vehicles';
 
 export function VehiclesSection() {
   const { theme } = useTheme();
+  const navigate = useNavigate();
+  const [selectedVehicle, setSelectedVehicle] = useState<CatalogVehicle | null>(null);
 
   return (
     <section id="vehiculos" className={`relative py-28 overflow-hidden transition-colors duration-300 ${
@@ -59,14 +48,13 @@ export function VehiclesSection() {
             <span style={{ color: '#1A1FE8', textShadow: theme === 'dark' ? '0 0 40px rgba(26,31,232,0.5)' : 'none' }}>Disponibles</span>
           </h2>
           <p className={`text-xl ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            Modelos recientes, ideales para plataformas de transporte
+            Dongfeng eléctricos, ideales para plataformas de transporte
           </p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-          {vehicles.map((vehicle, index) => (
-            <div key={index} className="group relative">
-              {/* Glow */}
+          {catalogVehicles.map((vehicle) => (
+            <div key={vehicle.id} className="group relative">
               {vehicle.popular && (
                 <div className="absolute inset-0 bg-[#1A1FE8]/15 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               )}
@@ -88,8 +76,12 @@ export function VehiclesSection() {
                   </div>
                 )}
 
-                {/* Image */}
-                <div className="aspect-[16/9] overflow-hidden relative">
+                <button
+                  type="button"
+                  onClick={() => setSelectedVehicle(vehicle)}
+                  className="w-full aspect-[16/9] overflow-hidden relative block text-left"
+                  aria-label={`Ver detalles de ${vehicle.name}`}
+                >
                   <ImageWithFallback
                     src={vehicle.image}
                     alt={vehicle.name}
@@ -98,19 +90,32 @@ export function VehiclesSection() {
                   <div className={`absolute inset-0 bg-gradient-to-t ${
                     theme === 'dark' ? 'from-[#0D0F2E]/80 to-transparent' : 'from-black/20 to-transparent'
                   }`} />
-                </div>
+                  <span className={`absolute bottom-3 left-4 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full backdrop-blur-sm ${
+                    theme === 'dark' ? 'bg-black/40 text-white' : 'bg-white/90 text-gray-800'
+                  }`}>
+                    <Info className="w-3.5 h-3.5" />
+                    Ver detalles
+                  </span>
+                </button>
 
-                {/* Content */}
                 <div className="p-6">
-                  <h3 className={`text-2xl font-bold mb-4 ${
+                  <p className={`text-xs font-semibold uppercase tracking-wider mb-1 ${
+                    theme === 'dark' ? 'text-[#6B70F5]' : 'text-[#1A1FE8]'
+                  }`}>
+                    {vehicle.type === 'camioneta' ? 'Camioneta SUV' : 'Carro compacto'}
+                  </p>
+                  <h3 className={`text-2xl font-bold mb-1 ${
                     theme === 'dark' ? 'text-white' : 'text-gray-900'
                   }`}>
                     {vehicle.name}
                   </h3>
+                  <p className={`text-sm mb-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {vehicle.subtitle}
+                  </p>
 
                   <ul className="space-y-2.5 mb-6">
-                    {vehicle.features.map((feature, idx) => (
-                      <li key={idx} className={`flex items-center gap-3 text-sm ${
+                    {vehicle.features.map((feature) => (
+                      <li key={feature} className={`flex items-center gap-3 text-sm ${
                         theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                       }`}>
                         <div className="w-5 h-5 rounded-full bg-[#1A1FE8]/15 border border-[#1A1FE8]/30 flex items-center justify-center flex-shrink-0">
@@ -125,22 +130,37 @@ export function VehiclesSection() {
                     theme === 'dark' ? 'border-white/[0.07]' : 'border-gray-100'
                   }`}>
                     <div className="flex items-baseline gap-1 mb-4">
-                      <span className="text-2xl font-bold text-[#1A1FE8]">$207.000</span>
+                      <span className="text-2xl font-bold text-[#1A1FE8]">{formatCop(vehicle.weeklyPriceCop)}</span>
                       <span className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>COP / semana</span>
                     </div>
-                    <button className={`group/btn relative w-full py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
-                      vehicle.popular
-                        ? 'bg-[#1A1FE8] text-white shadow-[0_0_25px_rgba(26,31,232,0.4)] hover:shadow-[0_0_40px_rgba(26,31,232,0.6)]'
-                        : theme === 'dark'
-                          ? 'border border-[#1A1FE8]/30 text-[#6B70F5] hover:bg-[#1A1FE8]/10 hover:border-[#1A1FE8]/50'
-                          : 'border border-[#1A1FE8]/25 text-[#1A1FE8] hover:bg-[#1A1FE8]/8 hover:border-[#1A1FE8]/45'
-                    }`}>
-                      <span className="relative z-10">Solicitar Este Vehículo</span>
-                      <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform relative z-10" />
-                      {vehicle.popular && (
-                        <div className="absolute inset-0 bg-gradient-to-r from-[#1A1FE8] to-[#3D42F0] opacity-0 group-hover/btn:opacity-100 transition-opacity" />
-                      )}
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedVehicle(vehicle)}
+                        className={`flex-1 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
+                          theme === 'dark'
+                            ? 'border border-[#1A1FE8]/30 text-[#6B70F5] hover:bg-[#1A1FE8]/10 hover:border-[#1A1FE8]/50'
+                            : 'border border-[#1A1FE8]/25 text-[#1A1FE8] hover:bg-[#1A1FE8]/8 hover:border-[#1A1FE8]/45'
+                        }`}
+                      >
+                        <Info className="w-4 h-4" />
+                        Ver ficha técnica
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navigate('/solicitud')}
+                        className={`group/btn relative flex-1 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
+                          vehicle.popular
+                            ? 'bg-[#1A1FE8] text-white shadow-[0_0_25px_rgba(26,31,232,0.4)] hover:shadow-[0_0_40px_rgba(26,31,232,0.6)]'
+                            : theme === 'dark'
+                              ? 'border border-[#1A1FE8]/30 text-[#6B70F5] hover:bg-[#1A1FE8]/10'
+                              : 'border border-[#1A1FE8]/25 text-[#1A1FE8] hover:bg-[#1A1FE8]/8'
+                        }`}
+                      >
+                        <span className="relative z-10">Solicitar</span>
+                        <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform relative z-10" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -148,6 +168,12 @@ export function VehiclesSection() {
           ))}
         </div>
       </div>
+
+      <VehicleDetailModal
+        vehicle={selectedVehicle}
+        open={selectedVehicle !== null}
+        onClose={() => setSelectedVehicle(null)}
+      />
 
       <div className={`absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#1A1FE8]/40 to-transparent`} />
     </section>
