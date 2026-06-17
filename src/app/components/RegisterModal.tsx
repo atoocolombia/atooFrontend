@@ -1,9 +1,10 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
+import { type CredentialResponse } from '@react-oauth/google';
 import { X, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useTheme } from '../contexts/ThemeContext';
+import { GoogleSignInButton } from './GoogleSignInButton';
 import { ApiError, authWithGoogle, registerUser } from '../../lib/api';
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '';
@@ -140,23 +141,18 @@ export function RegisterModal({ isOpen, onClose, onSwitchToLogin }: RegisterModa
           {/* Social Register Buttons */}
           <div className="space-y-3 mb-6">
             {googleClientId ? (
-              <div className="w-full flex justify-center [&>div]:w-full">
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={() =>
-                    setErrors({
-                      passwordMatch: '',
-                      passwordStrength: '',
-                      api: 'No se pudo iniciar el registro con Google.',
-                    })
-                  }
-                  theme={theme === 'dark' ? 'filled_black' : 'outline'}
-                  size="large"
-                  text="continue_with"
-                  locale="es"
-                  width="100%"
-                />
-              </div>
+              <GoogleSignInButton
+                theme={theme}
+                disabled={isSubmitting}
+                onSuccess={handleGoogleSuccess}
+                onError={() =>
+                  setErrors({
+                    passwordMatch: '',
+                    passwordStrength: '',
+                    api: 'No se pudo iniciar el registro con Google.',
+                  })
+                }
+              />
             ) : (
               <button
                 type="button"
