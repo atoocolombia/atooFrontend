@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { VehicleDetailModal } from './VehicleDetailModal';
 import { useTheme } from '../contexts/ThemeContext';
+import { landingLightSurfaces } from '../styles/landingSurfaces';
 import { catalogVehicles, formatCop, type CatalogVehicle } from '../data/vehicles';
 
 export function VehiclesSection() {
@@ -13,20 +14,14 @@ export function VehiclesSection() {
 
   return (
     <section id="vehiculos" className={`relative py-28 overflow-hidden transition-colors duration-300 ${
-      theme === 'dark' ? 'bg-[#06071A]' : 'bg-white'
+      theme === 'dark' ? 'bg-[#06071A]' : landingLightSurfaces.vehicles
     }`}>
 
-      {/* Aurora */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {theme === 'dark' ? (
+        {theme === 'dark' && (
           <>
             <div className="absolute top-1/2 -translate-y-1/2 -left-40 w-[700px] h-[700px] rounded-full blur-[220px] bg-[#1A1FE8]/18" />
             <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full blur-[180px] bg-[#3D42F0]/12" />
-          </>
-        ) : (
-          <>
-            <div className="absolute top-1/2 -translate-y-1/2 -right-20 w-[600px] h-[600px] rounded-full blur-[200px] bg-[#1A1FE8]/9" />
-            <div className="absolute -bottom-20 left-1/4 w-[400px] h-[400px] rounded-full blur-[160px] bg-[#1A1FE8]/6" />
           </>
         )}
       </div>

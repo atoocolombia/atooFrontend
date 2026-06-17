@@ -1,5 +1,6 @@
 import { Shield, TrendingUp, Clock, Heart, Wrench, Percent } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { landingLightSurfaces } from '../styles/landingSurfaces';
 
 const benefits = [
   { icon: TrendingUp, title: 'Incrementa tus Ganancias', description: 'Sin pagos de renta diarios. Todo lo que ganes es tuyo mientras cumples tu cuota semanal.', gradient: 'from-[#1A1FE8] to-[#3D42F0]' },
@@ -15,31 +16,23 @@ export function BenefitsSection() {
 
   return (
     <section id="beneficios" className={`relative py-28 overflow-hidden transition-colors duration-300 ${
-      theme === 'dark' ? 'bg-[#06071A]' : 'bg-white'
+      theme === 'dark' ? 'bg-[#06071A]' : landingLightSurfaces.benefits
     }`}>
 
-      {/* Aurora orbs */}
+      {/* Aurora orbs — solo oscuro */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {theme === 'dark' ? (
+        {theme === 'dark' && (
           <>
             <div className="absolute -top-40 -left-40 w-[700px] h-[700px] rounded-full blur-[200px] bg-[#1A1FE8]/20 animate-pulse" />
             <div className="absolute -bottom-40 -right-40 w-[600px] h-[600px] rounded-full blur-[180px] bg-[#3D42F0]/15 animate-pulse delay-1000" />
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full blur-[160px] bg-[#1A1FE8]/10" />
           </>
-        ) : (
-          <>
-            <div className="absolute -top-20 -right-20 w-[600px] h-[600px] rounded-full blur-[180px] bg-[#1A1FE8]/10" />
-            <div className="absolute -bottom-20 -left-20 w-[500px] h-[500px] rounded-full blur-[160px] bg-[#3D42F0]/8" />
-          </>
         )}
       </div>
 
-      {/* Diagonal separator top */}
-      <div className={`absolute top-0 left-0 right-0 h-16 ${
-        theme === 'dark'
-          ? 'bg-gradient-to-b from-[#0D0F2E] to-transparent'
-          : 'bg-gradient-to-b from-white to-transparent'
-      }`} />
+      {theme === 'dark' && (
+        <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-[#0D0F2E] to-transparent" />
+      )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center max-w-3xl mx-auto mb-20">
@@ -72,7 +65,7 @@ export function BenefitsSection() {
                 <div className={`relative rounded-2xl p-6 h-full transition-all duration-300 border ${
                   theme === 'dark'
                     ? 'bg-white/[0.04] border-white/[0.08] hover:border-[#1A1FE8]/40 hover:bg-white/[0.07] hover:shadow-[0_0_40px_rgba(26,31,232,0.2)]'
-                    : 'bg-white border-gray-100 shadow-[0_2px_16px_rgba(0,0,0,0.06)] hover:border-[#1A1FE8]/30 hover:shadow-[0_8px_40px_rgba(26,31,232,0.10)]'
+                    : 'bg-[#F3F5FF] border-[#D8DEFA] hover:border-[#1A1FE8]/35 hover:shadow-[0_8px_32px_rgba(26,31,232,0.12)]'
                 }`}>
                   {/* Icon */}
                   <div className={`w-12 h-12 bg-gradient-to-br ${benefit.gradient} rounded-xl flex items-center justify-center mb-4 shadow-[0_4px_20px_rgba(26,31,232,0.3)] group-hover:scale-110 transition-transform duration-300`}>

@@ -1,5 +1,6 @@
 import { FileText, CheckCircle2, Car, Trophy } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { landingLightSurfaces } from '../styles/landingSurfaces';
 
 const steps = [
   { number: '01', icon: FileText, title: 'Solicitud', description: 'Completa el formulario en línea con tus datos básicos. Solo necesitas INE y comprobante de domicilio.' },
@@ -13,20 +14,14 @@ export function HowItWorksSection() {
 
   return (
     <section id="como-funciona" className={`relative py-28 overflow-hidden transition-colors duration-300 ${
-      theme === 'dark' ? 'bg-[#06071A]' : 'bg-[#F7F8FF]'
+      theme === 'dark' ? 'bg-[#06071A]' : landingLightSurfaces.howItWorks
     }`}>
 
-      {/* Aurora */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {theme === 'dark' ? (
+        {theme === 'dark' && (
           <>
             <div className="absolute top-0 right-0 w-[800px] h-[600px] rounded-full blur-[250px] bg-[#1A1FE8]/18" />
             <div className="absolute bottom-0 left-0 w-[600px] h-[500px] rounded-full blur-[200px] bg-[#3D42F0]/12" />
-          </>
-        ) : (
-          <>
-            <div className="absolute top-0 left-0 w-[700px] h-[500px] rounded-full blur-[220px] bg-[#1A1FE8]/10" />
-            <div className="absolute bottom-0 right-0 w-[500px] h-[400px] rounded-full blur-[180px] bg-[#1A1FE8]/7" />
           </>
         )}
       </div>

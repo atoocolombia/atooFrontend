@@ -14,12 +14,13 @@ const BRAND_PRIMARY = '#1A1FE8';
 
 const HERO_TITLE_SHADOW_DARK =
   '0 2px 4px rgba(0,0,0,0.95), 0 4px 14px rgba(0,0,0,0.9), 0 8px 28px rgba(0,0,0,0.75), 0 16px 48px rgba(0,0,0,0.55)';
-const HERO_TITLE_SHADOW_LIGHT =
-  '0 2px 4px rgba(255,255,255,0.95), 0 4px 14px rgba(255,255,255,0.9), 0 8px 28px rgba(255,255,255,0.75), 0 16px 48px rgba(255,255,255,0.55)';
 const HERO_BODY_SHADOW_DARK =
   '0 1px 3px rgba(0,0,0,0.95), 0 3px 10px rgba(0,0,0,0.85), 0 6px 22px rgba(0,0,0,0.7)';
-const HERO_BODY_SHADOW_LIGHT =
-  '0 1px 3px rgba(255,255,255,0.95), 0 3px 10px rgba(255,255,255,0.85), 0 6px 22px rgba(255,255,255,0.7)';
+
+const HERO_TITLE_SHADOW_LIGHT =
+  '0 2px 4px rgba(0,0,0,0.92), 0 4px 16px rgba(0,0,0,0.82), 0 8px 32px rgba(0,0,0,0.65), 0 16px 48px rgba(0,0,0,0.45)';
+const HERO_BODY_SHADOW_ON_VIDEO =
+  '0 1px 3px rgba(0,0,0,0.92), 0 3px 12px rgba(0,0,0,0.8), 0 6px 24px rgba(0,0,0,0.6)';
 
 export function HeroSection() {
   const { theme } = useTheme();
@@ -47,7 +48,7 @@ export function HeroSection() {
         </video>
 
         {/* Overlay — video visible en los bordes, más contraste en el centro */}
-        {theme === 'dark' ? (
+        {theme === 'dark' && (
           <>
             <div className="absolute inset-0 bg-gradient-to-b from-[#06071A]/35 via-[#06071A]/30 to-[#06071A]/75" />
             <div
@@ -59,18 +60,6 @@ export function HeroSection() {
             />
             <div className="absolute inset-0 bg-gradient-to-r from-[#1A1FE8]/8 via-transparent to-transparent" />
           </>
-        ) : (
-          <>
-            <div className="absolute inset-0 bg-gradient-to-b from-white/8 via-white/10 to-white/45" />
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  'radial-gradient(ellipse 90% 70% at 50% 42%, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.08) 50%, transparent 100%)',
-              }}
-            />
-            <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-white/55 to-transparent" />
-          </>
         )}
       </div>
 
@@ -79,12 +68,6 @@ export function HeroSection() {
         <>
           <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full blur-[160px] bg-[#1A1FE8]/25 animate-pulse" />
           <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full blur-[140px] bg-[#3D42F0]/15 animate-pulse delay-1000" />
-        </>
-      )}
-      {theme === 'light' && (
-        <>
-          <div className="absolute top-0 right-0 w-[700px] h-[400px] rounded-full blur-[200px] bg-[#1A1FE8]/12" />
-          <div className="absolute bottom-0 left-0 w-[500px] h-[300px] rounded-full blur-[160px] bg-[#1A1FE8]/8" />
         </>
       )}
 
@@ -100,13 +83,13 @@ export function HeroSection() {
             className={`inline-flex items-center gap-2 px-4 py-2 border rounded-full text-sm mb-8 ${
               theme === 'dark'
                 ? 'border-[#1A1FE8]/30 text-blue-100'
-                : 'border-[#1A1FE8]/25 text-[#1A1FE8]'
+                : 'border-white/50 text-white bg-black/20 backdrop-blur-sm'
             }`}
             style={{
-              textShadow: theme === 'dark' ? HERO_BODY_SHADOW_DARK : HERO_BODY_SHADOW_LIGHT,
+              textShadow: theme === 'dark' ? HERO_BODY_SHADOW_DARK : HERO_BODY_SHADOW_ON_VIDEO,
             }}
           >
-            <Sparkles className="w-3.5 h-3.5 text-[#1A1FE8]" />
+            <Sparkles className={`w-3.5 h-3.5 ${theme === 'dark' ? 'text-[#1A1FE8]' : 'text-white'}`} />
             <span className="font-medium">Tu propio vehículo en 60 meses</span>
           </div>
 
@@ -116,18 +99,21 @@ export function HeroSection() {
               textShadow: theme === 'dark' ? HERO_TITLE_SHADOW_DARK : HERO_TITLE_SHADOW_LIGHT,
             }}
           >
-            <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>Drive Today, </span>
-            <span className="text-[#1A1FE8]" style={{ textShadow: theme === 'dark' ? HERO_TITLE_SHADOW_DARK : HERO_TITLE_SHADOW_LIGHT }}>
+            <span className={theme === 'dark' ? 'text-white' : 'text-white'}>Drive Today, </span>
+            <span
+              className={theme === 'dark' ? 'text-[#1A1FE8]' : 'text-[#8B9AFF]'}
+              style={{ textShadow: theme === 'dark' ? HERO_TITLE_SHADOW_DARK : HERO_TITLE_SHADOW_LIGHT }}
+            >
               Yours Tomorrow
             </span>
           </h1>
 
           <p
             className={`text-lg md:text-xl leading-relaxed mb-10 max-w-2xl mx-auto ${
-              theme === 'dark' ? 'text-gray-100' : 'text-gray-800'
+              theme === 'dark' ? 'text-gray-100' : 'text-white/95'
             }`}
             style={{
-              textShadow: theme === 'dark' ? HERO_BODY_SHADOW_DARK : HERO_BODY_SHADOW_LIGHT,
+              textShadow: theme === 'dark' ? HERO_BODY_SHADOW_DARK : HERO_BODY_SHADOW_ON_VIDEO,
             }}
           >
             Modelo Rent to Own para conductores de Uber, DiDi y más.
@@ -143,10 +129,10 @@ export function HeroSection() {
               <div className="absolute inset-0 bg-gradient-to-r from-[#1A1FE8] to-[#3D42F0] opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
 
-            <button className={`group px-8 py-4 backdrop-blur-md border-2 rounded-2xl transition-all flex items-center justify-center gap-2 font-semibold text-base ${
+            <button className={`group px-8 py-4 border-2 rounded-2xl transition-all flex items-center justify-center gap-2 font-semibold text-base ${
               theme === 'dark'
-                ? 'bg-white/8 text-white border-white/20 hover:border-[#1A1FE8]/60 hover:bg-[#1A1FE8]/15 hover:shadow-[0_0_30px_rgba(26,31,232,0.3)]'
-                : 'bg-white/70 text-gray-900 border-gray-200 hover:border-[#1A1FE8]/40 hover:shadow-[0_8px_30px_rgba(26,31,232,0.15)]'
+                ? 'bg-white/8 text-white border-white/20 backdrop-blur-md hover:border-[#1A1FE8]/60 hover:bg-[#1A1FE8]/15 hover:shadow-[0_0_30px_rgba(26,31,232,0.3)]'
+                : 'bg-black/25 text-white border-white/45 backdrop-blur-sm hover:bg-black/35 hover:border-white/70'
             }`}>
               <Play className="w-4 h-4 fill-current" />
               Ver Cómo Funciona
@@ -154,11 +140,9 @@ export function HeroSection() {
           </div>
         </div>
       </div>
-      <div className={`absolute bottom-0 left-0 right-0 h-32 ${
-        theme === 'dark'
-          ? 'bg-gradient-to-t from-[#06071A]/90 to-transparent'
-          : 'bg-gradient-to-t from-white/50 to-transparent'
-      }`} />
+      {theme === 'dark' && (
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#06071A]/90 to-transparent" />
+      )}
     </section>
   );
 }
