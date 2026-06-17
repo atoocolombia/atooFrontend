@@ -96,3 +96,37 @@ export async function registerUser(input: {
 
   return (await res.json()) as RegisteredUser;
 }
+
+export async function authWithGoogle(credential: string): Promise<RegisteredUser> {
+  if (!API_BASE) {
+    throw new ApiError(
+      'No está configurada la URL del API. Define VITE_API_URL en Vercel o en frontend/.env.',
+      0,
+    );
+  }
+
+  const url = apiUrl('/api/v1/auth/google');
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        credential,
+        userType: 'USER',
+      }),
+    });
+  } catch {
+    throw new ApiError(
+      'No se pudo conectar con el servidor. Revisa tu conexión o la configuración del API.',
+      0,
+    );
+  }
+
+  if (!res.ok) {
+    throw new ApiError(await parseErrorResponse(res), res.status);
+  }
+
+  return (await res.json()) as RegisteredUser;
+}
