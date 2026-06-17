@@ -10,6 +10,8 @@ const fallbackPosterDark =
 const fallbackPosterLight =
   'https://images.unsplash.com/photo-1522770450359-3de04ff5c9e2?w=1920&fit=crop&auto=format';
 
+const BRAND_PRIMARY = '#1A1FE8';
+
 const HERO_TITLE_SHADOW_DARK =
   '0 2px 4px rgba(0,0,0,0.95), 0 4px 14px rgba(0,0,0,0.9), 0 8px 28px rgba(0,0,0,0.75), 0 16px 48px rgba(0,0,0,0.55)';
 const HERO_TITLE_SHADOW_LIGHT =
@@ -59,15 +61,15 @@ export function HeroSection() {
           </>
         ) : (
           <>
-            <div className="absolute inset-0 bg-gradient-to-b from-white/15 via-white/25 to-white/90" />
+            <div className="absolute inset-0 bg-gradient-to-b from-white/8 via-white/10 to-white/45" />
             <div
               className="absolute inset-0"
               style={{
                 background:
-                  'radial-gradient(ellipse 90% 70% at 50% 42%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.22) 50%, transparent 100%)',
+                  'radial-gradient(ellipse 90% 70% at 50% 42%, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.08) 50%, transparent 100%)',
               }}
             />
-            <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-white to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-white/55 to-transparent" />
           </>
         )}
       </div>
@@ -115,15 +117,7 @@ export function HeroSection() {
             }}
           >
             <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>Drive Today, </span>
-            <span
-              style={{
-                color: '#1A1FE8',
-                textShadow:
-                  theme === 'dark'
-                    ? `${HERO_TITLE_SHADOW_DARK}, 0 0 36px rgba(26,31,232,0.45)`
-                    : `${HERO_TITLE_SHADOW_LIGHT}, 0 0 28px rgba(26,31,232,0.3)`,
-              }}
-            >
+            <span className="text-[#1A1FE8]" style={{ textShadow: theme === 'dark' ? HERO_TITLE_SHADOW_DARK : HERO_TITLE_SHADOW_LIGHT }}>
               Yours Tomorrow
             </span>
           </h1>
@@ -141,7 +135,7 @@ export function HeroSection() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="group relative px-8 py-4 bg-[#1A1FE8] text-white rounded-2xl overflow-hidden transition-all flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(26,31,232,0.5)] hover:shadow-[0_0_60px_rgba(26,31,232,0.7)]">
+            <button className="group relative px-8 py-4 text-white rounded-2xl overflow-hidden transition-all flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(26,31,232,0.5)] hover:shadow-[0_0_60px_rgba(26,31,232,0.7)]" style={{ backgroundColor: BRAND_PRIMARY }}>
               <span className="relative z-10 flex items-center gap-2 font-semibold text-base">
                 Comenzar Ahora
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -163,7 +157,7 @@ export function HeroSection() {
       <div className={`absolute bottom-0 left-0 right-0 h-32 ${
         theme === 'dark'
           ? 'bg-gradient-to-t from-[#06071A]/90 to-transparent'
-          : 'bg-gradient-to-t from-white to-transparent'
+          : 'bg-gradient-to-t from-white/50 to-transparent'
       }`} />
     </section>
   );
