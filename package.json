@@ -4,6 +4,9 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
+    "sync:galleries": "node scripts/sync-vehicle-galleries.mjs",
+    "predev": "npm run sync:galleries",
+    "prebuild": "npm run sync:galleries",
     "build": "vite build",
     "dev": "vite"
   },

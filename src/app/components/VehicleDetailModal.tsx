@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { useTheme } from '../contexts/ThemeContext';
+import { getVehicleGalleryImages } from '../data/vehicleGalleries.generated';
 import { type CatalogVehicle, formatCop, getVehicleSpecSheetFilename, getVehicleSpecSheetPdf } from '../data/vehicles';
 
 interface VehicleDetailModalProps {
@@ -19,7 +20,7 @@ export function VehicleDetailModal({ vehicle, open, onClose }: VehicleDetailModa
 
   if (!vehicle) return null;
 
-  const gallery = vehicle.gallery.length > 0 ? vehicle.gallery : [vehicle.image];
+  const gallery = getVehicleGalleryImages(vehicle);
   const currentImage = gallery[activeImage] ?? vehicle.image;
   const specSheetPdf = getVehicleSpecSheetPdf(vehicle);
   const specSheetFilename = getVehicleSpecSheetFilename(vehicle);
@@ -106,12 +107,9 @@ export function VehicleDetailModal({ vehicle, open, onClose }: VehicleDetailModa
                   }`}
                 >
                   <p className="text-sm">
-                    Sube más fotos en{' '}
+                    Sube fotos en{' '}
                     <code className="text-[#1A1FE8]">public/vehicles/{vehicle.slug}/gallery/</code>
-                  </p>
-                  <p className="text-xs mt-2 opacity-80">
-                    Luego agrégalas al arreglo <code>gallery</code> en{' '}
-                    <code>src/app/data/vehicles.ts</code>
+                    {' '}y vuelve a desplegar el sitio.
                   </p>
                 </div>
               )}
