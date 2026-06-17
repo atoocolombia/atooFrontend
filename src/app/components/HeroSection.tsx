@@ -35,15 +35,29 @@ export function HeroSection() {
           <source src={HERO_VIDEO} type="video/mp4" />
         </video>
 
-        {/* Overlay */}
+        {/* Overlay — video visible en los bordes, más contraste en el centro */}
         {theme === 'dark' ? (
           <>
-            <div className="absolute inset-0 bg-gradient-to-b from-[#06071A]/40 via-[#06071A]/35 to-[#06071A]/80" />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#1A1FE8]/15 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#06071A]/50 via-[#06071A]/45 to-[#06071A]/85" />
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  'radial-gradient(ellipse 75% 55% at 50% 42%, rgba(6,7,26,0.72) 0%, rgba(6,7,26,0.35) 55%, transparent 100%)',
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#1A1FE8]/12 via-transparent to-transparent" />
           </>
         ) : (
           <>
-            <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/35 to-white/95" />
+            <div className="absolute inset-0 bg-gradient-to-b from-white/25 via-white/40 to-white/95" />
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  'radial-gradient(ellipse 75% 55% at 50% 42%, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.45) 55%, transparent 100%)',
+              }}
+            />
             <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-white to-transparent" />
           </>
         )}
@@ -70,33 +84,50 @@ export function HeroSection() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 py-24">
-        <div className="max-w-3xl mx-auto text-center">
+        <div
+          className={`max-w-3xl mx-auto text-center rounded-3xl px-6 py-10 sm:px-10 sm:py-12 border backdrop-blur-md ${
+            theme === 'dark'
+              ? 'bg-[#06071A]/40 border-white/10 shadow-[0_8px_40px_rgba(0,0,0,0.35)]'
+              : 'bg-white/55 border-white/60 shadow-[0_8px_40px_rgba(0,0,0,0.08)]'
+          }`}
+        >
 
           <div className={`inline-flex items-center gap-2 px-4 py-2 border rounded-full text-sm mb-8 backdrop-blur-md ${
             theme === 'dark'
-              ? 'bg-[#1A1FE8]/15 border-[#1A1FE8]/40 text-blue-200 shadow-[0_0_20px_rgba(26,31,232,0.3)]'
-              : 'bg-white/80 border-[#1A1FE8]/25 text-[#1A1FE8] shadow-[0_4px_24px_rgba(26,31,232,0.12)]'
+              ? 'bg-[#1A1FE8]/20 border-[#1A1FE8]/40 text-blue-100 shadow-[0_0_20px_rgba(26,31,232,0.3)]'
+              : 'bg-white/90 border-[#1A1FE8]/25 text-[#1A1FE8] shadow-[0_4px_24px_rgba(26,31,232,0.12)]'
           }`}>
             <Sparkles className="w-3.5 h-3.5 text-[#1A1FE8]" />
             <span className="font-medium">Tu propio vehículo en 60 meses</span>
           </div>
 
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-5">
+          <h1
+            className={`text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-5 ${
+              theme === 'dark' ? '[text-shadow:0_2px_24px_rgba(0,0,0,0.9)]' : '[text-shadow:0_2px_16px_rgba(255,255,255,0.9)]'
+            }`}
+          >
             <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>Drive Today, </span>
             <span
               className="relative"
               style={{
                 color: '#1A1FE8',
-                textShadow: theme === 'dark' ? '0 0 60px rgba(26,31,232,0.6)' : '0 0 40px rgba(26,31,232,0.2)',
+                textShadow:
+                  theme === 'dark'
+                    ? '0 2px 24px rgba(0,0,0,0.9), 0 0 40px rgba(26,31,232,0.5)'
+                    : '0 2px 16px rgba(255,255,255,0.9), 0 0 30px rgba(26,31,232,0.25)',
               }}
             >
               Yours Tomorrow
             </span>
           </h1>
 
-          <p className={`text-lg md:text-xl leading-relaxed mb-10 max-w-2xl mx-auto ${
-            theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-          }`}>
+          <p
+            className={`text-lg md:text-xl leading-relaxed mb-10 max-w-2xl mx-auto ${
+              theme === 'dark'
+                ? 'text-gray-100 [text-shadow:0_1px_12px_rgba(0,0,0,0.85)]'
+                : 'text-gray-800 [text-shadow:0_1px_10px_rgba(255,255,255,0.85)]'
+            }`}
+          >
             Modelo Rent to Own para conductores de Uber, DiDi y más.
             Pagos semanales y al finalizar el plazo, ¡el vehículo es tuyo!
           </p>
@@ -121,8 +152,6 @@ export function HeroSection() {
           </div>
         </div>
       </div>
-
-      {/* Bottom edge fade */}
       <div className={`absolute bottom-0 left-0 right-0 h-32 ${
         theme === 'dark'
           ? 'bg-gradient-to-t from-[#06071A]/90 to-transparent'
