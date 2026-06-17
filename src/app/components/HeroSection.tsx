@@ -2,31 +2,37 @@ import { ArrowRight, Play, Sparkles } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { useTheme } from '../contexts/ThemeContext';
 
+const HERO_VIDEO = '/hero/hero-bg.mp4';
+const HERO_POSTER = '/hero/hero-poster.jpg';
+
+const fallbackPosterDark =
+  'https://images.unsplash.com/photo-1672783521773-4ad176cfa461?w=1920&fit=crop&auto=format';
+const fallbackPosterLight =
+  'https://images.unsplash.com/photo-1522770450359-3de04ff5c9e2?w=1920&fit=crop&auto=format';
+
 export function HeroSection() {
   const { theme } = useTheme();
+  const fallbackPoster = theme === 'dark' ? fallbackPosterDark : fallbackPosterLight;
 
   return (
     <section className="relative min-h-[90vh] flex items-center overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 z-0">
         <ImageWithFallback
-          src={
-            theme === 'dark'
-              ? 'https://images.unsplash.com/photo-1672783521773-4ad176cfa461?w=1920&fit=crop&auto=format'
-              : 'https://images.unsplash.com/photo-1522770450359-3de04ff5c9e2?w=1920&fit=crop&auto=format'
-          }
-          alt="Modern car background"
+          src={fallbackPoster}
+          alt="Fondo hero atoo"
           className="w-full h-full object-cover"
         />
         <video
-          autoPlay loop muted playsInline key={theme}
+          autoPlay
+          loop
+          muted
+          playsInline
+          key={theme}
           className="absolute inset-0 w-full h-full object-cover"
-          poster={theme === 'dark'
-            ? 'https://images.unsplash.com/photo-1672783521773-4ad176cfa461?w=1920&fit=crop&auto=format'
-            : 'https://images.unsplash.com/photo-1522770450359-3de04ff5c9e2?w=1920&fit=crop&auto=format'}
+          poster={HERO_POSTER}
         >
-          <source src="https://assets.mixkit.co/videos/preview/mixkit-going-down-a-curved-highway-through-a-mountain-range-41576-large.mp4" type="video/mp4" />
-          <source src="https://assets.mixkit.co/videos/preview/mixkit-curvy-road-on-a-tree-covered-hill-41537-large.mp4" type="video/mp4" />
+          <source src={HERO_VIDEO} type="video/mp4" />
         </video>
 
         {/* Overlay */}
