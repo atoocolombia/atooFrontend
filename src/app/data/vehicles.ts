@@ -106,3 +106,13 @@ export function formatCop(value: number): string {
     maximumFractionDigits: 0,
   }).format(value);
 }
+
+/** PDF de ficha técnica: public/vehicles/{slug}/ficha-tecnica.pdf */
+export function getVehicleSpecSheetPdf(vehicle: CatalogVehicle): string {
+  return `/vehicles/${vehicle.slug}/ficha-tecnica.pdf`;
+}
+
+export function getVehicleSpecSheetFilename(vehicle: CatalogVehicle): string {
+  const safeName = vehicle.name.replace(/\s+/g, '-');
+  return `Ficha-tecnica-${safeName}.pdf`;
+}

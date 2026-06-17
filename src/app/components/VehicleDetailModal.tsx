@@ -1,10 +1,10 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, Check, Battery, Gauge, Users, Zap } from 'lucide-react';
+import { X, Check, Battery, Gauge, Users, Zap, FileText, Download } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { useTheme } from '../contexts/ThemeContext';
-import { type CatalogVehicle, formatCop } from '../data/vehicles';
+import { type CatalogVehicle, formatCop, getVehicleSpecSheetFilename, getVehicleSpecSheetPdf } from '../data/vehicles';
 
 interface VehicleDetailModalProps {
   vehicle: CatalogVehicle | null;
@@ -21,6 +21,8 @@ export function VehicleDetailModal({ vehicle, open, onClose }: VehicleDetailModa
 
   const gallery = vehicle.gallery.length > 0 ? vehicle.gallery : [vehicle.image];
   const currentImage = gallery[activeImage] ?? vehicle.image;
+  const specSheetPdf = getVehicleSpecSheetPdf(vehicle);
+  const specSheetFilename = getVehicleSpecSheetFilename(vehicle);
 
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
@@ -137,9 +139,29 @@ export function VehicleDetailModal({ vehicle, open, onClose }: VehicleDetailModa
             </section>
 
             <section>
-              <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                Ficha técnica
-              </h3>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                  Ficha técnica
+                </h3>
+                <a
+                  href={specSheetPdf}
+                  download={specSheetFilename}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                    theme === 'dark'
+                      ? 'bg-[#1A1FE8]/15 text-[#8B90FF] border border-[#1A1FE8]/30 hover:bg-[#1A1FE8]/25'
+                      : 'bg-[#1A1FE8]/8 text-[#1A1FE8] border border-[#1A1FE8]/20 hover:bg-[#1A1FE8]/15'
+                  }`}
+                >
+                  <FileText className="w-4 h-4" />
+                  Descargar PDF
+                  <Download className="w-4 h-4" />
+                </a>
+              </div>
+              <p className={`text-xs mb-4 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
+                También puedes abrir el documento en una pestaña nueva.
+              </p>
               <div className="grid sm:grid-cols-2 gap-3">
                 {vehicle.specs.map((spec) => (
                   <div
