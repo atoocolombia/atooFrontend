@@ -10,17 +10,14 @@ const fallbackPosterDark =
 const fallbackPosterLight =
   'https://images.unsplash.com/photo-1522770450359-3de04ff5c9e2?w=1920&fit=crop&auto=format';
 
-const HERO_TEXT_BLEND_MASK =
-  'radial-gradient(ellipse 100% 92% at 50% 50%, black 22%, black 38%, transparent 100%)';
-
-function heroTextBackdrop(theme: 'dark' | 'light') {
-  const core = theme === 'dark' ? '6,7,26' : '255,255,255';
-  return [
-    `linear-gradient(to right, transparent 0%, rgba(${core},0.12) 18%, rgba(${core},0.12) 82%, transparent 100%)`,
-    `linear-gradient(to bottom, transparent 0%, rgba(${core},0.08) 14%, rgba(${core},0.08) 86%, transparent 100%)`,
-    `radial-gradient(ellipse 78% 68% at 50% 48%, rgba(${core},0.52) 0%, rgba(${core},0.28) 46%, rgba(${core},0.06) 72%, transparent 100%)`,
-  ].join(', ');
-}
+const HERO_TITLE_SHADOW_DARK =
+  '0 2px 4px rgba(0,0,0,0.95), 0 4px 14px rgba(0,0,0,0.9), 0 8px 28px rgba(0,0,0,0.75), 0 16px 48px rgba(0,0,0,0.55)';
+const HERO_TITLE_SHADOW_LIGHT =
+  '0 2px 4px rgba(255,255,255,0.95), 0 4px 14px rgba(255,255,255,0.9), 0 8px 28px rgba(255,255,255,0.75), 0 16px 48px rgba(255,255,255,0.55)';
+const HERO_BODY_SHADOW_DARK =
+  '0 1px 3px rgba(0,0,0,0.95), 0 3px 10px rgba(0,0,0,0.85), 0 6px 22px rgba(0,0,0,0.7)';
+const HERO_BODY_SHADOW_LIGHT =
+  '0 1px 3px rgba(255,255,255,0.95), 0 3px 10px rgba(255,255,255,0.85), 0 6px 22px rgba(255,255,255,0.7)';
 
 export function HeroSection() {
   const { theme } = useTheme();
@@ -97,42 +94,34 @@ export function HeroSection() {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 py-24">
         <div className="relative max-w-3xl mx-auto text-center px-4 py-8 sm:px-8 sm:py-10">
-          {/* Fondo del texto: centro legible, bordes que se desvanecen al video */}
           <div
-            aria-hidden
-            className="pointer-events-none absolute -inset-x-10 -inset-y-8 sm:-inset-x-16 sm:-inset-y-12 -z-10"
+            className={`inline-flex items-center gap-2 px-4 py-2 border rounded-full text-sm mb-8 ${
+              theme === 'dark'
+                ? 'border-[#1A1FE8]/30 text-blue-100'
+                : 'border-[#1A1FE8]/25 text-[#1A1FE8]'
+            }`}
             style={{
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              background: heroTextBackdrop(theme),
-              maskImage: HERO_TEXT_BLEND_MASK,
-              WebkitMaskImage: HERO_TEXT_BLEND_MASK,
+              textShadow: theme === 'dark' ? HERO_BODY_SHADOW_DARK : HERO_BODY_SHADOW_LIGHT,
             }}
-          />
-
-          <div className={`inline-flex items-center gap-2 px-4 py-2 border rounded-full text-sm mb-8 backdrop-blur-md ${
-            theme === 'dark'
-              ? 'bg-[#1A1FE8]/15 border-[#1A1FE8]/25 text-blue-100'
-              : 'bg-white/75 border-[#1A1FE8]/20 text-[#1A1FE8]'
-          }`}>
+          >
             <Sparkles className="w-3.5 h-3.5 text-[#1A1FE8]" />
             <span className="font-medium">Tu propio vehículo en 60 meses</span>
           </div>
 
           <h1
-            className={`text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-5 ${
-              theme === 'dark' ? '[text-shadow:0_2px_24px_rgba(0,0,0,0.9)]' : '[text-shadow:0_2px_16px_rgba(255,255,255,0.9)]'
-            }`}
+            className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-5"
+            style={{
+              textShadow: theme === 'dark' ? HERO_TITLE_SHADOW_DARK : HERO_TITLE_SHADOW_LIGHT,
+            }}
           >
             <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>Drive Today, </span>
             <span
-              className="relative"
               style={{
                 color: '#1A1FE8',
                 textShadow:
                   theme === 'dark'
-                    ? '0 2px 24px rgba(0,0,0,0.9), 0 0 40px rgba(26,31,232,0.5)'
-                    : '0 2px 16px rgba(255,255,255,0.9), 0 0 30px rgba(26,31,232,0.25)',
+                    ? `${HERO_TITLE_SHADOW_DARK}, 0 0 36px rgba(26,31,232,0.45)`
+                    : `${HERO_TITLE_SHADOW_LIGHT}, 0 0 28px rgba(26,31,232,0.3)`,
               }}
             >
               Yours Tomorrow
@@ -141,10 +130,11 @@ export function HeroSection() {
 
           <p
             className={`text-lg md:text-xl leading-relaxed mb-10 max-w-2xl mx-auto ${
-              theme === 'dark'
-                ? 'text-gray-100 [text-shadow:0_1px_12px_rgba(0,0,0,0.85)]'
-                : 'text-gray-800 [text-shadow:0_1px_10px_rgba(255,255,255,0.85)]'
+              theme === 'dark' ? 'text-gray-100' : 'text-gray-800'
             }`}
+            style={{
+              textShadow: theme === 'dark' ? HERO_BODY_SHADOW_DARK : HERO_BODY_SHADOW_LIGHT,
+            }}
           >
             Modelo Rent to Own para conductores de Uber, DiDi y más.
             Pagos semanales y al finalizar el plazo, ¡el vehículo es tuyo!
