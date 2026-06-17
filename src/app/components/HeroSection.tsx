@@ -10,8 +10,17 @@ const fallbackPosterDark =
 const fallbackPosterLight =
   'https://images.unsplash.com/photo-1522770450359-3de04ff5c9e2?w=1920&fit=crop&auto=format';
 
-const HERO_CONTENT_MASK =
-  'radial-gradient(ellipse 92% 82% at 50% 50%, black 38%, transparent 80%)';
+const HERO_TEXT_BLEND_MASK =
+  'radial-gradient(ellipse 100% 92% at 50% 50%, black 22%, black 38%, transparent 100%)';
+
+function heroTextBackdrop(theme: 'dark' | 'light') {
+  const core = theme === 'dark' ? '6,7,26' : '255,255,255';
+  return [
+    `linear-gradient(to right, transparent 0%, rgba(${core},0.12) 18%, rgba(${core},0.12) 82%, transparent 100%)`,
+    `linear-gradient(to bottom, transparent 0%, rgba(${core},0.08) 14%, rgba(${core},0.08) 86%, transparent 100%)`,
+    `radial-gradient(ellipse 78% 68% at 50% 48%, rgba(${core},0.52) 0%, rgba(${core},0.28) 46%, rgba(${core},0.06) 72%, transparent 100%)`,
+  ].join(', ');
+}
 
 export function HeroSection() {
   const { theme } = useTheme();
@@ -41,24 +50,24 @@ export function HeroSection() {
         {/* Overlay — video visible en los bordes, más contraste en el centro */}
         {theme === 'dark' ? (
           <>
-            <div className="absolute inset-0 bg-gradient-to-b from-[#06071A]/50 via-[#06071A]/45 to-[#06071A]/85" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#06071A]/35 via-[#06071A]/30 to-[#06071A]/75" />
             <div
               className="absolute inset-0"
               style={{
                 background:
-                  'radial-gradient(ellipse 75% 55% at 50% 42%, rgba(6,7,26,0.72) 0%, rgba(6,7,26,0.35) 55%, transparent 100%)',
+                  'radial-gradient(ellipse 90% 70% at 50% 42%, rgba(6,7,26,0.38) 0%, rgba(6,7,26,0.18) 50%, transparent 100%)',
               }}
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#1A1FE8]/12 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#1A1FE8]/8 via-transparent to-transparent" />
           </>
         ) : (
           <>
-            <div className="absolute inset-0 bg-gradient-to-b from-white/25 via-white/40 to-white/95" />
+            <div className="absolute inset-0 bg-gradient-to-b from-white/15 via-white/25 to-white/90" />
             <div
               className="absolute inset-0"
               style={{
                 background:
-                  'radial-gradient(ellipse 75% 55% at 50% 42%, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.45) 55%, transparent 100%)',
+                  'radial-gradient(ellipse 90% 70% at 50% 42%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.22) 50%, transparent 100%)',
               }}
             />
             <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-white to-transparent" />
@@ -87,35 +96,24 @@ export function HeroSection() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 py-24">
-        <div className="relative max-w-3xl mx-auto text-center px-6 py-10 sm:px-10 sm:py-12">
-          {/* Halo difuminado — sin bordes duros, se funde con el video */}
+        <div className="relative max-w-3xl mx-auto text-center px-4 py-8 sm:px-8 sm:py-10">
+          {/* Fondo del texto: centro legible, bordes que se desvanecen al video */}
           <div
             aria-hidden
-            className={`pointer-events-none absolute inset-0 -z-10 backdrop-blur-xl ${
-              theme === 'dark' ? 'bg-[#06071A]/50' : 'bg-white/55'
-            }`}
+            className="pointer-events-none absolute -inset-x-10 -inset-y-8 sm:-inset-x-16 sm:-inset-y-12 -z-10"
             style={{
-              maskImage: HERO_CONTENT_MASK,
-              WebkitMaskImage: HERO_CONTENT_MASK,
-            }}
-          />
-          <div
-            aria-hidden
-            className={`pointer-events-none absolute inset-0 -z-10 ${
-              theme === 'dark' ? 'bg-[#06071A]/30' : 'bg-white/35'
-            }`}
-            style={{
-              maskImage:
-                'radial-gradient(ellipse 100% 95% at 50% 50%, black 25%, transparent 72%)',
-              WebkitMaskImage:
-                'radial-gradient(ellipse 100% 95% at 50% 50%, black 25%, transparent 72%)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              background: heroTextBackdrop(theme),
+              maskImage: HERO_TEXT_BLEND_MASK,
+              WebkitMaskImage: HERO_TEXT_BLEND_MASK,
             }}
           />
 
           <div className={`inline-flex items-center gap-2 px-4 py-2 border rounded-full text-sm mb-8 backdrop-blur-md ${
             theme === 'dark'
-              ? 'bg-[#1A1FE8]/20 border-[#1A1FE8]/40 text-blue-100 shadow-[0_0_20px_rgba(26,31,232,0.3)]'
-              : 'bg-white/90 border-[#1A1FE8]/25 text-[#1A1FE8] shadow-[0_4px_24px_rgba(26,31,232,0.12)]'
+              ? 'bg-[#1A1FE8]/15 border-[#1A1FE8]/25 text-blue-100'
+              : 'bg-white/75 border-[#1A1FE8]/20 text-[#1A1FE8]'
           }`}>
             <Sparkles className="w-3.5 h-3.5 text-[#1A1FE8]" />
             <span className="font-medium">Tu propio vehículo en 60 meses</span>

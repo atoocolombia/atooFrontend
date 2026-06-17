@@ -1,11 +1,17 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, Check, Battery, Gauge, Users, Zap, FileText, Download } from 'lucide-react';
-import { useState } from 'react';
+import { X, Check, Battery, Gauge, Users, Zap, FileText, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { useTheme } from '../contexts/ThemeContext';
 import { getVehicleGalleryImages } from '../data/vehicleGalleries.generated';
 import { type CatalogVehicle, formatCop, getVehicleSpecSheetFilename, getVehicleSpecSheetPdf } from '../data/vehicles';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  type CarouselApi,
+} from './ui/carousel';
 
 interface VehicleDetailModalProps {
   vehicle: CatalogVehicle | null;
@@ -17,11 +23,29 @@ export function VehicleDetailModal({ vehicle, open, onClose }: VehicleDetailModa
   const { theme } = useTheme();
   const navigate = useNavigate();
   const [activeImage, setActiveImage] = useState(0);
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+
+  const gallery = vehicle ? getVehicleGalleryImages(vehicle) : [];
+
+  useEffect(() => {
+    if (!carouselApi) return;
+    const onSelect = () => setActiveImage(carouselApi.selectedScrollSnap());
+    onSelect();
+    carouselApi.on('select', onSelect);
+    return () => {
+      carouselApi.off('select', onSelect);
+    };
+  }, [carouselApi]);
+
+  useEffect(() => {
+    if (!open) {
+      setActiveImage(0);
+      carouselApi?.scrollTo(0, true);
+    }
+  }, [open, carouselApi]);
 
   if (!vehicle) return null;
 
-  const gallery = getVehicleGalleryImages(vehicle);
-  const currentImage = gallery[activeImage] ?? vehicle.image;
   const specSheetPdf = getVehicleSpecSheetPdf(vehicle);
   const specSheetFilename = getVehicleSpecSheetFilename(vehicle);
 
@@ -53,14 +77,74 @@ export function VehicleDetailModal({ vehicle, open, onClose }: VehicleDetailModa
             <X className="w-5 h-5" />
           </Dialog.Close>
 
-          <div className="aspect-[16/9] overflow-hidden relative bg-black/5">
-            <ImageWithFallback
-              src={currentImage}
-              alt={vehicle.name}
-              className="w-full h-full object-cover"
-            />
+          <div className="relative bg-black/5">
+            {gallery.length > 0 ? (
+              <Carousel
+                setApi={setCarouselApi}
+                opts={{ loop: gallery.length > 1, align: 'start' }}
+                className="w-full"
+              >
+                <CarouselContent className="-ml-0">
+                  {gallery.map((src, index) => (
+                    <CarouselItem key={`${src}-${index}`} className="pl-0 basis-full">
+                      <div className="aspect-[16/9] overflow-hidden">
+                        <ImageWithFallback
+                          src={src}
+                          alt={`${vehicle.name} ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+
+                {gallery.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => carouselApi?.scrollPrev()}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition hover:bg-black/60"
+                      aria-label="Foto anterior"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => carouselApi?.scrollNext()}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition hover:bg-black/60"
+                      aria-label="Foto siguiente"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1.5 backdrop-blur-sm">
+                      {gallery.map((src, index) => (
+                        <button
+                          key={`dot-${src}-${index}`}
+                          type="button"
+                          onClick={() => carouselApi?.scrollTo(index)}
+                          className={`h-1.5 rounded-full transition-all ${
+                            activeImage === index ? 'w-5 bg-white' : 'w-1.5 bg-white/45 hover:bg-white/70'
+                          }`}
+                          aria-label={`Ir a foto ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </Carousel>
+            ) : (
+              <div className="aspect-[16/9] overflow-hidden">
+                <ImageWithFallback
+                  src={vehicle.image}
+                  alt={vehicle.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+
             {vehicle.badge && (
-              <div className="absolute top-4 left-4 flex items-center gap-1.5 bg-[#1A1FE8] text-white px-3 py-1.5 rounded-full text-xs font-bold">
+              <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5 bg-[#1A1FE8] text-white px-3 py-1.5 rounded-full text-xs font-bold">
                 <Zap className="w-3 h-3 fill-current" />
                 {vehicle.badge}
               </div>
@@ -76,44 +160,6 @@ export function VehicleDetailModal({ vehicle, open, onClose }: VehicleDetailModa
                 {vehicle.subtitle}
               </Dialog.Description>
             </div>
-
-            <section>
-              <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                Galería de fotos
-              </h3>
-              {gallery.length > 1 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {gallery.map((src, index) => (
-                    <button
-                      key={`${src}-${index}`}
-                      type="button"
-                      onClick={() => setActiveImage(index)}
-                      className={`aspect-[4/3] rounded-xl overflow-hidden border-2 transition-all ${
-                        activeImage === index
-                          ? 'border-[#1A1FE8] ring-2 ring-[#1A1FE8]/30'
-                          : theme === 'dark'
-                            ? 'border-white/10 hover:border-[#1A1FE8]/40'
-                            : 'border-gray-200 hover:border-[#1A1FE8]/40'
-                      }`}
-                    >
-                      <ImageWithFallback src={src} alt={`${vehicle.name} ${index + 1}`} className="w-full h-full object-cover" />
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div
-                  className={`rounded-xl border border-dashed p-6 text-center ${
-                    theme === 'dark' ? 'border-white/15 text-gray-400' : 'border-gray-300 text-gray-500'
-                  }`}
-                >
-                  <p className="text-sm">
-                    Sube fotos en{' '}
-                    <code className="text-[#1A1FE8]">public/vehicles/{vehicle.slug}/gallery/</code>
-                    {' '}y vuelve a desplegar el sitio.
-                  </p>
-                </div>
-              )}
-            </section>
 
             <section>
               <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
