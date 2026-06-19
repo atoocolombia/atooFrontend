@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ImagePlus, Loader2, Save, Star, Trash2 } from 'lucide-react';
+import { ImagePlus, Loader2, Plus, Save, Star, Trash2 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { LandingContentAdminPanel } from './LandingContentAdminPanel';
 import {
+  adminCreateCatalogVehicle,
+  adminDeleteCatalogVehicle,
   adminDeleteVehicleImage,
   adminFetchCatalogVehicles,
   adminFetchLandingSettings,
@@ -15,7 +18,19 @@ import { ApiError } from '../../../lib/api';
 import { formatCop } from '../../data/vehicles';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 
+const NEW_VEHICLE_ID = '__new__';
+
+type AdminTab = 'vehicles' | 'benefits' | 'steps' | 'contact';
+
+const ADMIN_TABS: { id: AdminTab; label: string }[] = [
+  { id: 'vehicles', label: 'Vehículos' },
+  { id: 'benefits', label: 'Beneficios' },
+  { id: 'steps', label: 'Pasos' },
+  { id: 'contact', label: 'Contacto' },
+];
+
 type VehicleForm = {
+  slug: string;
   name: string;
   subtitle: string;
   type: 'carro' | 'camioneta';
@@ -31,6 +46,7 @@ type VehicleForm = {
 
 function vehicleToForm(v: AdminCatalogVehicle): VehicleForm {
   return {
+    slug: v.slug,
     name: v.name,
     subtitle: v.subtitle,
     type: v.type,
@@ -59,8 +75,35 @@ function parseSpecs(text: string) {
   });
 }
 
+function slugify(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+function emptyVehicleForm(sortOrder: number): VehicleForm {
+  return {
+    slug: '',
+    name: '',
+    subtitle: '',
+    type: 'carro',
+    badge: '',
+    weeklyPriceCop: 207_000,
+    popular: false,
+    active: true,
+    sortOrder,
+    highlightsText: '',
+    featuresText: '',
+    specsText: '',
+  };
+}
+
 export function LandingAdminView() {
   const { theme } = useTheme();
+  const [activeTab, setActiveTab] = useState<AdminTab>('vehicles');
   const [maxVisible, setMaxVisible] = useState(10);
   const [vehicles, setVehicles] = useState<AdminCatalogVehicle[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -72,6 +115,7 @@ export function LandingAdminView() {
   const [error, setError] = useState('');
 
   const selected = vehicles.find((v) => v.id === selectedId) ?? null;
+  const isCreating = selectedId === NEW_VEHICLE_ID;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -96,9 +140,32 @@ export function LandingAdminView() {
   }, [load]);
 
   useEffect(() => {
+    if (selectedId === NEW_VEHICLE_ID) return;
     const v = vehicles.find((item) => item.id === selectedId);
     if (v) setForm(vehicleToForm(v));
   }, [selectedId, vehicles]);
+
+  const startCreateVehicle = () => {
+    setSelectedId(NEW_VEHICLE_ID);
+    setForm(emptyVehicleForm(vehicles.length));
+    setMessage('');
+    setError('');
+  };
+
+  const buildPayloadFromForm = (f: VehicleForm) => ({
+    slug: f.slug.trim().toLowerCase(),
+    name: f.name.trim(),
+    subtitle: f.subtitle,
+    type: f.type,
+    badge: f.badge.trim() || null,
+    weeklyPriceCop: f.weeklyPriceCop,
+    popular: f.popular,
+    active: f.active,
+    sortOrder: f.sortOrder,
+    highlights: parseLines(f.highlightsText),
+    features: parseLines(f.featuresText),
+    specs: parseSpecs(f.specsText),
+  });
 
   const cardClass =
     theme === 'dark'
@@ -125,28 +192,51 @@ export function LandingAdminView() {
   };
 
   const saveVehicle = async () => {
-    if (!selected || !form) return;
+    if (!form) return;
     setSaving(true);
     setMessage('');
     setError('');
     try {
-      const updated = await adminUpdateCatalogVehicle(selected.id, {
-        name: form.name,
-        subtitle: form.subtitle,
-        type: form.type,
-        badge: form.badge.trim() || null,
-        weeklyPriceCop: form.weeklyPriceCop,
-        popular: form.popular,
-        active: form.active,
-        sortOrder: form.sortOrder,
-        highlights: parseLines(form.highlightsText),
-        features: parseLines(form.featuresText),
-        specs: parseSpecs(form.specsText),
-      });
-      setVehicles((prev) => prev.map((v) => (v.id === updated.id ? updated : v)));
-      setMessage(`Vehículo "${updated.name}" actualizado.`);
+      const payload = buildPayloadFromForm(form);
+      if (!payload.slug) {
+        setError('El identificador (slug) es obligatorio.');
+        return;
+      }
+      if (!payload.name) {
+        setError('El nombre es obligatorio.');
+        return;
+      }
+
+      if (isCreating) {
+        const created = await adminCreateCatalogVehicle(payload);
+        setVehicles((prev) => [...prev, created]);
+        setSelectedId(created.id);
+        setMessage(`Vehículo "${created.name}" creado. Ahora puedes subir fotos.`);
+      } else if (selected) {
+        const updated = await adminUpdateCatalogVehicle(selected.id, payload);
+        setVehicles((prev) => prev.map((v) => (v.id === updated.id ? updated : v)));
+        setMessage(`Vehículo "${updated.name}" actualizado.`);
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Error al guardar vehículo');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteVehicle = async () => {
+    if (!selected || isCreating) return;
+    if (!confirm(`¿Eliminar "${selected.name}" y todas sus fotos?`)) return;
+    setSaving(true);
+    setError('');
+    try {
+      await adminDeleteCatalogVehicle(selected.id);
+      const remaining = vehicles.filter((v) => v.id !== selected.id);
+      setVehicles(remaining);
+      setSelectedId(remaining[0]?.id ?? null);
+      setMessage('Vehículo eliminado.');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Error al eliminar vehículo');
     } finally {
       setSaving(false);
     }
@@ -207,9 +297,28 @@ export function LandingAdminView() {
           Landing page
         </h1>
         <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
-          Administra los vehículos visibles en la página principal, su información y galería de fotos.
+          Administra vehículos, beneficios, pasos y datos de contacto de la página principal.
         </p>
       </div>
+
+      <nav className={`flex flex-wrap gap-2 border-b pb-4 ${theme === 'dark' ? 'border-white/10' : 'border-gray-200'}`}>
+        {ADMIN_TABS.map(({ id, label }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setActiveTab(id)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === id
+                ? 'bg-[#1A1FE8] text-white'
+                : theme === 'dark'
+                  ? 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
 
       {(message || error) && (
         <div
@@ -223,6 +332,8 @@ export function LandingAdminView() {
         </div>
       )}
 
+      {activeTab === 'vehicles' && (
+      <>
       <section className={`rounded-2xl border p-6 ${cardClass}`}>
         <h2 className="text-lg font-semibold mb-4">Visibilidad en la landing</h2>
         <div className="flex flex-col sm:flex-row sm:items-end gap-4">
@@ -256,7 +367,26 @@ export function LandingAdminView() {
 
       <div className="grid lg:grid-cols-[240px_1fr] gap-6">
         <aside className={`rounded-2xl border p-4 space-y-2 ${cardClass}`}>
-          <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide opacity-70">Vehículos</h3>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <h3 className="text-sm font-semibold uppercase tracking-wide opacity-70">Vehículos</h3>
+            <button
+              type="button"
+              onClick={startCreateVehicle}
+              className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg bg-[#1A1FE8] text-white hover:bg-[#1217C8]"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Nuevo
+            </button>
+          </div>
+          {isCreating && (
+            <button
+              type="button"
+              className="w-full text-left px-3 py-2 rounded-lg text-sm bg-[#1A1FE8] text-white"
+            >
+              <div className="font-medium">Nuevo vehículo</div>
+              <div className="text-xs opacity-75">Sin guardar</div>
+            </button>
+          )}
           {vehicles.map((v) => (
             <button
               key={v.id}
@@ -276,18 +406,56 @@ export function LandingAdminView() {
           ))}
         </aside>
 
-        {selected && form && (
+        {(isCreating || (selected && form)) && form && (
           <div className="space-y-6">
             <section className={`rounded-2xl border p-6 space-y-4 ${cardClass}`}>
-              <h2 className="text-lg font-semibold">Información del vehículo</h2>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <h2 className="text-lg font-semibold">
+                  {isCreating ? 'Nuevo vehículo' : 'Información del vehículo'}
+                </h2>
+                {!isCreating && selected && (
+                  <button
+                    type="button"
+                    onClick={() => void deleteVehicle()}
+                    disabled={saving}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/10 disabled:opacity-60"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Eliminar vehículo
+                  </button>
+                )}
+              </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm mb-1 block">Nombre</label>
                   <input
                     value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    onChange={(e) => {
+                      const name = e.target.value;
+                      setForm((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              name,
+                              slug: isCreating && !prev.slug ? slugify(name) : prev.slug,
+                            }
+                          : prev,
+                      );
+                    }}
                     className={`w-full px-3 py-2 rounded-lg border ${inputClass}`}
                   />
+                </div>
+                <div>
+                  <label className="text-sm mb-1 block">Identificador (slug)</label>
+                  <input
+                    value={form.slug}
+                    onChange={(e) => setForm({ ...form, slug: slugify(e.target.value) })}
+                    placeholder="mi-vehiculo-electrico"
+                    className={`w-full px-3 py-2 rounded-lg border ${inputClass}`}
+                  />
+                  <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
+                    Solo minúsculas, números y guiones. No se puede cambiar fácilmente después.
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm mb-1 block">Subtítulo</label>
@@ -391,10 +559,11 @@ export function LandingAdminView() {
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1A1FE8] text-white rounded-lg font-semibold hover:bg-[#1217C8] disabled:opacity-60"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                Guardar vehículo
+                {isCreating ? 'Crear vehículo' : 'Guardar vehículo'}
               </button>
             </section>
 
+            {!isCreating && selected && (
             <section className={`rounded-2xl border p-6 ${cardClass}`}>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
                 <h2 className="text-lg font-semibold">Galería de fotos</h2>
@@ -460,9 +629,29 @@ export function LandingAdminView() {
                 </div>
               )}
             </section>
+            )}
+
+            {isCreating && (
+              <p className={`text-sm ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
+                Guarda el vehículo primero para poder subir fotos a la galería.
+              </p>
+            )}
           </div>
         )}
       </div>
+      </>
+      )}
+
+      {(activeTab === 'benefits' || activeTab === 'steps' || activeTab === 'contact') && (
+        <LandingContentAdminPanel
+          tab={activeTab}
+          theme={theme}
+          cardClass={cardClass}
+          inputClass={inputClass}
+          onMessage={setMessage}
+          onError={setError}
+        />
+      )}
     </div>
   );
 }

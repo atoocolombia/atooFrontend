@@ -1,5 +1,6 @@
 import { ApiError } from './api';
 import type { CatalogVehicle, VehicleSpec } from '../app/data/vehicles';
+import type { LandingContent } from '../app/data/landingContent';
 
 function normalizeApiBase(raw: string): string {
   let base = raw
@@ -74,6 +75,13 @@ export async function fetchLandingSettings(): Promise<LandingSettings | null> {
   return (await res.json()) as LandingSettings;
 }
 
+export async function fetchLandingContent(): Promise<LandingContent | null> {
+  if (!API_BASE) return null;
+  const res = await fetch(apiUrl('/api/v1/landing/content'));
+  if (!res.ok) return null;
+  return (await res.json()) as LandingContent;
+}
+
 export async function adminFetchLandingSettings(): Promise<LandingSettings> {
   const res = await fetch(apiUrl('/api/v1/admin/landing/settings'));
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
@@ -90,11 +98,58 @@ export async function adminUpdateLandingSettings(maxVisibleVehicles: number): Pr
   return (await res.json()) as LandingSettings;
 }
 
+export async function adminFetchLandingContent(): Promise<LandingContent> {
+  const res = await fetch(apiUrl('/api/v1/admin/landing/content'));
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
+  return (await res.json()) as LandingContent;
+}
+
+export async function adminUpdateLandingContent(content: LandingContent): Promise<LandingContent> {
+  const res = await fetch(apiUrl('/api/v1/admin/landing/content'), {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(content),
+  });
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
+  return (await res.json()) as LandingContent;
+}
+
 export async function adminFetchCatalogVehicles(): Promise<AdminCatalogVehicle[]> {
   const res = await fetch(apiUrl('/api/v1/admin/landing/vehicles'));
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
   const data = (await res.json()) as AdminCatalogVehicle[];
   return data.map(mapVehicleDto);
+}
+
+export async function adminCreateCatalogVehicle(payload: {
+  slug: string;
+  name: string;
+  subtitle?: string;
+  type?: 'carro' | 'camioneta' | 'CARRO' | 'CAMIONETA';
+  highlights?: string[];
+  features?: string[];
+  specs?: VehicleSpec[];
+  badge?: string | null;
+  popular?: boolean;
+  weeklyPriceCop?: number;
+  active?: boolean;
+  sortOrder?: number;
+  specSheetPath?: string | null;
+}): Promise<AdminCatalogVehicle> {
+  const res = await fetch(apiUrl('/api/v1/admin/landing/vehicles'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
+  return mapVehicleDto((await res.json()) as AdminCatalogVehicle);
+}
+
+export async function adminDeleteCatalogVehicle(id: string): Promise<void> {
+  const res = await fetch(apiUrl(`/api/v1/admin/landing/vehicles/${id}`), {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
 }
 
 export async function adminUpdateCatalogVehicle(

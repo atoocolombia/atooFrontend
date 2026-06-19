@@ -1,10 +1,15 @@
 import { ArrowRight, Phone, Mail, Sparkles } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { landingLightSurfaces } from '../styles/landingSurfaces';
+import { splitContactDescription } from '../data/landingContent';
+import { useLandingContent } from '../../lib/useLandingContent';
 
 export function CTASection() {
   const { theme } = useTheme();
+  const { content } = useLandingContent();
+  const { contact } = content;
   const isBrandCta = theme === 'light';
+  const [descBefore, descAfter] = splitContactDescription(contact.description, contact.driverCount);
 
   return (
     <section className={`relative py-32 overflow-hidden transition-colors duration-300 ${
@@ -39,26 +44,34 @@ export function CTASection() {
                 : 'bg-[#1A1FE8]/8 border-[#1A1FE8]/20 text-[#1A1FE8]'
           }`}>
             <Sparkles className="w-4 h-4" />
-            <span className="font-medium">¡Comienza Tu Viaje Hoy!</span>
+            <span className="font-medium">{contact.badge}</span>
           </div>
 
           <h2 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
-            <span className={isBrandCta ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'}>¿Listo para </span>
+            <span className={isBrandCta ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'}>{contact.titleBefore}</span>
             <span
               style={{
                 color: isBrandCta ? '#FFFFFF' : '#1A1FE8',
                 textShadow: theme === 'dark' ? '0 0 60px rgba(26,31,232,0.6)' : isBrandCta ? 'none' : '0 0 30px rgba(26,31,232,0.15)',
               }}
             >
-              Yours Tomorrow
+              {contact.titleHighlight}
             </span>
-            <span className={isBrandCta ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'}>?</span>
+            <span className={isBrandCta ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'}>{contact.titleAfter}</span>
           </h2>
 
           <p className={`text-xl mb-12 leading-relaxed ${isBrandCta ? 'text-white/85' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            Únete a más de{' '}
-            <span className={`font-bold ${isBrandCta ? 'text-white' : 'text-[#1A1FE8]'}`}>100 conductores</span>{' '}
-            que ya están construyendo su patrimonio mientras trabajan
+            {descAfter ? (
+              <>
+                {descBefore}
+                <span className={`font-bold ${isBrandCta ? 'text-white' : 'text-[#1A1FE8]'}`}>
+                  {contact.driverCount}
+                </span>
+                {descAfter}
+              </>
+            ) : (
+              descBefore
+            )}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-5 justify-center mb-16">
@@ -90,8 +103,8 @@ export function CTASection() {
           {/* Contact cards */}
           <div className="grid md:grid-cols-2 gap-5 max-w-2xl mx-auto mb-12">
             {[
-              { icon: Phone, label: 'Llámanos', value: '55 1234 5678' },
-              { icon: Mail, label: 'Escríbenos', value: 'hola@atoo.com' },
+              { icon: Phone, label: contact.phoneLabel, value: contact.phone },
+              { icon: Mail, label: contact.emailLabel, value: contact.email },
             ].map(({ icon: Icon, label, value }) => (
               <div key={label} className="group relative">
                 <div className={`absolute inset-0 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity ${isBrandCta ? 'bg-white/20' : 'bg-[#1A1FE8]/15'}`} />
@@ -118,7 +131,7 @@ export function CTASection() {
 
           {/* Trust indicators */}
           <div className={`flex flex-wrap justify-center gap-8 text-sm ${isBrandCta ? 'text-white/75' : theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-            {['Aprobación en 24h', 'Sin enganche', 'Pagos semanales'].map((item) => (
+            {contact.trustItems.map((item) => (
               <div key={item} className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                 <span>{item}</span>

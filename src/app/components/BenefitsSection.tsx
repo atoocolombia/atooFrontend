@@ -1,18 +1,12 @@
-import { Shield, TrendingUp, Clock, Heart, Wrench, Percent } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { landingLightSurfaces } from '../styles/landingSurfaces';
-
-const benefits = [
-  { icon: TrendingUp, title: 'Incrementa tus Ganancias', description: 'Sin pagos de renta diarios. Todo lo que ganes es tuyo mientras cumples tu cuota semanal.', gradient: 'from-[#1A1FE8] to-[#3D42F0]' },
-  { icon: Shield, title: 'Sin Enganche', description: 'Comienza a conducir tu vehículo sin necesidad de desembolso inicial.', gradient: 'from-cyan-500 to-[#1A1FE8]' },
-  { icon: Clock, title: 'Proceso Rápido', description: 'Aprobación en 24 horas. Mínimos requisitos y trámites simples.', gradient: 'from-emerald-500 to-teal-600' },
-  { icon: Heart, title: 'Seguro Incluido', description: 'Todos nuestros vehículos incluyen seguro de cobertura amplia.', gradient: 'from-[#1A1FE8] to-[#6B70F5]' },
-  { icon: Wrench, title: 'Mantenimiento', description: 'Servicio y mantenimiento preventivo incluido durante el periodo de renta.', gradient: 'from-orange-500 to-amber-500' },
-  { icon: Percent, title: 'Mejores Tasas', description: 'Tasas competitivas y transparentes. Sin cargos ocultos.', gradient: 'from-[#3D42F0] to-[#1A1FE8]' },
-];
+import { resolveBenefitIcon } from '../data/landingContent';
+import { useLandingContent } from '../../lib/useLandingContent';
 
 export function BenefitsSection() {
   const { theme } = useTheme();
+  const { content } = useLandingContent();
+  const { benefits } = content;
 
   return (
     <section id="beneficios" className={`relative py-28 overflow-hidden transition-colors duration-300 ${
@@ -42,21 +36,21 @@ export function BenefitsSection() {
               : 'bg-[#1A1FE8]/8 border-[#1A1FE8]/20 text-[#1A1FE8]'
           }`}>
             <span className="w-1.5 h-1.5 rounded-full bg-[#1A1FE8] animate-pulse" />
-            Beneficios atoo
+            {benefits.badge}
           </div>
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>¿Por Qué Elegir </span>
-            <span style={{ color: '#1A1FE8', textShadow: theme === 'dark' ? '0 0 40px rgba(26,31,232,0.5)' : 'none' }}>atoo</span>
-            <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>?</span>
+            <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>{benefits.titleBefore}</span>
+            <span style={{ color: '#1A1FE8', textShadow: theme === 'dark' ? '0 0 40px rgba(26,31,232,0.5)' : 'none' }}>{benefits.titleHighlight}</span>
+            <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>{benefits.titleAfter}</span>
           </h2>
           <p className={`text-xl leading-relaxed ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            La mejor alternativa para que puedas tener tu propio vehículo mientras generas ingresos.
+            {benefits.description}
           </p>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {benefits.map((benefit, index) => {
-            const Icon = benefit.icon;
+          {benefits.items.map((benefit, index) => {
+            const Icon = resolveBenefitIcon(benefit.icon);
             return (
               <div key={index} className="group relative">
                 {/* Glow on hover */}

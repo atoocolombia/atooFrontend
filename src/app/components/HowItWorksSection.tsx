@@ -1,16 +1,12 @@
-import { FileText, CheckCircle2, Car, Trophy } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { landingLightSurfaces } from '../styles/landingSurfaces';
-
-const steps = [
-  { number: '01', icon: FileText, title: 'Solicitud', description: 'Completa el formulario en línea con tus datos básicos. Solo necesitas INE y comprobante de domicilio.' },
-  { number: '02', icon: CheckCircle2, title: 'Aprobación', description: 'Nuestro equipo revisa tu solicitud y te contacta en menos de 24 horas con una respuesta.' },
-  { number: '03', icon: Car, title: 'Entrega', description: 'Elige tu vehículo y firma el contrato. Comienza a conducir el mismo día.' },
-  { number: '04', icon: Trophy, title: '¡Es Tuyo!', description: 'Después de 60 meses de pagos semanales puntuales, el vehículo pasa a tu nombre.' },
-];
+import { resolveStepIcon } from '../data/landingContent';
+import { useLandingContent } from '../../lib/useLandingContent';
 
 export function HowItWorksSection() {
   const { theme } = useTheme();
+  const { content } = useLandingContent();
+  const { steps } = content;
 
   return (
     <section id="como-funciona" className={`relative py-28 overflow-hidden transition-colors duration-300 ${
@@ -37,15 +33,15 @@ export function HowItWorksSection() {
               : 'bg-[#1A1FE8]/8 border-[#1A1FE8]/20 text-[#1A1FE8]'
           }`}>
             <span className="w-1.5 h-1.5 rounded-full bg-[#1A1FE8] animate-pulse" />
-            Proceso Simple
+            {steps.badge}
           </div>
           <h2 className="text-4xl md:text-5xl font-bold mb-5">
-            <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>¿Cómo </span>
-            <span style={{ color: '#1A1FE8', textShadow: theme === 'dark' ? '0 0 40px rgba(26,31,232,0.5)' : 'none' }}>Funciona</span>
-            <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>?</span>
+            <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>{steps.titleBefore}</span>
+            <span style={{ color: '#1A1FE8', textShadow: theme === 'dark' ? '0 0 40px rgba(26,31,232,0.5)' : 'none' }}>{steps.titleHighlight}</span>
+            <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>{steps.titleAfter}</span>
           </h2>
           <p className={`text-xl ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            En solo 4 pasos simples estarás manejando tu futuro vehículo
+            {steps.description}
           </p>
         </div>
 
@@ -60,8 +56,8 @@ export function HowItWorksSection() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {steps.map((step, index) => {
-              const Icon = step.icon;
+            {steps.items.map((step, index) => {
+              const Icon = resolveStepIcon(step.icon);
               return (
                 <div key={index} className="group relative text-center">
                   {/* Step circle */}
@@ -103,11 +99,11 @@ export function HowItWorksSection() {
 
         <div className="text-center mt-16">
           <button className="group relative px-10 py-4 bg-[#1A1FE8] text-white rounded-2xl font-bold text-base overflow-hidden transition-all duration-300 shadow-[0_0_40px_rgba(26,31,232,0.4)] hover:shadow-[0_0_60px_rgba(26,31,232,0.6)]">
-            <span className="relative z-10">Iniciar Mi Solicitud</span>
+            <span className="relative z-10">{steps.ctaText}</span>
             <div className="absolute inset-0 bg-gradient-to-r from-[#1A1FE8] to-[#3D42F0] opacity-0 group-hover:opacity-100 transition-opacity" />
           </button>
           <p className={`text-sm mt-4 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-            ⚡ Respuesta en menos de 24 horas
+            {steps.ctaNote}
           </p>
         </div>
       </div>
