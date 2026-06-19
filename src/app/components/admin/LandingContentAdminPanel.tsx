@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Loader2, Plus, Save, Trash2 } from 'lucide-react';
+import { ImagePlus, Loader2, Plus, Save, Trash2 } from 'lucide-react';
 import {
+  adminClearHeroPoster,
+  adminClearHeroVideo,
   adminFetchLandingContent,
   adminUpdateLandingContent,
+  adminUploadHeroPoster,
+  adminUploadHeroVideo,
 } from '../../../lib/landingApi';
 import { ApiError } from '../../../lib/api';
+import { invalidateLandingContentCache } from '../../../lib/useLandingContent';
 import {
   BENEFIT_ICON_OPTIONS,
   defaultLandingContent,
@@ -15,7 +20,7 @@ import {
   type StepItem,
 } from '../../data/landingContent';
 
-type ContentTab = 'benefits' | 'steps' | 'contact';
+type ContentTab = 'hero' | 'benefits' | 'steps' | 'contact';
 
 type Props = {
   tab: ContentTab;
@@ -65,6 +70,8 @@ export function LandingContentAdminPanel({ tab, theme, cardClass, inputClass, on
   const [content, setContent] = useState<LandingContent>(defaultLandingContent());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadingPoster, setUploadingPoster] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -90,6 +97,7 @@ export function LandingContentAdminPanel({ tab, theme, cardClass, inputClass, on
     try {
       const updated = await adminUpdateLandingContent(content);
       setContent(updated);
+      invalidateLandingContentCache();
       onMessage('Contenido guardado correctamente.');
     } catch (err) {
       onError(err instanceof ApiError ? err.message : 'Error al guardar contenido');
@@ -108,6 +116,76 @@ export function LandingContentAdminPanel({ tab, theme, cardClass, inputClass, on
 
   const updateContact = (patch: Partial<ContactSectionContent>) => {
     setContent((prev) => ({ ...prev, contact: { ...prev.contact, ...patch } }));
+  };
+
+  const updateHero = (patch: Partial<LandingContent['hero']>) => {
+    setContent((prev) => ({ ...prev, hero: { ...prev.hero, ...patch } }));
+  };
+
+  const applyContentUpdate = (updated: LandingContent, message: string) => {
+    setContent(updated);
+    invalidateLandingContentCache();
+    onMessage(message);
+  };
+
+  const onUploadVideo = async (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    setUploadingVideo(true);
+    onError('');
+    try {
+      const updated = await adminUploadHeroVideo(file);
+      applyContentUpdate(updated, 'Video del hero actualizado.');
+    } catch (err) {
+      onError(err instanceof ApiError ? err.message : 'Error al subir video');
+    } finally {
+      setUploadingVideo(false);
+    }
+  };
+
+  const onClearVideo = async () => {
+    if (!content.hero.videoStoredPath) return;
+    if (!confirm('¿Volver al video por defecto?')) return;
+    setUploadingVideo(true);
+    onError('');
+    try {
+      const updated = await adminClearHeroVideo();
+      applyContentUpdate(updated, 'Video restaurado al valor por defecto.');
+    } catch (err) {
+      onError(err instanceof ApiError ? err.message : 'Error al quitar video');
+    } finally {
+      setUploadingVideo(false);
+    }
+  };
+
+  const onUploadPoster = async (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    setUploadingPoster(true);
+    onError('');
+    try {
+      const updated = await adminUploadHeroPoster(file);
+      applyContentUpdate(updated, 'Poster del hero actualizado.');
+    } catch (err) {
+      onError(err instanceof ApiError ? err.message : 'Error al subir poster');
+    } finally {
+      setUploadingPoster(false);
+    }
+  };
+
+  const onClearPoster = async () => {
+    if (!content.hero.posterStoredPath) return;
+    if (!confirm('¿Volver al poster por defecto?')) return;
+    setUploadingPoster(true);
+    onError('');
+    try {
+      const updated = await adminClearHeroPoster();
+      applyContentUpdate(updated, 'Poster restaurado al valor por defecto.');
+    } catch (err) {
+      onError(err instanceof ApiError ? err.message : 'Error al quitar poster');
+    } finally {
+      setUploadingPoster(false);
+    }
   };
 
   const updateBenefitItem = (index: number, patch: Partial<BenefitItem>) => {
@@ -190,10 +268,99 @@ export function LandingContentAdminPanel({ tab, theme, cardClass, inputClass, on
     );
   }
 
-  const { benefits, steps, contact } = content;
+  const { hero, benefits, steps, contact } = content;
 
   return (
     <div className="space-y-6">
+      {tab === 'hero' && (
+        <section className={`rounded-2xl border p-6 space-y-6 ${cardClass}`}>
+          <h2 className="text-lg font-semibold">Sección Hero</h2>
+          <SectionHeaderFields
+            inputClass={inputClass}
+            fields={[
+              { label: 'Etiqueta superior', value: hero.badge, onChange: (v) => updateHero({ badge: v }) },
+              { label: 'Título (antes del destacado)', value: hero.titleBefore, onChange: (v) => updateHero({ titleBefore: v }) },
+              { label: 'Título destacado', value: hero.titleHighlight, onChange: (v) => updateHero({ titleHighlight: v }) },
+              { label: 'Descripción', value: hero.description, onChange: (v) => updateHero({ description: v }), multiline: true },
+              { label: 'Texto botón principal', value: hero.primaryButtonText, onChange: (v) => updateHero({ primaryButtonText: v }) },
+              { label: 'Texto botón secundario', value: hero.secondaryButtonText, onChange: (v) => updateHero({ secondaryButtonText: v }) },
+              { label: 'Video por defecto (ruta estática)', value: hero.videoUrl, onChange: (v) => updateHero({ videoUrl: v }) },
+              { label: 'Poster por defecto (ruta estática)', value: hero.posterUrl, onChange: (v) => updateHero({ posterUrl: v }) },
+            ]}
+          />
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className={`rounded-xl border p-4 space-y-3 ${theme === 'dark' ? 'border-white/10' : 'border-gray-100'}`}>
+              <h3 className="text-sm font-semibold">Video de fondo</h3>
+              <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
+                MP4 o WebM, idealmente menos de 50 MB. Si subes uno, reemplaza el video por defecto.
+              </p>
+              <p className="text-xs break-all opacity-70">{hero.video}</p>
+              <div className="flex flex-wrap gap-2">
+                <label className="inline-flex items-center gap-2 px-3 py-2 bg-[#1A1FE8]/15 text-[#1A1FE8] border border-[#1A1FE8]/30 rounded-lg cursor-pointer hover:bg-[#1A1FE8]/25 text-sm">
+                  {uploadingVideo ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
+                  Subir video
+                  <input
+                    type="file"
+                    accept="video/mp4,video/webm"
+                    className="hidden"
+                    onChange={(e) => {
+                      void onUploadVideo(e.target.files);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+                {hero.videoStoredPath && (
+                  <button
+                    type="button"
+                    onClick={() => void onClearVideo()}
+                    disabled={uploadingVideo}
+                    className="px-3 py-2 text-sm text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/10 disabled:opacity-60"
+                  >
+                    Usar video por defecto
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className={`rounded-xl border p-4 space-y-3 ${theme === 'dark' ? 'border-white/10' : 'border-gray-100'}`}>
+              <h3 className="text-sm font-semibold">Poster (mientras carga)</h3>
+              <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
+                JPG, PNG o WebP. Se muestra un instante antes de que arranque el video.
+              </p>
+              <div className="aspect-video rounded-lg overflow-hidden border border-white/10 bg-black/20">
+                <img src={hero.poster} alt="Poster hero" className="w-full h-full object-cover" />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <label className="inline-flex items-center gap-2 px-3 py-2 bg-[#1A1FE8]/15 text-[#1A1FE8] border border-[#1A1FE8]/30 rounded-lg cursor-pointer hover:bg-[#1A1FE8]/25 text-sm">
+                  {uploadingPoster ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
+                  Subir poster
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      void onUploadPoster(e.target.files);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+                {hero.posterStoredPath && (
+                  <button
+                    type="button"
+                    onClick={() => void onClearPoster()}
+                    disabled={uploadingPoster}
+                    className="px-3 py-2 text-sm text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/10 disabled:opacity-60"
+                  >
+                    Usar poster por defecto
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {tab === 'benefits' && (
         <section className={`rounded-2xl border p-6 space-y-6 ${cardClass}`}>
           <h2 className="text-lg font-semibold">Sección de beneficios</h2>

@@ -1,9 +1,7 @@
 import { ArrowRight, Play, Sparkles } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { useTheme } from '../contexts/ThemeContext';
-
-const HERO_VIDEO = '/hero/hero-bg.mp4';
-const HERO_POSTER = '/hero/hero-poster.jpg';
+import { useLandingContent } from '../../lib/useLandingContent';
 
 const fallbackPosterDark =
   'https://images.unsplash.com/photo-1672783521773-4ad176cfa461?w=1920&fit=crop&auto=format';
@@ -24,7 +22,10 @@ const HERO_BODY_SHADOW_ON_VIDEO =
 
 export function HeroSection() {
   const { theme } = useTheme();
+  const { content } = useLandingContent();
+  const { hero } = content;
   const fallbackPoster = theme === 'dark' ? fallbackPosterDark : fallbackPosterLight;
+  const posterSrc = hero.poster || fallbackPoster;
 
   return (
     <section className="relative min-h-[90vh] flex items-center overflow-hidden">
@@ -40,11 +41,11 @@ export function HeroSection() {
           loop
           muted
           playsInline
-          key={theme}
+          key={`${theme}-${hero.video}`}
           className="absolute inset-0 w-full h-full object-cover"
-          poster={HERO_POSTER}
+          poster={posterSrc}
         >
-          <source src={HERO_VIDEO} type="video/mp4" />
+          <source src={hero.video} type={hero.videoMimeType ?? 'video/mp4'} />
         </video>
 
         {/* Overlay — video visible en los bordes, más contraste en el centro */}
@@ -90,7 +91,7 @@ export function HeroSection() {
             }}
           >
             <Sparkles className={`w-3.5 h-3.5 ${theme === 'dark' ? 'text-[#1A1FE8]' : 'text-white'}`} />
-            <span className="font-medium">Tu propio vehículo en 60 meses</span>
+            <span className="font-medium">{hero.badge}</span>
           </div>
 
           <h1
@@ -99,12 +100,12 @@ export function HeroSection() {
               textShadow: theme === 'dark' ? HERO_TITLE_SHADOW_DARK : HERO_TITLE_SHADOW_LIGHT,
             }}
           >
-            <span className={theme === 'dark' ? 'text-white' : 'text-white'}>Drive Today, </span>
+            <span className={theme === 'dark' ? 'text-white' : 'text-white'}>{hero.titleBefore}</span>
             <span
               className={theme === 'dark' ? 'text-[#1A1FE8]' : 'text-[#8B9AFF]'}
               style={{ textShadow: theme === 'dark' ? HERO_TITLE_SHADOW_DARK : HERO_TITLE_SHADOW_LIGHT }}
             >
-              Yours Tomorrow
+              {hero.titleHighlight}
             </span>
           </h1>
 
@@ -116,14 +117,13 @@ export function HeroSection() {
               textShadow: theme === 'dark' ? HERO_BODY_SHADOW_DARK : HERO_BODY_SHADOW_ON_VIDEO,
             }}
           >
-            Modelo Rent to Own para conductores de Uber, DiDi y más.
-            Pagos semanales y al finalizar el plazo, ¡el vehículo es tuyo!
+            {hero.description}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button className="group relative px-8 py-4 text-white rounded-2xl overflow-hidden transition-all flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(26,31,232,0.5)] hover:shadow-[0_0_60px_rgba(26,31,232,0.7)]" style={{ backgroundColor: BRAND_PRIMARY }}>
               <span className="relative z-10 flex items-center gap-2 font-semibold text-base">
-                Comenzar Ahora
+                {hero.primaryButtonText}
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </span>
               <div className="absolute inset-0 bg-gradient-to-r from-[#1A1FE8] to-[#3D42F0] opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -135,7 +135,7 @@ export function HeroSection() {
                 : 'bg-black/25 text-white border-white/45 backdrop-blur-sm hover:bg-black/35 hover:border-white/70'
             }`}>
               <Play className="w-4 h-4 fill-current" />
-              Ver Cómo Funciona
+              {hero.secondaryButtonText}
             </button>
           </div>
         </div>

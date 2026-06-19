@@ -75,11 +75,31 @@ export async function fetchLandingSettings(): Promise<LandingSettings | null> {
   return (await res.json()) as LandingSettings;
 }
 
+function resolveMediaUrl(url: string): string {
+  if (!url) return url;
+  if (/^https?:\/\//i.test(url)) return url;
+  if (url.startsWith('/api/') && API_BASE) return `${API_BASE}${url}`;
+  return url;
+}
+
+function mapLandingContentDto(raw: LandingContent): LandingContent {
+  const video = raw.hero.video ?? raw.hero.videoUrl;
+  const poster = raw.hero.poster ?? raw.hero.posterUrl;
+  return {
+    ...raw,
+    hero: {
+      ...raw.hero,
+      video: resolveMediaUrl(video),
+      poster: resolveMediaUrl(poster),
+    },
+  };
+}
+
 export async function fetchLandingContent(): Promise<LandingContent | null> {
   if (!API_BASE) return null;
   const res = await fetch(apiUrl('/api/v1/landing/content'));
   if (!res.ok) return null;
-  return (await res.json()) as LandingContent;
+  return mapLandingContentDto((await res.json()) as LandingContent);
 }
 
 export async function adminFetchLandingSettings(): Promise<LandingSettings> {
@@ -101,7 +121,7 @@ export async function adminUpdateLandingSettings(maxVisibleVehicles: number): Pr
 export async function adminFetchLandingContent(): Promise<LandingContent> {
   const res = await fetch(apiUrl('/api/v1/admin/landing/content'));
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
-  return (await res.json()) as LandingContent;
+  return mapLandingContentDto((await res.json()) as LandingContent);
 }
 
 export async function adminUpdateLandingContent(content: LandingContent): Promise<LandingContent> {
@@ -111,7 +131,41 @@ export async function adminUpdateLandingContent(content: LandingContent): Promis
     body: JSON.stringify(content),
   });
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
-  return (await res.json()) as LandingContent;
+  return mapLandingContentDto((await res.json()) as LandingContent);
+}
+
+export async function adminUploadHeroVideo(file: File): Promise<LandingContent> {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch(apiUrl('/api/v1/admin/landing/hero/video'), {
+    method: 'POST',
+    body: form,
+  });
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
+  return mapLandingContentDto((await res.json()) as LandingContent);
+}
+
+export async function adminClearHeroVideo(): Promise<LandingContent> {
+  const res = await fetch(apiUrl('/api/v1/admin/landing/hero/video'), { method: 'DELETE' });
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
+  return mapLandingContentDto((await res.json()) as LandingContent);
+}
+
+export async function adminUploadHeroPoster(file: File): Promise<LandingContent> {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch(apiUrl('/api/v1/admin/landing/hero/poster'), {
+    method: 'POST',
+    body: form,
+  });
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
+  return mapLandingContentDto((await res.json()) as LandingContent);
+}
+
+export async function adminClearHeroPoster(): Promise<LandingContent> {
+  const res = await fetch(apiUrl('/api/v1/admin/landing/hero/poster'), { method: 'DELETE' });
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
+  return mapLandingContentDto((await res.json()) as LandingContent);
 }
 
 export async function adminFetchCatalogVehicles(): Promise<AdminCatalogVehicle[]> {

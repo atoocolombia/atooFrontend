@@ -12,6 +12,23 @@ import {
   Wrench,
 } from 'lucide-react';
 
+export interface HeroSectionContent {
+  badge: string;
+  titleBefore: string;
+  titleHighlight: string;
+  description: string;
+  primaryButtonText: string;
+  secondaryButtonText: string;
+  videoUrl: string;
+  posterUrl: string;
+  videoStoredPath: string | null;
+  posterStoredPath: string | null;
+  videoMimeType: string | null;
+  posterMimeType: string | null;
+  video: string;
+  poster: string;
+}
+
 export interface BenefitItem {
   icon: string;
   title: string;
@@ -61,6 +78,7 @@ export interface ContactSectionContent {
 }
 
 export interface LandingContent {
+  hero: HeroSectionContent;
   benefits: BenefitsSectionContent;
   steps: StepsSectionContent;
   contact: ContactSectionContent;
@@ -108,6 +126,23 @@ export function resolveStepIcon(key: string): LucideIcon {
 
 export function defaultLandingContent(): LandingContent {
   return {
+    hero: {
+      badge: 'Tu propio vehículo en 60 meses',
+      titleBefore: 'Drive Today, ',
+      titleHighlight: 'Yours Tomorrow',
+      description:
+        'Modelo Rent to Own para conductores de Uber, DiDi y más. Pagos semanales y al finalizar el plazo, ¡el vehículo es tuyo!',
+      primaryButtonText: 'Comenzar Ahora',
+      secondaryButtonText: 'Ver Cómo Funciona',
+      videoUrl: '/hero/hero-bg.mp4',
+      posterUrl: '/hero/hero-poster.jpg',
+      videoStoredPath: null,
+      posterStoredPath: null,
+      videoMimeType: null,
+      posterMimeType: null,
+      video: '/hero/hero-bg.mp4',
+      poster: '/hero/hero-poster.jpg',
+    },
     benefits: {
       badge: 'Beneficios atoo',
       titleBefore: '¿Por Qué Elegir ',

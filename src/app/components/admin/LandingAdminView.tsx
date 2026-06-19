@@ -20,12 +20,13 @@ import { ImageWithFallback } from '../figma/ImageWithFallback';
 
 const NEW_VEHICLE_ID = '__new__';
 
-type AdminTab = 'vehicles' | 'benefits' | 'steps' | 'contact';
+type AdminTab = 'hero' | 'benefits' | 'steps' | 'vehicles' | 'contact';
 
 const ADMIN_TABS: { id: AdminTab; label: string }[] = [
-  { id: 'vehicles', label: 'Vehículos' },
+  { id: 'hero', label: 'Hero' },
   { id: 'benefits', label: 'Beneficios' },
   { id: 'steps', label: 'Pasos' },
+  { id: 'vehicles', label: 'Vehículos' },
   { id: 'contact', label: 'Contacto' },
 ];
 
@@ -103,7 +104,7 @@ function emptyVehicleForm(sortOrder: number): VehicleForm {
 
 export function LandingAdminView() {
   const { theme } = useTheme();
-  const [activeTab, setActiveTab] = useState<AdminTab>('vehicles');
+  const [activeTab, setActiveTab] = useState<AdminTab>('hero');
   const [maxVisible, setMaxVisible] = useState(10);
   const [vehicles, setVehicles] = useState<AdminCatalogVehicle[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -642,7 +643,7 @@ export function LandingAdminView() {
       </>
       )}
 
-      {(activeTab === 'benefits' || activeTab === 'steps' || activeTab === 'contact') && (
+      {(activeTab === 'hero' || activeTab === 'benefits' || activeTab === 'steps' || activeTab === 'contact') && (
         <LandingContentAdminPanel
           tab={activeTab}
           theme={theme}

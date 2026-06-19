@@ -5,6 +5,11 @@ import { fetchLandingContent } from './landingApi';
 let cachedContent: LandingContent | null = null;
 let fetchPromise: Promise<LandingContent | null> | null = null;
 
+export function invalidateLandingContentCache() {
+  cachedContent = null;
+  fetchPromise = null;
+}
+
 function loadLandingContent(): Promise<LandingContent | null> {
   if (cachedContent) return Promise.resolve(cachedContent);
   if (!fetchPromise) {
