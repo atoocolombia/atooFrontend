@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { useTheme } from '../contexts/ThemeContext';
-import { getVehicleGalleryImages } from '../data/vehicleGalleries.generated';
 import { type CatalogVehicle, formatCop, getVehicleSpecSheetFilename, getVehicleSpecSheetPdf } from '../data/vehicles';
 import {
   Carousel,
@@ -25,7 +24,7 @@ export function VehicleDetailModal({ vehicle, open, onClose }: VehicleDetailModa
   const [activeImage, setActiveImage] = useState(0);
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
 
-  const gallery = vehicle ? getVehicleGalleryImages(vehicle) : [];
+  const gallery = vehicle ? (vehicle.gallery.length > 0 ? vehicle.gallery : [vehicle.image]) : [];
 
   useEffect(() => {
     if (!carouselApi) return;

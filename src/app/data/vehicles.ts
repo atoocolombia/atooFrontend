@@ -18,6 +18,8 @@ export interface CatalogVehicle {
   badge: string | null;
   popular: boolean;
   weeklyPriceCop: number;
+  /** PDF de ficha técnica (desde API o ruta estática) */
+  specSheetPdf?: string | null;
 }
 
 export const catalogVehicles: CatalogVehicle[] = [
@@ -107,8 +109,9 @@ export function formatCop(value: number): string {
   }).format(value);
 }
 
-/** PDF de ficha técnica: public/vehicles/{slug}/ficha-tecnica.pdf */
+/** PDF de ficha técnica: API o public/vehicles/{slug}/ficha-tecnica.pdf */
 export function getVehicleSpecSheetPdf(vehicle: CatalogVehicle): string {
+  if (vehicle.specSheetPdf) return vehicle.specSheetPdf;
   return `/vehicles/${vehicle.slug}/ficha-tecnica.pdf`;
 }
 

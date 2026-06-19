@@ -10,6 +10,7 @@ import {
   LogOut,
   Menu,
   X,
+  LayoutTemplate,
 } from 'lucide-react';
 import { AdminMetricsView } from '../components/admin/AdminMetricsView';
 import { DeliveredVehiclesView } from '../components/admin/DeliveredVehiclesView';
@@ -17,10 +18,12 @@ import { PaymentRiskView } from '../components/admin/PaymentRiskView';
 import { RetainedVehiclesView } from '../components/admin/RetainedVehiclesView';
 import { FinancialReportsView } from '../components/admin/FinancialReportsView';
 import { ActiveUsersView } from '../components/admin/ActiveUsersView';
+import { LandingAdminView } from '../components/admin/LandingAdminView';
 import { useTheme } from '../contexts/ThemeContext';
 
 const menuItems = [
   { id: 'metrics', label: 'Dashboard General', icon: LayoutDashboard },
+  { id: 'landing', label: 'Landing Page', icon: LayoutTemplate },
   { id: 'delivered', label: 'Vehículos Entregados', icon: Car },
   { id: 'risk', label: 'Pagos en Riesgo', icon: AlertTriangle },
   { id: 'retained', label: 'Vehículos Retenidos', icon: Lock },
@@ -141,6 +144,7 @@ export function AdminDashboard() {
       <main className="flex-1 overflow-auto">
         <div className="p-6 lg:p-8">
           {activeView === 'metrics' && <AdminMetricsView />}
+          {activeView === 'landing' && <LandingAdminView />}
           {activeView === 'delivered' && <DeliveredVehiclesView />}
           {activeView === 'risk' && <PaymentRiskView />}
           {activeView === 'retained' && <RetainedVehiclesView />}

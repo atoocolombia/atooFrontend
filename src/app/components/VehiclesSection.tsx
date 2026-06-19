@@ -5,11 +5,13 @@ import { ImageWithFallback } from './figma/ImageWithFallback';
 import { VehicleDetailModal } from './VehicleDetailModal';
 import { useTheme } from '../contexts/ThemeContext';
 import { landingLightSurfaces } from '../styles/landingSurfaces';
-import { catalogVehicles, formatCop, type CatalogVehicle } from '../data/vehicles';
+import { useLandingVehicles } from '../../lib/useLandingVehicles';
+import { formatCop, type CatalogVehicle } from '../data/vehicles';
 
 export function VehiclesSection() {
   const { theme } = useTheme();
   const navigate = useNavigate();
+  const { vehicles } = useLandingVehicles();
   const [selectedVehicle, setSelectedVehicle] = useState<CatalogVehicle | null>(null);
 
   return (
@@ -48,7 +50,7 @@ export function VehiclesSection() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-          {catalogVehicles.map((vehicle) => (
+          {vehicles.map((vehicle) => (
             <div key={vehicle.id} className="group relative">
               {vehicle.popular && (
                 <div className="absolute inset-0 bg-[#1A1FE8]/15 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
