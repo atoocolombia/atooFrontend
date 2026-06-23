@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useTheme } from '../contexts/ThemeContext';
 import { GoogleSignInButton } from './GoogleSignInButton';
-import { getDashboardPath, persistUserSession } from '../../lib/authRouting';
+import { persistUserSession, resolvePostAuthPath } from '../../lib/authRouting';
 import { ApiError, authWithGoogle, loginUser } from '../../lib/api';
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '';
@@ -28,7 +28,7 @@ export function LoginModal({ isOpen, onClose, onSwitchToRegister }: LoginModalPr
   const finishLogin = (user: Parameters<typeof persistUserSession>[0]) => {
     persistUserSession(user);
     onClose();
-    navigate(getDashboardPath(user.userType));
+    navigate(resolvePostAuthPath(user));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

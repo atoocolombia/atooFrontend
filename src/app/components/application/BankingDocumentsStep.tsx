@@ -1,94 +1,26 @@
-import { useState } from 'react';
-import { Upload, Building2 } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { PersistedFileUpload } from './PersistedFileUpload';
+import { useApplicationUploads } from '../../hooks/useApplicationUploads';
+import type { UserDocumentMeta } from '../../../lib/documentsApi';
 
 interface BankingDocumentsStepProps {
+  userId: string;
+  documents: Record<string, UserDocumentMeta>;
+  onDocumentUploaded: (doc: UserDocumentMeta) => void;
   onNext: () => void;
   onBack: () => void;
 }
 
-export function BankingDocumentsStep({ onNext, onBack }: BankingDocumentsStepProps) {
+export function BankingDocumentsStep({
+  userId,
+  documents,
+  onDocumentUploaded,
+  onNext,
+  onBack,
+}: BankingDocumentsStepProps) {
   const { theme } = useTheme();
-  const [bankStatement, setBankStatement] = useState<File | null>(null);
-  const [creditHistory, setCreditHistory] = useState<File | null>(null);
-
-  const handleFileChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    setter: React.Dispatch<React.SetStateAction<File | null>>
-  ) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setter(file);
-    }
-  };
-
-  const handleSubmit = () => {
-    onNext();
-  };
-
-  const FileUploadBox = ({
-    id,
-    file,
-    label,
-    icon: Icon,
-    onChange,
-    description,
-  }: {
-    id: string;
-    file: File | null;
-    label: string;
-    icon: any;
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    description: string;
-  }) => (
-    <div>
-      <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-        {label}
-      </label>
-      <label
-        htmlFor={id}
-        className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-          file
-            ? theme === 'dark'
-              ? 'border-green-500 bg-green-500/10'
-              : 'border-green-500 bg-green-50'
-            : theme === 'dark'
-              ? 'border-blue-600/30 hover:border-[#1A1FE8] bg-white/5'
-              : 'border-gray-300 hover:border-[#1A1FE8] bg-gray-50'
-        }`}
-      >
-        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-          {file ? (
-            <>
-              <Icon className="w-10 h-10 text-green-600 mb-2" />
-              <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{file.name}</p>
-              <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
-                {(file.size / 1024 / 1024).toFixed(2)} MB
-              </p>
-            </>
-          ) : (
-            <>
-              <Upload className={`w-10 h-10 mb-2 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} />
-              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                <span className="font-semibold">Click para subir</span>
-              </p>
-              <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>PDF o imagen</p>
-            </>
-          )}
-        </div>
-        <input
-          id={id}
-          type="file"
-          className="hidden"
-          accept="image/*,.pdf"
-          onChange={onChange}
-        />
-      </label>
-      <p className={`mt-2 text-sm ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>
-        {description}
-      </p>
-    </div>
-  );
+  const { upload, isUploading, getError } = useApplicationUploads(userId, onDocumentUploaded);
 
   return (
     <div className="space-y-8">
@@ -104,50 +36,57 @@ export function BankingDocumentsStep({ onNext, onBack }: BankingDocumentsStepPro
         </p>
       </div>
 
-      {/* Extracto Bancario */}
-      <div className={`rounded-xl border p-6 ${
-        theme === 'dark'
-          ? 'bg-[#06071A]/50 border-blue-600/20'
-          : 'bg-gray-50 border-gray-200'
-      }`}>
+      <div
+        className={`rounded-xl border p-6 ${
+          theme === 'dark' ? 'bg-[#06071A]/50 border-blue-600/20' : 'bg-gray-50 border-gray-200'
+        }`}
+      >
         <h3 className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
           Extracto Bancario
         </h3>
-        <FileUploadBox
+        <PersistedFileUpload
           id="bank-statement"
-          file={bankStatement}
           label="Extracto bancario de los últimos 3 meses"
           icon={Building2}
-          onChange={(e) => handleFileChange(e, setBankStatement)}
-          description="📄 Descarga el extracto desde la app o portal web de tu banco"
+          accept="image/*,.pdf"
+          saved={documents.bankDocument}
+          uploading={isUploading('bankDocument')}
+          error={getError('bankDocument')}
+          onFileSelected={(file) => upload('bankDocument', file)}
         />
+        <p className={`mt-2 text-sm ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>
+          📄 Descarga el extracto desde la app o portal web de tu banco
+        </p>
       </div>
 
-      {/* Historial Crediticio */}
-      <div className={`rounded-xl border p-6 ${
-        theme === 'dark'
-          ? 'bg-[#06071A]/50 border-blue-600/20'
-          : 'bg-gray-50 border-gray-200'
-      }`}>
+      <div
+        className={`rounded-xl border p-6 ${
+          theme === 'dark' ? 'bg-[#06071A]/50 border-blue-600/20' : 'bg-gray-50 border-gray-200'
+        }`}
+      >
         <h3 className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
           Historial Crediticio
         </h3>
-        <FileUploadBox
+        <PersistedFileUpload
           id="credit-history"
-          file={creditHistory}
           label="Consulta de DataCrédito o centrales de riesgo"
           icon={Building2}
-          onChange={(e) => handleFileChange(e, setCreditHistory)}
-          description="💳 Puedes obtenerlo gratis en www.midatacrédito.com"
+          accept="image/*,.pdf"
+          saved={documents.creditReport}
+          uploading={isUploading('creditReport')}
+          error={getError('creditReport')}
+          onFileSelected={(file) => upload('creditReport', file)}
         />
+        <p className={`mt-2 text-sm ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>
+          💳 Puedes obtenerlo gratis en www.midatacrédito.com
+        </p>
       </div>
 
-      {/* Información adicional */}
-      <div className={`p-6 rounded-xl border ${
-        theme === 'dark'
-          ? 'bg-blue-600/10 border-blue-600/30'
-          : 'bg-blue-50 border-blue-200'
-      }`}>
+      <div
+        className={`p-6 rounded-xl border ${
+          theme === 'dark' ? 'bg-blue-600/10 border-blue-600/30' : 'bg-blue-50 border-blue-200'
+        }`}
+      >
         <h4 className={`font-semibold mb-3 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-950'}`}>
           ¿Por qué necesitamos esta información?
         </h4>
@@ -159,7 +98,6 @@ export function BankingDocumentsStep({ onNext, onBack }: BankingDocumentsStepPro
         </ul>
       </div>
 
-      {/* Botones de navegación */}
       <div className="flex justify-between pt-4">
         <button
           onClick={onBack}
@@ -172,7 +110,7 @@ export function BankingDocumentsStep({ onNext, onBack }: BankingDocumentsStepPro
           Volver
         </button>
         <button
-          onClick={handleSubmit}
+          onClick={onNext}
           className="px-8 py-3 bg-[#1A1FE8] text-white rounded-lg hover:bg-[#1217C8] transition-colors font-semibold shadow-[0_0_20px_rgba(26,31,232,0.3)] hover:shadow-[0_0_30px_rgba(26,31,232,0.5)]"
         >
           Continuar

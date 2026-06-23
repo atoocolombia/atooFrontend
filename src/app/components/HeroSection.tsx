@@ -1,6 +1,7 @@
 import { ArrowRight, Play, Sparkles } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuthModal } from '../contexts/AuthModalContext';
 import { useLandingContent } from '../../lib/useLandingContent';
 
 const fallbackPosterDark =
@@ -22,6 +23,7 @@ const HERO_BODY_SHADOW_ON_VIDEO =
 
 export function HeroSection() {
   const { theme } = useTheme();
+  const { openRegister } = useAuthModal();
   const { content } = useLandingContent();
   const { hero } = content;
   const fallbackPoster = theme === 'dark' ? fallbackPosterDark : fallbackPosterLight;
@@ -121,7 +123,11 @@ export function HeroSection() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="group relative px-8 py-4 text-white rounded-2xl overflow-hidden transition-all flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(26,31,232,0.5)] hover:shadow-[0_0_60px_rgba(26,31,232,0.7)]" style={{ backgroundColor: BRAND_PRIMARY }}>
+            <button
+              type="button"
+              onClick={openRegister}
+              className="group relative px-8 py-4 text-white rounded-2xl overflow-hidden transition-all flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(26,31,232,0.5)] hover:shadow-[0_0_60px_rgba(26,31,232,0.7)]" style={{ backgroundColor: BRAND_PRIMARY }}
+            >
               <span className="relative z-10 flex items-center gap-2 font-semibold text-base">
                 {hero.primaryButtonText}
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

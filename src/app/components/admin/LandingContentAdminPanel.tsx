@@ -29,6 +29,7 @@ type Props = {
   inputClass: string;
   onMessage: (msg: string) => void;
   onError: (msg: string) => void;
+  onAuditRefresh?: () => void;
 };
 
 function SectionHeaderFields({
@@ -66,7 +67,7 @@ function SectionHeaderFields({
   );
 }
 
-export function LandingContentAdminPanel({ tab, theme, cardClass, inputClass, onMessage, onError }: Props) {
+export function LandingContentAdminPanel({ tab, theme, cardClass, inputClass, onMessage, onError, onAuditRefresh }: Props) {
   const [content, setContent] = useState<LandingContent>(defaultLandingContent());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -99,6 +100,7 @@ export function LandingContentAdminPanel({ tab, theme, cardClass, inputClass, on
       setContent(updated);
       invalidateLandingContentCache();
       onMessage('Contenido guardado correctamente.');
+      onAuditRefresh?.();
     } catch (err) {
       onError(err instanceof ApiError ? err.message : 'Error al guardar contenido');
     } finally {
@@ -126,6 +128,7 @@ export function LandingContentAdminPanel({ tab, theme, cardClass, inputClass, on
     setContent(updated);
     invalidateLandingContentCache();
     onMessage(message);
+    onAuditRefresh?.();
   };
 
   const onUploadVideo = async (files: FileList | null) => {

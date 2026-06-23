@@ -1,93 +1,26 @@
-import { useState } from 'react';
-import { Upload, CreditCard, Camera, AlertCircle } from 'lucide-react';
+import { CreditCard, Camera } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { PersistedFileUpload } from './PersistedFileUpload';
+import { useApplicationUploads } from '../../hooks/useApplicationUploads';
+import type { UserDocumentMeta } from '../../../lib/documentsApi';
 
 interface IdentityDocumentsStepProps {
+  userId: string;
+  documents: Record<string, UserDocumentMeta>;
+  onDocumentUploaded: (doc: UserDocumentMeta) => void;
   onNext: () => void;
   onBack: () => void;
 }
 
-export function IdentityDocumentsStep({ onNext, onBack }: IdentityDocumentsStepProps) {
+export function IdentityDocumentsStep({
+  userId,
+  documents,
+  onDocumentUploaded,
+  onNext,
+  onBack,
+}: IdentityDocumentsStepProps) {
   const { theme } = useTheme();
-  const [idFront, setIdFront] = useState<File | null>(null);
-  const [idBack, setIdBack] = useState<File | null>(null);
-  const [licenseFront, setLicenseFront] = useState<File | null>(null);
-  const [licenseBack, setLicenseBack] = useState<File | null>(null);
-  const [facePhoto, setFacePhoto] = useState<File | null>(null);
-
-  const handleFileChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    setter: React.Dispatch<React.SetStateAction<File | null>>
-  ) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setter(file);
-    }
-  };
-
-  const handleSubmit = () => {
-    // No validamos por ahora según lo solicitado
-    onNext();
-  };
-
-  const FileUploadBox = ({
-    id,
-    file,
-    label,
-    icon: Icon,
-    onChange,
-  }: {
-    id: string;
-    file: File | null;
-    label: string;
-    icon: any;
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  }) => (
-    <div>
-      <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-        {label}
-      </label>
-      <label
-        htmlFor={id}
-        className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-          file
-            ? theme === 'dark'
-              ? 'border-green-500 bg-green-500/10'
-              : 'border-green-500 bg-green-50'
-            : theme === 'dark'
-              ? 'border-blue-600/30 hover:border-[#1A1FE8] bg-white/5'
-              : 'border-gray-300 hover:border-[#1A1FE8] bg-gray-50'
-        }`}
-      >
-        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-          {file ? (
-            <>
-              <Icon className="w-10 h-10 text-green-600 mb-2" />
-              <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{file.name}</p>
-              <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
-                {(file.size / 1024 / 1024).toFixed(2)} MB
-              </p>
-            </>
-          ) : (
-            <>
-              <Upload className={`w-10 h-10 mb-2 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} />
-              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                <span className="font-semibold">Click para subir</span>
-              </p>
-              <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>JPG o PNG</p>
-            </>
-          )}
-        </div>
-        <input
-          id={id}
-          type="file"
-          className="hidden"
-          accept="image/*"
-          onChange={onChange}
-        />
-      </label>
-    </div>
-  );
+  const { upload, isUploading, getError } = useApplicationUploads(userId, onDocumentUploaded);
 
   return (
     <div className="space-y-8">
@@ -103,29 +36,32 @@ export function IdentityDocumentsStep({ onNext, onBack }: IdentityDocumentsStepP
         </p>
       </div>
 
-      {/* Documento de Identidad */}
-      <div className={`rounded-xl border p-6 ${
-        theme === 'dark'
-          ? 'bg-[#06071A]/50 border-blue-600/20'
-          : 'bg-gray-50 border-gray-200'
-      }`}>
+      <div
+        className={`rounded-xl border p-6 ${
+          theme === 'dark' ? 'bg-[#06071A]/50 border-blue-600/20' : 'bg-gray-50 border-gray-200'
+        }`}
+      >
         <h3 className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
           Documento de Identidad
         </h3>
         <div className="grid md:grid-cols-2 gap-4">
-          <FileUploadBox
+          <PersistedFileUpload
             id="id-front"
-            file={idFront}
             label="Frente del documento"
             icon={CreditCard}
-            onChange={(e) => handleFileChange(e, setIdFront)}
+            saved={documents.idFront}
+            uploading={isUploading('idFront')}
+            error={getError('idFront')}
+            onFileSelected={(file) => upload('idFront', file)}
           />
-          <FileUploadBox
+          <PersistedFileUpload
             id="id-back"
-            file={idBack}
             label="Reverso del documento"
             icon={CreditCard}
-            onChange={(e) => handleFileChange(e, setIdBack)}
+            saved={documents.idBack}
+            uploading={isUploading('idBack')}
+            error={getError('idBack')}
+            onFileSelected={(file) => upload('idBack', file)}
           />
         </div>
         <p className={`mt-3 text-sm ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>
@@ -133,29 +69,32 @@ export function IdentityDocumentsStep({ onNext, onBack }: IdentityDocumentsStepP
         </p>
       </div>
 
-      {/* Licencia de Conducción */}
-      <div className={`rounded-xl border p-6 ${
-        theme === 'dark'
-          ? 'bg-[#06071A]/50 border-blue-600/20'
-          : 'bg-gray-50 border-gray-200'
-      }`}>
+      <div
+        className={`rounded-xl border p-6 ${
+          theme === 'dark' ? 'bg-[#06071A]/50 border-blue-600/20' : 'bg-gray-50 border-gray-200'
+        }`}
+      >
         <h3 className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
           Licencia de Conducción
         </h3>
         <div className="grid md:grid-cols-2 gap-4">
-          <FileUploadBox
+          <PersistedFileUpload
             id="license-front"
-            file={licenseFront}
             label="Frente de la licencia"
             icon={CreditCard}
-            onChange={(e) => handleFileChange(e, setLicenseFront)}
+            saved={documents.licenseFront}
+            uploading={isUploading('licenseFront')}
+            error={getError('licenseFront')}
+            onFileSelected={(file) => upload('licenseFront', file)}
           />
-          <FileUploadBox
+          <PersistedFileUpload
             id="license-back"
-            file={licenseBack}
             label="Reverso de la licencia"
             icon={CreditCard}
-            onChange={(e) => handleFileChange(e, setLicenseBack)}
+            saved={documents.licenseBack}
+            uploading={isUploading('licenseBack')}
+            error={getError('licenseBack')}
+            onFileSelected={(file) => upload('licenseBack', file)}
           />
         </div>
         <p className={`mt-3 text-sm ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>
@@ -163,27 +102,28 @@ export function IdentityDocumentsStep({ onNext, onBack }: IdentityDocumentsStepP
         </p>
       </div>
 
-      {/* Foto de Rostro */}
-      <div className={`rounded-xl border p-6 ${
-        theme === 'dark'
-          ? 'bg-[#06071A]/50 border-blue-600/20'
-          : 'bg-gray-50 border-gray-200'
-      }`}>
+      <div
+        className={`rounded-xl border p-6 ${
+          theme === 'dark' ? 'bg-[#06071A]/50 border-blue-600/20' : 'bg-gray-50 border-gray-200'
+        }`}
+      >
         <h3 className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
           Foto de Rostro
         </h3>
-        <FileUploadBox
+        <PersistedFileUpload
           id="face-photo"
-          file={facePhoto}
           label="Foto con buena iluminación"
           icon={Camera}
-          onChange={(e) => handleFileChange(e, setFacePhoto)}
+          saved={documents.selfieWhiteBackground}
+          uploading={isUploading('selfieWhiteBackground')}
+          error={getError('selfieWhiteBackground')}
+          onFileSelected={(file) => upload('selfieWhiteBackground', file)}
         />
-        <div className={`mt-4 p-4 rounded-lg border ${
-          theme === 'dark'
-            ? 'bg-blue-600/10 border-blue-600/30'
-            : 'bg-blue-50 border-blue-200'
-        }`}>
+        <div
+          className={`mt-4 p-4 rounded-lg border ${
+            theme === 'dark' ? 'bg-blue-600/10 border-blue-600/30' : 'bg-blue-50 border-blue-200'
+          }`}
+        >
           <h4 className={`font-semibold mb-2 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-900'}`}>
             Recomendaciones para la foto:
           </h4>
@@ -196,7 +136,6 @@ export function IdentityDocumentsStep({ onNext, onBack }: IdentityDocumentsStepP
         </div>
       </div>
 
-      {/* Botones de navegación */}
       <div className="flex justify-between pt-4">
         <button
           onClick={onBack}
@@ -209,7 +148,7 @@ export function IdentityDocumentsStep({ onNext, onBack }: IdentityDocumentsStepP
           Volver
         </button>
         <button
-          onClick={handleSubmit}
+          onClick={onNext}
           className="px-8 py-3 bg-[#1A1FE8] text-white rounded-lg hover:bg-[#1217C8] transition-colors font-semibold shadow-[0_0_20px_rgba(26,31,232,0.3)] hover:shadow-[0_0_30px_rgba(26,31,232,0.5)]"
         >
           Continuar

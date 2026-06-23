@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useTheme } from '../contexts/ThemeContext';
 import { GoogleSignInButton } from './GoogleSignInButton';
+import { persistUserSession } from '../../lib/authRouting';
 import { ApiError, authWithGoogle, registerUser } from '../../lib/api';
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '';
@@ -57,7 +58,7 @@ export function RegisterModal({ isOpen, onClose, onSwitchToLogin }: RegisterModa
         userType: 'USER',
       });
 
-      sessionStorage.setItem('atooUser', JSON.stringify(user));
+      persistUserSession(user);
       onClose();
       navigate('/solicitud');
     } catch (err) {
@@ -82,7 +83,7 @@ export function RegisterModal({ isOpen, onClose, onSwitchToLogin }: RegisterModa
 
     try {
       const user = await authWithGoogle(response.credential);
-      sessionStorage.setItem('atooUser', JSON.stringify(user));
+      persistUserSession(user);
       onClose();
       navigate('/solicitud');
     } catch (err) {

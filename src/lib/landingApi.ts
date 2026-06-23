@@ -1,6 +1,7 @@
 import { ApiError } from './api';
 import type { CatalogVehicle, VehicleSpec } from '../app/data/vehicles';
 import type { LandingContent } from '../app/data/landingContent';
+import { getSessionUserEmail } from './authRouting';
 
 function normalizeApiBase(raw: string): string {
   let base = raw
@@ -32,6 +33,29 @@ async function parseErrorResponse(res: Response): Promise<string> {
     /* ignore */
   }
   return `Error del servidor (${res.status})`;
+}
+
+function adminJsonHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const email = getSessionUserEmail();
+  if (email) headers['X-Actor-Email'] = email;
+  return headers;
+}
+
+function adminActorHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {};
+  const email = getSessionUserEmail();
+  if (email) headers['X-Actor-Email'] = email;
+  return headers;
+}
+
+export interface LandingAuditLogEntry {
+  id: string;
+  actorEmail: string;
+  action: string;
+  summary: string;
+  metadata: unknown;
+  createdAt: string;
 }
 
 export interface LandingSettings {
@@ -111,7 +135,7 @@ export async function adminFetchLandingSettings(): Promise<LandingSettings> {
 export async function adminUpdateLandingSettings(maxVisibleVehicles: number): Promise<LandingSettings> {
   const res = await fetch(apiUrl('/api/v1/admin/landing/settings'), {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: adminJsonHeaders(),
     body: JSON.stringify({ maxVisibleVehicles }),
   });
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
@@ -127,7 +151,7 @@ export async function adminFetchLandingContent(): Promise<LandingContent> {
 export async function adminUpdateLandingContent(content: LandingContent): Promise<LandingContent> {
   const res = await fetch(apiUrl('/api/v1/admin/landing/content'), {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: adminJsonHeaders(),
     body: JSON.stringify(content),
   });
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
@@ -139,6 +163,7 @@ export async function adminUploadHeroVideo(file: File): Promise<LandingContent> 
   form.append('file', file);
   const res = await fetch(apiUrl('/api/v1/admin/landing/hero/video'), {
     method: 'POST',
+    headers: adminActorHeaders(),
     body: form,
   });
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
@@ -146,7 +171,10 @@ export async function adminUploadHeroVideo(file: File): Promise<LandingContent> 
 }
 
 export async function adminClearHeroVideo(): Promise<LandingContent> {
-  const res = await fetch(apiUrl('/api/v1/admin/landing/hero/video'), { method: 'DELETE' });
+  const res = await fetch(apiUrl('/api/v1/admin/landing/hero/video'), {
+    method: 'DELETE',
+    headers: adminActorHeaders(),
+  });
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
   return mapLandingContentDto((await res.json()) as LandingContent);
 }
@@ -156,6 +184,7 @@ export async function adminUploadHeroPoster(file: File): Promise<LandingContent>
   form.append('file', file);
   const res = await fetch(apiUrl('/api/v1/admin/landing/hero/poster'), {
     method: 'POST',
+    headers: adminActorHeaders(),
     body: form,
   });
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
@@ -163,7 +192,10 @@ export async function adminUploadHeroPoster(file: File): Promise<LandingContent>
 }
 
 export async function adminClearHeroPoster(): Promise<LandingContent> {
-  const res = await fetch(apiUrl('/api/v1/admin/landing/hero/poster'), { method: 'DELETE' });
+  const res = await fetch(apiUrl('/api/v1/admin/landing/hero/poster'), {
+    method: 'DELETE',
+    headers: adminActorHeaders(),
+  });
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
   return mapLandingContentDto((await res.json()) as LandingContent);
 }
@@ -192,7 +224,7 @@ export async function adminCreateCatalogVehicle(payload: {
 }): Promise<AdminCatalogVehicle> {
   const res = await fetch(apiUrl('/api/v1/admin/landing/vehicles'), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: adminJsonHeaders(),
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
@@ -202,6 +234,7 @@ export async function adminCreateCatalogVehicle(payload: {
 export async function adminDeleteCatalogVehicle(id: string): Promise<void> {
   const res = await fetch(apiUrl(`/api/v1/admin/landing/vehicles/${id}`), {
     method: 'DELETE',
+    headers: adminActorHeaders(),
   });
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
 }
@@ -226,7 +259,7 @@ export async function adminUpdateCatalogVehicle(
 ): Promise<AdminCatalogVehicle> {
   const res = await fetch(apiUrl(`/api/v1/admin/landing/vehicles/${id}`), {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: adminJsonHeaders(),
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
@@ -243,6 +276,7 @@ export async function adminUploadVehicleImage(
   form.append('isPrimary', String(isPrimary));
   const res = await fetch(apiUrl(`/api/v1/admin/landing/vehicles/${vehicleId}/images`), {
     method: 'POST',
+    headers: adminActorHeaders(),
     body: form,
   });
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
@@ -255,6 +289,7 @@ export async function adminDeleteVehicleImage(
 ): Promise<AdminCatalogVehicle> {
   const res = await fetch(apiUrl(`/api/v1/admin/landing/vehicles/${vehicleId}/images/${imageId}`), {
     method: 'DELETE',
+    headers: adminActorHeaders(),
   });
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
   return mapVehicleDto((await res.json()) as AdminCatalogVehicle);
@@ -266,11 +301,19 @@ export async function adminSetPrimaryVehicleImage(
 ): Promise<AdminCatalogVehicle> {
   const res = await fetch(apiUrl(`/api/v1/admin/landing/vehicles/${vehicleId}/images/${imageId}`), {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: adminJsonHeaders(),
     body: JSON.stringify({ isPrimary: true }),
   });
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
   return mapVehicleDto((await res.json()) as AdminCatalogVehicle);
+}
+
+export async function adminFetchLandingAuditLogs(limit = 50): Promise<LandingAuditLogEntry[]> {
+  const res = await fetch(apiUrl(`/api/v1/admin/landing/audit-logs?limit=${limit}`), {
+    headers: adminActorHeaders(),
+  });
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
+  return (await res.json()) as LandingAuditLogEntry[];
 }
 
 export function isLandingApiConfigured(): boolean {

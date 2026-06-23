@@ -1,24 +1,12 @@
 import { Menu, X, Sun, Moon } from 'lucide-react';
 import { useState } from 'react';
-import { LoginModal } from './LoginModal';
-import { RegisterModal } from './RegisterModal';
+import { useAuthModal } from '../contexts/AuthModalContext';
 import { useTheme } from '../contexts/ThemeContext';
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const { openLogin, openRegister } = useAuthModal();
   const { theme, toggleTheme } = useTheme();
-
-  const handleSwitchToLogin = () => {
-    setIsRegisterModalOpen(false);
-    setIsLoginModalOpen(true);
-  };
-
-  const handleSwitchToRegister = () => {
-    setIsLoginModalOpen(false);
-    setIsRegisterModalOpen(true);
-  };
 
   return (
     <>
@@ -72,7 +60,7 @@ export function Header() {
                 {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
               <button
-                onClick={() => setIsLoginModalOpen(true)}
+                onClick={openLogin}
                 className={`px-4 py-2 transition-colors ${
                   theme === 'dark'
                     ? 'text-blue-400 hover:text-blue-200'
@@ -82,7 +70,7 @@ export function Header() {
                 Iniciar Sesión
               </button>
               <button
-                onClick={() => setIsRegisterModalOpen(true)}
+                onClick={openRegister}
                 className="group relative px-6 py-2 bg-[#1A1FE8] text-white rounded-lg overflow-hidden shadow-[0_0_20px_rgba(26,31,232,0.4)] hover:shadow-[0_0_30px_rgba(26,31,232,0.6)] transition-all"
               >
                 <span className="relative z-10">Registrarse</span>
@@ -164,7 +152,7 @@ export function Header() {
                 </button>
                 <button
                   onClick={() => {
-                    setIsLoginModalOpen(true);
+                    openLogin();
                     setIsMenuOpen(false);
                   }}
                   className={`px-4 py-2 border rounded-lg transition-all ${
@@ -177,7 +165,7 @@ export function Header() {
                 </button>
                 <button
                   onClick={() => {
-                    setIsRegisterModalOpen(true);
+                    openRegister();
                     setIsMenuOpen(false);
                   }}
                   className="px-4 py-2 bg-[#1A1FE8] text-white rounded-lg hover:shadow-[0_0_20px_rgba(26,31,232,0.4)] transition-all"
@@ -189,18 +177,6 @@ export function Header() {
           </div>
         )}
       </header>
-
-      <LoginModal 
-        isOpen={isLoginModalOpen} 
-        onClose={() => setIsLoginModalOpen(false)}
-        onSwitchToRegister={handleSwitchToRegister}
-      />
-      
-      <RegisterModal 
-        isOpen={isRegisterModalOpen} 
-        onClose={() => setIsRegisterModalOpen(false)}
-        onSwitchToLogin={handleSwitchToLogin}
-      />
     </>
   );
 }

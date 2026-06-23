@@ -66,17 +66,16 @@ export function VehicleDetailModal({ vehicle, open, onClose }: VehicleDetailModa
               : 'bg-white border-gray-200'
           }`}
         >
-          <Dialog.Close
-            className={`absolute top-4 right-4 z-10 p-2 rounded-lg transition-colors ${
-              theme === 'dark'
-                ? 'hover:bg-white/10 text-gray-400'
-                : 'hover:bg-gray-100 text-gray-500'
-            }`}
-          >
-            <X className="w-5 h-5" />
-          </Dialog.Close>
+          <div className="sticky top-0 z-30 flex justify-end p-3 pointer-events-none">
+            <Dialog.Close
+              aria-label="Cerrar detalle del vehículo"
+              className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white shadow-lg border border-white/25 backdrop-blur-sm transition hover:bg-black/75 active:scale-95"
+            >
+              <X className="w-5 h-5" />
+            </Dialog.Close>
+          </div>
 
-          <div className="relative bg-black/5">
+          <div className="relative bg-black/5 -mt-[3.25rem]">
             {gallery.length > 0 ? (
               <Carousel
                 setApi={setCarouselApi}

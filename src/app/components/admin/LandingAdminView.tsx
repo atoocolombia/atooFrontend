@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ImagePlus, Loader2, Plus, Save, Star, Trash2 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { LandingContentAdminPanel } from './LandingContentAdminPanel';
+import { LandingAuditLogSection } from './LandingAuditLogSection';
 import {
   adminCreateCatalogVehicle,
   adminDeleteCatalogVehicle,
@@ -114,6 +115,9 @@ export function LandingAdminView() {
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [auditRefreshKey, setAuditRefreshKey] = useState(0);
+
+  const bumpAuditLog = () => setAuditRefreshKey((k) => k + 1);
 
   const selected = vehicles.find((v) => v.id === selectedId) ?? null;
   const isCreating = selectedId === NEW_VEHICLE_ID;
@@ -185,6 +189,7 @@ export function LandingAdminView() {
     try {
       await adminUpdateLandingSettings(maxVisible);
       setMessage('Ajustes de la landing guardados.');
+      bumpAuditLog();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Error al guardar ajustes');
     } finally {
@@ -218,6 +223,7 @@ export function LandingAdminView() {
         setVehicles((prev) => prev.map((v) => (v.id === updated.id ? updated : v)));
         setMessage(`Vehículo "${updated.name}" actualizado.`);
       }
+      bumpAuditLog();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Error al guardar vehículo');
     } finally {
@@ -236,6 +242,7 @@ export function LandingAdminView() {
       setVehicles(remaining);
       setSelectedId(remaining[0]?.id ?? null);
       setMessage('Vehículo eliminado.');
+      bumpAuditLog();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Error al eliminar vehículo');
     } finally {
@@ -254,6 +261,7 @@ export function LandingAdminView() {
       }
       setVehicles((prev) => prev.map((v) => (v.id === latest.id ? latest : v)));
       setMessage(`${files.length} imagen(es) subida(s).`);
+      bumpAuditLog();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Error al subir imagen');
     } finally {
@@ -268,6 +276,7 @@ export function LandingAdminView() {
       const updated = await adminDeleteVehicleImage(selected.id, imageId);
       setVehicles((prev) => prev.map((v) => (v.id === updated.id ? updated : v)));
       setMessage('Imagen eliminada.');
+      bumpAuditLog();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Error al eliminar imagen');
     }
@@ -278,6 +287,7 @@ export function LandingAdminView() {
     try {
       const updated = await adminSetPrimaryVehicleImage(selected.id, imageId);
       setVehicles((prev) => prev.map((v) => (v.id === updated.id ? updated : v)));
+      bumpAuditLog();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Error al marcar imagen principal');
     }
@@ -651,8 +661,11 @@ export function LandingAdminView() {
           inputClass={inputClass}
           onMessage={setMessage}
           onError={setError}
+          onAuditRefresh={bumpAuditLog}
         />
       )}
+
+      <LandingAuditLogSection theme={theme} cardClass={cardClass} refreshKey={auditRefreshKey} />
     </div>
   );
 }

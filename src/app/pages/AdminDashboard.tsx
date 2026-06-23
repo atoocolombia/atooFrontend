@@ -20,6 +20,7 @@ import { FinancialReportsView } from '../components/admin/FinancialReportsView';
 import { ActiveUsersView } from '../components/admin/ActiveUsersView';
 import { LandingAdminView } from '../components/admin/LandingAdminView';
 import { useTheme } from '../contexts/ThemeContext';
+import { clearUserSession } from '../../lib/authRouting';
 
 const menuItems = [
   { id: 'metrics', label: 'Dashboard General', icon: LayoutDashboard },
@@ -38,6 +39,7 @@ export function AdminDashboard() {
   const { theme } = useTheme();
 
   const handleLogout = () => {
+    clearUserSession();
     navigate('/');
   };
 
