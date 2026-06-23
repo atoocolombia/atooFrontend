@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router";
 import { AppLayout } from "./AppLayout";
+import { RequireAuth } from "./components/RequireAuth";
 import { Root } from "./Root";
 import { ApplicationPage } from "./pages/ApplicationPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -30,23 +31,43 @@ export const router = createBrowserRouter([
       },
       {
         path: "solicitud",
-        Component: ApplicationPage,
+        element: (
+          <RequireAuth>
+            <ApplicationPage />
+          </RequireAuth>
+        ),
       },
       {
         path: "dashboard",
-        Component: DashboardPage,
+        element: (
+          <RequireAuth allowedTypes={['USER']}>
+            <DashboardPage />
+          </RequireAuth>
+        ),
       },
       {
         path: "asesor",
-        Component: AdvisorDashboard,
+        element: (
+          <RequireAuth allowedTypes={['ADVISOR']}>
+            <AdvisorDashboard />
+          </RequireAuth>
+        ),
       },
       {
         path: "admin",
-        Component: AdminDashboard,
+        element: (
+          <RequireAuth allowedTypes={['ADMIN']}>
+            <AdminDashboard />
+          </RequireAuth>
+        ),
       },
       {
         path: "analista",
-        Component: AnalystDashboard,
+        element: (
+          <RequireAuth allowedTypes={['ANALYST']}>
+            <AnalystDashboard />
+          </RequireAuth>
+        ),
       },
     ],
   },

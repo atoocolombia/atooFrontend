@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { ApplicationHeader } from '../components/application/ApplicationHeader';
 import { DataAuthorizationStep } from '../components/application/DataAuthorizationStep';
@@ -9,7 +9,6 @@ import { BankingDocumentsStep } from '../components/application/BankingDocuments
 import { FinalValidationMessage } from '../components/application/FinalValidationMessage';
 import { Check, Loader2 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
-import { useAuthModal } from '../contexts/AuthModalContext';
 import {
   DEFAULT_APPLICATION_PROGRESS,
   inferProgressFromDocuments,
@@ -18,29 +17,20 @@ import {
   markApplicationCompleted,
   type ApplicationProgress,
 } from '../../lib/applicationProgress';
-import { getSessionUser, setAuthRedirect } from '../../lib/authRouting';
+import { getSessionUser } from '../../lib/authRouting';
 import { listUserDocuments, type UserDocumentMeta } from '../../lib/documentsApi';
 
 export function ApplicationPage() {
   const { theme } = useTheme();
   const navigate = useNavigate();
-  const { openLogin } = useAuthModal();
-  const authPrompted = useRef(false);
+  const user = getSessionUser()!;
 
-  const [user] = useState(() => getSessionUser());
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [documents, setDocuments] = useState<Record<string, UserDocumentMeta>>({});
   const [progress, setProgress] = useState<ApplicationProgress>(DEFAULT_APPLICATION_PROGRESS);
 
   const { currentStep, showBackgroundCheck, showFinalMessage } = progress;
-
-  useEffect(() => {
-    if (user || authPrompted.current) return;
-    authPrompted.current = true;
-    setAuthRedirect('/solicitud');
-    openLogin();
-  }, [user, openLogin]);
 
   useEffect(() => {
     if (!user) return;
@@ -140,31 +130,6 @@ export function ApplicationPage() {
     if (showBackgroundCheck) return currentStep;
     return currentStep;
   };
-
-  if (!user) {
-    return (
-      <div className={`min-h-screen flex items-center justify-center px-4 ${theme === 'dark' ? 'bg-[#06071A]' : 'bg-gray-50'}`}>
-        <div className={`max-w-md w-full rounded-2xl p-8 text-center shadow-lg ${theme === 'dark' ? 'bg-[#0D0F2E] border border-blue-600/20' : 'bg-white'}`}>
-          <h2 className={`text-xl font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            Continúa tu solicitud
-          </h2>
-          <p className={`mb-6 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-            Inicia sesión para retomar el paso donde te quedaste.
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              setAuthRedirect('/solicitud');
-              openLogin();
-            }}
-            className="px-6 py-3 bg-[#1A1FE8] text-white rounded-lg font-semibold hover:bg-[#1217C8] transition-colors"
-          >
-            Iniciar sesión
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   if (!ready) {
     return (

@@ -16,6 +16,7 @@ import { RejectedUsersView } from '../components/advisor/RejectedUsersView';
 import { MetricsView } from '../components/advisor/MetricsView';
 import { VehiclesView } from '../components/advisor/VehiclesView';
 import { useTheme } from '../contexts/ThemeContext';
+import { clearUserSession } from '../../lib/authRouting';
 
 const menuItems = [
   { id: 'metrics', label: 'Métricas', icon: BarChart3 },
@@ -32,6 +33,7 @@ export function AdvisorDashboard() {
   const { theme } = useTheme();
 
   const handleLogout = () => {
+    clearUserSession();
     navigate('/');
   };
 

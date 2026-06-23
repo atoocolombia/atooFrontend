@@ -17,6 +17,7 @@ import { DocumentsView } from '../components/dashboard/DocumentsView';
 import { SupportButton } from '../components/dashboard/SupportButton';
 import { NotificationBell } from '../components/dashboard/NotificationBell';
 import { useTheme } from '../contexts/ThemeContext';
+import { clearUserSession } from '../../lib/authRouting';
 
 const menuItems = [
   { id: 'progress', label: 'Mi Progreso', icon: LayoutDashboard },
@@ -40,7 +41,7 @@ export function DashboardPage() {
   const paymentStatus = 'current'; // 👈 Cambiar a 'warning' o 'critical' para probar el sombreado
 
   const handleLogout = () => {
-    // Aquí iría la lógica de logout
+    clearUserSession();
     navigate('/');
   };
 

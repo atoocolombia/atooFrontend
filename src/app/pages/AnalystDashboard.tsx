@@ -9,6 +9,7 @@ import {
   X,
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { clearUserSession } from '../../lib/authRouting';
 import { PendingApplicationsView } from '../components/analyst/PendingApplicationsView';
 import { ApprovedApplicationsView } from '../components/analyst/ApprovedApplicationsView';
 import { RejectedApplicationsView } from '../components/analyst/RejectedApplicationsView';
@@ -26,6 +27,7 @@ export function AnalystDashboard() {
   const { theme } = useTheme();
 
   const handleLogout = () => {
+    clearUserSession();
     navigate('/');
   };
 

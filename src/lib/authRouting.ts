@@ -5,8 +5,17 @@ import {
 } from './applicationProgress';
 import { listUserDocuments } from './documentsApi';
 
-const USER_STORAGE_KEY = 'atooUser';
+const USER_SESSION_KEY = 'atooUserSession';
 const AUTH_REDIRECT_KEY = 'atooAuthRedirect';
+const LEGACY_USER_KEY = 'atooUser';
+
+/** Duración de sesión activa (se renueva con cada uso). Prueba: 5 min. Producción: 12 * 60 * 60 * 1000 */
+export const SESSION_TTL_MS = 5 * 60 * 1000;
+
+interface StoredUserSession {
+  user: RegisteredUser;
+  expiresAt: number;
+}
 
 export function getDashboardPath(userType: UserType): string {
   switch (userType) {
@@ -21,33 +30,67 @@ export function getDashboardPath(userType: UserType): string {
   }
 }
 
-export function persistUserSession(user: RegisteredUser): void {
-  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
-  sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
-}
-
-export function clearUserSession(): void {
-  localStorage.removeItem(USER_STORAGE_KEY);
-  sessionStorage.removeItem(USER_STORAGE_KEY);
-}
-
-export function getSessionUser(): RegisteredUser | null {
+function readStoredSession(): StoredUserSession | null {
   try {
-    const raw =
-      localStorage.getItem(USER_STORAGE_KEY) ?? sessionStorage.getItem(USER_STORAGE_KEY);
+    const raw = sessionStorage.getItem(USER_SESSION_KEY);
     if (!raw) return null;
-    const user = JSON.parse(raw) as RegisteredUser;
+    const parsed = JSON.parse(raw) as Partial<StoredUserSession>;
+    const user = parsed.user;
     if (
-      typeof user.id === 'string' &&
-      typeof user.email === 'string' &&
-      typeof user.userType === 'string'
+      !user ||
+      typeof user.id !== 'string' ||
+      typeof user.email !== 'string' ||
+      typeof user.userType !== 'string' ||
+      typeof parsed.expiresAt !== 'number'
     ) {
-      return user;
+      return null;
     }
-    return null;
+    return { user, expiresAt: parsed.expiresAt };
   } catch {
     return null;
   }
+}
+
+function writeStoredSession(session: StoredUserSession): void {
+  sessionStorage.setItem(USER_SESSION_KEY, JSON.stringify(session));
+}
+
+export function persistUserSession(user: RegisteredUser): void {
+  writeStoredSession({
+    user,
+    expiresAt: Date.now() + SESSION_TTL_MS,
+  });
+  sessionStorage.removeItem(LEGACY_USER_KEY);
+  localStorage.removeItem(LEGACY_USER_KEY);
+}
+
+export function clearUserSession(): void {
+  sessionStorage.removeItem(USER_SESSION_KEY);
+  sessionStorage.removeItem(AUTH_REDIRECT_KEY);
+  sessionStorage.removeItem(LEGACY_USER_KEY);
+  localStorage.removeItem(LEGACY_USER_KEY);
+}
+
+export function getSessionUser(options: { refresh?: boolean } = {}): RegisteredUser | null {
+  const { refresh = true } = options;
+  const stored = readStoredSession();
+  if (!stored) {
+    return null;
+  }
+
+  if (Date.now() > stored.expiresAt) {
+    clearUserSession();
+    return null;
+  }
+
+  if (refresh) {
+    writeStoredSession({
+      user: stored.user,
+      expiresAt: Date.now() + SESSION_TTL_MS,
+    });
+  }
+
+  return stored.user;
 }
 
 export function getSessionUserEmail(): string | null {
