@@ -1,4 +1,5 @@
 import { createBrowserRouter } from "react-router";
+import { AppLayout } from "./AppLayout";
 import { Root } from "./Root";
 import { ApplicationPage } from "./pages/ApplicationPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -20,32 +21,33 @@ function ErrorBoundary() {
 export const router = createBrowserRouter([
   {
     path: "/",
-    Component: Root,
+    Component: AppLayout,
     errorElement: <ErrorBoundary />,
-  },
-  {
-    path: "/solicitud",
-    Component: ApplicationPage,
-    errorElement: <ErrorBoundary />,
-  },
-  {
-    path: "/dashboard",
-    Component: DashboardPage,
-    errorElement: <ErrorBoundary />,
-  },
-  {
-    path: "/asesor",
-    Component: AdvisorDashboard,
-    errorElement: <ErrorBoundary />,
-  },
-  {
-    path: "/admin",
-    Component: AdminDashboard,
-    errorElement: <ErrorBoundary />,
-  },
-  {
-    path: "/analista",
-    Component: AnalystDashboard,
-    errorElement: <ErrorBoundary />,
+    children: [
+      {
+        index: true,
+        Component: Root,
+      },
+      {
+        path: "solicitud",
+        Component: ApplicationPage,
+      },
+      {
+        path: "dashboard",
+        Component: DashboardPage,
+      },
+      {
+        path: "asesor",
+        Component: AdvisorDashboard,
+      },
+      {
+        path: "admin",
+        Component: AdminDashboard,
+      },
+      {
+        path: "analista",
+        Component: AnalystDashboard,
+      },
+    ],
   },
 ]);

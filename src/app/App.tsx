@@ -1,7 +1,6 @@
 import { RouterProvider } from 'react-router';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { router } from './routes';
-import { AuthModalProvider } from './contexts/AuthModalContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '';
@@ -9,9 +8,7 @@ const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '';
 export default function App() {
   const app = (
     <ThemeProvider>
-      <AuthModalProvider>
-        <RouterProvider router={router} />
-      </AuthModalProvider>
+      <RouterProvider router={router} />
     </ThemeProvider>
   );
 
