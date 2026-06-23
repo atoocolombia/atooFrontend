@@ -42,6 +42,30 @@ export function clearApplicationProgress(userId: string): void {
   localStorage.removeItem(storageKey(userId));
 }
 
+export function isApplicationCompleted(userId: string): boolean {
+  return loadApplicationProgress(userId)?.showFinalMessage === true;
+}
+
+export function markApplicationCompleted(userId: string): void {
+  saveApplicationProgress(userId, {
+    currentStep: 3,
+    showBackgroundCheck: false,
+    showFinalMessage: true,
+    step0Completed: true,
+  });
+}
+
+/** Hay progreso guardado localmente y la solicitud no fue enviada. */
+export function hasLocalApplicationInProgress(userId: string): boolean {
+  const progress = loadApplicationProgress(userId);
+  if (!progress || progress.showFinalMessage) return false;
+  return (
+    progress.step0Completed ||
+    progress.currentStep > 0 ||
+    progress.showBackgroundCheck
+  );
+}
+
 const IDENTITY_KINDS = [
   'idFront',
   'idBack',

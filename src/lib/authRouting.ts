@@ -1,4 +1,9 @@
 import type { RegisteredUser, UserType } from './api';
+import {
+  hasLocalApplicationInProgress,
+  isApplicationCompleted,
+} from './applicationProgress';
+import { listUserDocuments } from './documentsApi';
 
 const USER_STORAGE_KEY = 'atooUser';
 const AUTH_REDIRECT_KEY = 'atooAuthRedirect';
@@ -63,5 +68,39 @@ export function consumeAuthRedirect(): string | null {
 export function resolvePostAuthPath(user: RegisteredUser): string {
   const redirect = consumeAuthRedirect();
   if (redirect) return redirect;
+
+  if (user.userType === 'USER' && hasLocalApplicationInProgress(user.id)) {
+    return '/solicitud';
+  }
+
+  return getDashboardPath(user.userType);
+}
+
+/** Tras login, decide la ruta considerando progreso local y documentos en el servidor. */
+export async function resolvePostAuthPathAsync(user: RegisteredUser): Promise<string> {
+  const redirect = consumeAuthRedirect();
+  if (redirect) return redirect;
+
+  if (user.userType !== 'USER') {
+    return getDashboardPath(user.userType);
+  }
+
+  if (isApplicationCompleted(user.id)) {
+    return getDashboardPath(user.userType);
+  }
+
+  if (hasLocalApplicationInProgress(user.id)) {
+    return '/solicitud';
+  }
+
+  try {
+    const docs = await listUserDocuments(user.id);
+    if (docs.length > 0) {
+      return '/solicitud';
+    }
+  } catch {
+    // Si falla el API, ir al dashboard por defecto
+  }
+
   return getDashboardPath(user.userType);
 }

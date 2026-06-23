@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
+import { useLocation } from 'react-router';
 import { LoginModal } from '../components/LoginModal';
 import { RegisterModal } from '../components/RegisterModal';
+import { setAuthRedirect } from '../../lib/authRouting';
 
 type AuthModalContextValue = {
   openRegister: () => void;
@@ -10,6 +12,7 @@ type AuthModalContextValue = {
 const AuthModalContext = createContext<AuthModalContextValue | null>(null);
 
 export function AuthModalProvider({ children }: { children: ReactNode }) {
+  const location = useLocation();
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
 
@@ -19,9 +22,12 @@ export function AuthModalProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const openLogin = useCallback(() => {
+    if (location.pathname === '/solicitud') {
+      setAuthRedirect('/solicitud');
+    }
     setIsRegisterOpen(false);
     setIsLoginOpen(true);
-  }, []);
+  }, [location.pathname]);
 
   const handleSwitchToLogin = () => {
     setIsRegisterOpen(false);

@@ -15,7 +15,7 @@ import {
   inferProgressFromDocuments,
   loadApplicationProgress,
   saveApplicationProgress,
-  clearApplicationProgress,
+  markApplicationCompleted,
   type ApplicationProgress,
 } from '../../lib/applicationProgress';
 import { getSessionUser, setAuthRedirect } from '../../lib/authRouting';
@@ -113,7 +113,7 @@ export function ApplicationPage() {
       setProgress((p) => ({ ...p, currentStep: p.currentStep + 1 }));
     } else {
       setProgress((p) => ({ ...p, showFinalMessage: true }));
-      if (user) clearApplicationProgress(user.id);
+      if (user) markApplicationCompleted(user.id);
     }
   };
 
