@@ -1,5 +1,6 @@
 import { useTheme } from '../contexts/ThemeContext';
-import { landingLightSurfaces } from '../styles/landingSurfaces';
+import { landingLightSurfaces, landingLightType } from '../styles/landingSurfaces';
+import { LandingEyebrow } from './landing/LandingEyebrow';
 import { resolveBenefitIcon } from '../data/landingContent';
 import { useLandingContent } from '../../lib/useLandingContent';
 
@@ -7,13 +8,15 @@ export function BenefitsSection() {
   const { theme } = useTheme();
   const { content } = useLandingContent();
   const { benefits } = content;
+  const isLight = theme === 'light';
 
   return (
-    <section id="beneficios" className={`relative py-28 overflow-hidden transition-colors duration-300 ${
-      theme === 'dark' ? 'bg-[#06071A]' : landingLightSurfaces.benefits
-    }`}>
-
-      {/* Aurora orbs — solo oscuro */}
+    <section
+      id="beneficios"
+      className={`relative py-28 overflow-hidden transition-colors duration-300 ${
+        theme === 'dark' ? 'bg-[#06071A]' : landingLightSurfaces.benefits
+      }`}
+    >
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {theme === 'dark' && (
           <>
@@ -30,20 +33,33 @@ export function BenefitsSection() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center max-w-3xl mx-auto mb-20">
-          <div className={`inline-flex items-center gap-2 px-4 py-2 border rounded-full text-sm font-medium mb-5 ${
-            theme === 'dark'
-              ? 'bg-[#1A1FE8]/15 border-[#1A1FE8]/30 text-blue-300'
-              : 'bg-[#1A1FE8]/8 border-[#1A1FE8]/20 text-[#1A1FE8]'
-          }`}>
-            <span className="w-1.5 h-1.5 rounded-full bg-[#1A1FE8] animate-pulse" />
-            {benefits.badge}
-          </div>
-          <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>{benefits.titleBefore}</span>
-            <span style={{ color: '#1A1FE8', textShadow: theme === 'dark' ? '0 0 40px rgba(26,31,232,0.5)' : 'none' }}>{benefits.titleHighlight}</span>
-            <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>{benefits.titleAfter}</span>
+          {isLight ? (
+            <LandingEyebrow>{benefits.badge}</LandingEyebrow>
+          ) : (
+            <div className="inline-flex items-center gap-2 px-4 py-2 border rounded-full text-sm font-medium mb-5 bg-[#1A1FE8]/15 border-[#1A1FE8]/30 text-blue-300">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1A1FE8] animate-pulse" />
+              {benefits.badge}
+            </div>
+          )}
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">
+            <span className={isLight ? landingLightType.titleOnWhite : 'text-white'}>
+              {benefits.titleBefore}
+            </span>
+            <span
+              style={{
+                color: '#1A1FE8',
+                textShadow: theme === 'dark' ? '0 0 40px rgba(26,31,232,0.5)' : 'none',
+              }}
+            >
+              {benefits.titleHighlight}
+            </span>
+            <span className={isLight ? landingLightType.titleOnWhite : 'text-white'}>
+              {benefits.titleAfter}
+            </span>
           </h2>
-          <p className={`text-xl leading-relaxed ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+          <p
+            className={`text-xl leading-relaxed ${isLight ? landingLightType.bodyOnWhite : 'text-gray-400'}`}
+          >
             {benefits.description}
           </p>
         </div>
@@ -53,32 +69,59 @@ export function BenefitsSection() {
             const Icon = resolveBenefitIcon(benefit.icon);
             return (
               <div key={index} className="group relative">
-                {/* Glow on hover */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${benefit.gradient} opacity-0 group-hover:opacity-[0.12] rounded-2xl blur-xl transition-all duration-500`} />
+                {theme === 'dark' && (
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-br ${benefit.gradient} opacity-0 group-hover:opacity-[0.12] rounded-2xl blur-xl transition-all duration-500`}
+                  />
+                )}
 
-                <div className={`relative rounded-2xl p-6 h-full transition-all duration-300 border ${
-                  theme === 'dark'
-                    ? 'bg-white/[0.04] border-white/[0.08] hover:border-[#1A1FE8]/40 hover:bg-white/[0.07] hover:shadow-[0_0_40px_rgba(26,31,232,0.2)]'
-                    : 'bg-[#F3F5FF] border-[#D8DEFA] hover:border-[#1A1FE8]/35 hover:shadow-[0_8px_32px_rgba(26,31,232,0.12)]'
-                }`}>
-                  {/* Icon */}
-                  <div className={`w-12 h-12 bg-gradient-to-br ${benefit.gradient} rounded-xl flex items-center justify-center mb-4 shadow-[0_4px_20px_rgba(26,31,232,0.3)] group-hover:scale-110 transition-transform duration-300`}>
-                    <Icon className="w-6 h-6 text-white" />
+                <div
+                  className={`relative h-full transition-all duration-300 overflow-hidden ${
+                    isLight
+                      ? 'bg-white border border-gray-200/80 shadow-[0_1px_0_rgba(26,31,232,0.06)] hover:shadow-[0_12px_40px_rgba(26,31,232,0.08)] hover:border-[#1A1FE8]/30'
+                      : 'rounded-2xl p-6 bg-white/[0.04] border border-white/[0.08] hover:border-[#1A1FE8]/40 hover:bg-white/[0.07] hover:shadow-[0_0_40px_rgba(26,31,232,0.2)]'
+                  }`}
+                >
+                  {isLight && <div className="h-1.5 w-full bg-[#1A1FE8]" />}
+
+                  <div className={isLight ? 'p-6' : ''}>
+                    <div
+                      className={`w-12 h-12 flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-105 ${
+                        isLight
+                          ? 'bg-[#1A1FE8] text-white'
+                          : `bg-gradient-to-br ${benefit.gradient} rounded-xl shadow-[0_4px_20px_rgba(26,31,232,0.3)]`
+                      }`}
+                    >
+                      <Icon className="w-6 h-6 text-white" />
+                    </div>
+
+                    <h3
+                      className={`font-bold mb-2 transition-colors ${
+                        isLight ? 'text-gray-900' : 'text-white group-hover:text-[#6B70F5]'
+                      }`}
+                    >
+                      {benefit.title}
+                    </h3>
+                    <p
+                      className={`text-sm leading-relaxed ${
+                        isLight ? 'text-gray-600' : 'text-gray-400'
+                      }`}
+                    >
+                      {benefit.description}
+                    </p>
+
+                    {isLight && (
+                      <p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#1A1FE8]/70">
+                        atoo signature
+                      </p>
+                    )}
+
+                    {!isLight && (
+                      <div
+                        className={`absolute bottom-0 left-6 right-6 h-px bg-gradient-to-r ${benefit.gradient} opacity-0 group-hover:opacity-40 transition-opacity duration-300`}
+                      />
+                    )}
                   </div>
-
-                  <h3 className={`font-bold mb-2 transition-colors ${
-                    theme === 'dark' ? 'text-white group-hover:text-[#6B70F5]' : 'text-gray-900'
-                  }`}>
-                    {benefit.title}
-                  </h3>
-                  <p className={`text-sm leading-relaxed ${
-                    theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                  }`}>
-                    {benefit.description}
-                  </p>
-
-                  {/* Bottom accent line */}
-                  <div className={`absolute bottom-0 left-6 right-6 h-px bg-gradient-to-r ${benefit.gradient} opacity-0 group-hover:opacity-40 transition-opacity duration-300`} />
                 </div>
               </div>
             );

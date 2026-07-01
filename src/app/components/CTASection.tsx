@@ -1,6 +1,7 @@
 import { ArrowRight, Phone, Mail, Sparkles } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
-import { landingLightSurfaces } from '../styles/landingSurfaces';
+import { landingLightSurfaces, landingLightType } from '../styles/landingSurfaces';
+import { LandingEyebrow } from './landing/LandingEyebrow';
 import { splitContactDescription } from '../data/landingContent';
 import { useLandingContent } from '../../lib/useLandingContent';
 
@@ -23,29 +24,24 @@ export function CTASection() {
             <div className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full blur-[160px] bg-[#3D42F0]/12" />
             <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full blur-[160px] bg-[#1A1FE8]/10" />
           </>
-        ) : (
-          <>
-            <div className="absolute top-0 right-0 w-[500px] h-[400px] rounded-full blur-[180px] bg-white/15" />
-            <div className="absolute bottom-0 left-0 w-[400px] h-[300px] rounded-full blur-[160px] bg-[#3D42F0]/25" />
-          </>
-        )}
+        ) : null}
       </div>
 
-      <div className={`absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent ${isBrandCta ? 'via-white/35' : 'via-[#1A1FE8]/40'} to-transparent`} />
+      {!isBrandCta && (
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#1A1FE8]/40 to-transparent" />
+      )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center max-w-4xl mx-auto">
 
-          <div className={`inline-flex items-center gap-2 px-5 py-2.5 border rounded-full text-sm mb-8 ${
-            isBrandCta
-              ? 'bg-white/15 border-white/30 text-white'
-              : theme === 'dark'
-                ? 'bg-[#1A1FE8]/15 border-[#1A1FE8]/30 text-blue-300'
-                : 'bg-[#1A1FE8]/8 border-[#1A1FE8]/20 text-[#1A1FE8]'
-          }`}>
-            <Sparkles className="w-4 h-4" />
-            <span className="font-medium">{contact.badge}</span>
-          </div>
+          {isBrandCta ? (
+            <LandingEyebrow onBrandBlock>{contact.badge}</LandingEyebrow>
+          ) : (
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 border rounded-full text-sm mb-8 bg-[#1A1FE8]/15 border-[#1A1FE8]/30 text-blue-300">
+              <Sparkles className="w-4 h-4" />
+              <span className="font-medium">{contact.badge}</span>
+            </div>
+          )}
 
           <h2 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
             <span className={isBrandCta ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'}>{contact.titleBefore}</span>
@@ -60,7 +56,7 @@ export function CTASection() {
             <span className={isBrandCta ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'}>{contact.titleAfter}</span>
           </h2>
 
-          <p className={`text-xl mb-12 leading-relaxed ${isBrandCta ? 'text-white/85' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+          <p className={`text-xl mb-12 leading-relaxed ${isBrandCta ? landingLightType.bodyOnBlue : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
             {descAfter ? (
               <>
                 {descBefore}
@@ -75,10 +71,10 @@ export function CTASection() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-5 justify-center mb-16">
-            <button className={`group relative px-10 py-4 rounded-2xl font-bold text-base overflow-hidden transition-all duration-300 ${
+            <button className={`group relative px-10 py-4 font-bold text-base overflow-hidden transition-all duration-300 ${
               isBrandCta
-                ? 'bg-white text-[#1A1FE8] shadow-[0_8px_30px_rgba(0,0,0,0.15)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.2)]'
-                : 'bg-[#1A1FE8] text-white shadow-[0_0_50px_rgba(26,31,232,0.45)] hover:shadow-[0_0_70px_rgba(26,31,232,0.65)]'
+                ? 'rounded-sm bg-white text-[#1A1FE8] shadow-[0_8px_30px_rgba(0,0,0,0.15)] hover:bg-white/95'
+                : 'rounded-2xl bg-[#1A1FE8] text-white shadow-[0_0_50px_rgba(26,31,232,0.45)] hover:shadow-[0_0_70px_rgba(26,31,232,0.65)]'
             }`}>
               <span className="relative z-10 flex items-center justify-center gap-2">
                 Solicitar Ahora
@@ -89,9 +85,9 @@ export function CTASection() {
               )}
             </button>
 
-            <button className={`px-10 py-4 border-2 rounded-2xl font-bold text-base transition-all duration-300 ${
+            <button className={`px-10 py-4 border-2 font-bold text-base transition-all duration-300 ${
               isBrandCta
-                ? 'border-white/50 text-white hover:bg-white/10 hover:border-white'
+                ? 'rounded-sm border-white/50 text-white hover:bg-white/10 hover:border-white'
                 : theme === 'dark'
                   ? 'border-[#1A1FE8]/30 text-white hover:border-[#1A1FE8] hover:bg-[#1A1FE8]/10 hover:shadow-[0_0_30px_rgba(26,31,232,0.25)]'
                   : 'border-[#1A1FE8]/25 text-gray-800 hover:border-[#1A1FE8]/50 hover:bg-[#1A1FE8]/5 hover:shadow-[0_8px_30px_rgba(26,31,232,0.12)]'

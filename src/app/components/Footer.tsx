@@ -13,9 +13,9 @@ export function Footer() {
     }`}>
       <div className={`absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent ${theme === 'light' ? 'via-white/20' : 'via-[#1A1FE8]/40'} to-transparent`} />
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full blur-[160px] ${
-          theme === 'dark' ? 'bg-[#1A1FE8]/12' : 'bg-[#1A1FE8]/10'
-        }`} />
+        {theme === 'dark' && (
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full blur-[160px] bg-[#1A1FE8]/12" />
+        )}
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative z-10">

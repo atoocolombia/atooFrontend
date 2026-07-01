@@ -10,10 +10,10 @@ export function Header() {
 
   return (
     <>
-      <header className={`fixed top-0 left-0 right-0 backdrop-blur-md border-b z-50 transition-colors duration-300 ${
+      <header className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 ${
         theme === 'dark' 
-          ? 'bg-[#06071A]/90 border-blue-600/20 shadow-[0_0_30px_rgba(26,31,232,0.2)]'
-          : 'bg-white/90 border-blue-200 shadow-sm'
+          ? 'bg-[#06071A]/90 backdrop-blur-md border-b border-blue-600/20 shadow-[0_0_30px_rgba(26,31,232,0.2)]'
+          : 'bg-white border-b border-gray-200/80'
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Desktop Layout */}
@@ -28,22 +28,27 @@ export function Header() {
 
             {/* Desktop Navigation */}
             <nav className="flex items-center gap-8">
-              <a href="#beneficios" className={`relative transition-colors group ${theme === 'dark' ? 'text-gray-300 hover:text-blue-400' : 'text-gray-700 hover:text-blue-700'}`}>
-                Beneficios
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#1A1FE8] to-[#6B70F5] group-hover:w-full transition-all duration-300"></span>
-              </a>
-              <a href="#como-funciona" className={`relative transition-colors group ${theme === 'dark' ? 'text-gray-300 hover:text-blue-400' : 'text-gray-700 hover:text-blue-700'}`}>
-                Cómo Funciona
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#1A1FE8] to-[#6B70F5] group-hover:w-full transition-all duration-300"></span>
-              </a>
-              <a href="#vehiculos" className={`relative transition-colors group ${theme === 'dark' ? 'text-gray-300 hover:text-blue-400' : 'text-gray-700 hover:text-blue-700'}`}>
-                Vehículos
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#1A1FE8] to-[#6B70F5] group-hover:w-full transition-all duration-300"></span>
-              </a>
-              <a href="#contacto" className={`relative transition-colors group ${theme === 'dark' ? 'text-gray-300 hover:text-blue-400' : 'text-gray-700 hover:text-blue-700'}`}>
-                Contacto
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#1A1FE8] to-[#6B70F5] group-hover:w-full transition-all duration-300"></span>
-              </a>
+              {[
+                { href: '#beneficios', label: 'Beneficios' },
+                { href: '#como-funciona', label: 'Cómo Funciona' },
+                { href: '#vehiculos', label: 'Vehículos' },
+                { href: '#contacto', label: 'Contacto' },
+              ].map(({ href, label }) => (
+                <a
+                  key={href}
+                  href={href}
+                  className={`relative transition-colors group text-sm font-medium tracking-wide ${
+                    theme === 'dark'
+                      ? 'text-gray-300 hover:text-blue-400'
+                      : 'text-gray-700 hover:text-[#1A1FE8]'
+                  }`}
+                >
+                  {label}
+                  <span className={`absolute -bottom-1 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 ${
+                    theme === 'dark' ? 'bg-gradient-to-r from-[#1A1FE8] to-[#6B70F5]' : 'bg-[#1A1FE8]'
+                  }`} />
+                </a>
+              ))}
             </nav>
 
             {/* Desktop Auth Buttons */}
@@ -71,7 +76,11 @@ export function Header() {
               </button>
               <button
                 onClick={openRegister}
-                className="group relative px-6 py-2 bg-[#1A1FE8] text-white rounded-lg overflow-hidden shadow-[0_0_20px_rgba(26,31,232,0.4)] hover:shadow-[0_0_30px_rgba(26,31,232,0.6)] transition-all"
+                className={`group relative px-6 py-2 bg-[#1A1FE8] text-white overflow-hidden transition-all ${
+                  theme === 'dark'
+                    ? 'rounded-lg shadow-[0_0_20px_rgba(26,31,232,0.4)] hover:shadow-[0_0_30px_rgba(26,31,232,0.6)]'
+                    : 'rounded-sm hover:bg-[#1217C8]'
+                }`}
               >
                 <span className="relative z-10">Registrarse</span>
                 <div className="absolute inset-0 bg-[#1217C8] opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -104,10 +113,10 @@ export function Header() {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className={`md:hidden backdrop-blur-md border-t transition-colors duration-300 ${
+          <div className={`md:hidden border-t transition-colors duration-300 ${
             theme === 'dark'
-              ? 'bg-[#0D0F2E]/95 border-blue-600/20'
-              : 'bg-white/95 border-blue-200'
+              ? 'bg-[#0D0F2E]/95 backdrop-blur-md border-blue-600/20'
+              : 'bg-white border-gray-200/80'
           }`}>
             <nav className="px-4 py-4 flex flex-col gap-4">
               <a

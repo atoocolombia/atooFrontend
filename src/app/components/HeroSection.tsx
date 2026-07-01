@@ -51,7 +51,7 @@ export function HeroSection() {
         </video>
 
         {/* Overlay — video visible en los bordes, más contraste en el centro */}
-        {theme === 'dark' && (
+        {theme === 'dark' ? (
           <>
             <div className="absolute inset-0 bg-gradient-to-b from-[#06071A]/35 via-[#06071A]/30 to-[#06071A]/75" />
             <div
@@ -63,6 +63,8 @@ export function HeroSection() {
             />
             <div className="absolute inset-0 bg-gradient-to-r from-[#1A1FE8]/8 via-transparent to-transparent" />
           </>
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/15 to-white" />
         )}
       </div>
 
@@ -146,8 +148,10 @@ export function HeroSection() {
           </div>
         </div>
       </div>
-      {theme === 'dark' && (
+      {theme === 'dark' ? (
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#06071A]/90 to-transparent" />
+      ) : (
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white to-transparent pointer-events-none" />
       )}
     </section>
   );
