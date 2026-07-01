@@ -73,7 +73,7 @@ export function CTASection() {
           <div className="flex flex-col sm:flex-row gap-5 justify-center mb-16">
             <button className={`group relative px-10 py-4 font-bold text-base overflow-hidden transition-all duration-300 ${
               isBrandCta
-                ? 'rounded-sm bg-white text-[#1A1FE8] shadow-[0_8px_30px_rgba(0,0,0,0.15)] hover:bg-white/95'
+                ? 'rounded-2xl bg-white text-[#1A1FE8] shadow-[0_8px_30px_rgba(0,0,0,0.15)] hover:bg-white/95'
                 : 'rounded-2xl bg-[#1A1FE8] text-white shadow-[0_0_50px_rgba(26,31,232,0.45)] hover:shadow-[0_0_70px_rgba(26,31,232,0.65)]'
             }`}>
               <span className="relative z-10 flex items-center justify-center gap-2">
@@ -87,7 +87,7 @@ export function CTASection() {
 
             <button className={`px-10 py-4 border-2 font-bold text-base transition-all duration-300 ${
               isBrandCta
-                ? 'rounded-sm border-white/50 text-white hover:bg-white/10 hover:border-white'
+                ? 'rounded-2xl border-white/50 text-white hover:bg-white/10 hover:border-white'
                 : theme === 'dark'
                   ? 'border-[#1A1FE8]/30 text-white hover:border-[#1A1FE8] hover:bg-[#1A1FE8]/10 hover:shadow-[0_0_30px_rgba(26,31,232,0.25)]'
                   : 'border-[#1A1FE8]/25 text-gray-800 hover:border-[#1A1FE8]/50 hover:bg-[#1A1FE8]/5 hover:shadow-[0_8px_30px_rgba(26,31,232,0.12)]'

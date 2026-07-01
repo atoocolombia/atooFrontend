@@ -79,7 +79,7 @@ export function Header() {
                 className={`group relative px-6 py-2 bg-[#1A1FE8] text-white overflow-hidden transition-all ${
                   theme === 'dark'
                     ? 'rounded-lg shadow-[0_0_20px_rgba(26,31,232,0.4)] hover:shadow-[0_0_30px_rgba(26,31,232,0.6)]'
-                    : 'rounded-sm hover:bg-[#1217C8]'
+                    : 'rounded-lg hover:bg-[#1217C8]'
                 }`}
               >
                 <span className="relative z-10">Registrarse</span>

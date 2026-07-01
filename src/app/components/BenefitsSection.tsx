@@ -78,7 +78,7 @@ export function BenefitsSection() {
                 <div
                   className={`relative h-full transition-all duration-300 overflow-hidden ${
                     isLight
-                      ? 'bg-white border border-gray-200/80 shadow-[0_1px_0_rgba(26,31,232,0.06)] hover:shadow-[0_12px_40px_rgba(26,31,232,0.08)] hover:border-[#1A1FE8]/30'
+                      ? 'rounded-2xl bg-white border border-gray-200/80 shadow-[0_1px_0_rgba(26,31,232,0.06)] hover:shadow-[0_12px_40px_rgba(26,31,232,0.08)] hover:border-[#1A1FE8]/30'
                       : 'rounded-2xl p-6 bg-white/[0.04] border border-white/[0.08] hover:border-[#1A1FE8]/40 hover:bg-white/[0.07] hover:shadow-[0_0_40px_rgba(26,31,232,0.2)]'
                   }`}
                 >
@@ -88,7 +88,7 @@ export function BenefitsSection() {
                     <div
                       className={`w-12 h-12 flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-105 ${
                         isLight
-                          ? 'bg-[#1A1FE8] text-white'
+                          ? 'rounded-xl bg-[#1A1FE8] text-white'
                           : `bg-gradient-to-br ${benefit.gradient} rounded-xl shadow-[0_4px_20px_rgba(26,31,232,0.3)]`
                       }`}
                     >

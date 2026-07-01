@@ -67,8 +67,8 @@ export function VehiclesSection() {
                         : 'bg-white/[0.03] border-white/[0.07] hover:border-[#1A1FE8]/30 hover:shadow-[0_0_40px_rgba(26,31,232,0.15)]'
                     }`
                   : vehicle.popular
-                    ? 'bg-white border-[#1A1FE8] shadow-[0_8px_30px_rgba(26,31,232,0.12)] hover:shadow-[0_12px_40px_rgba(26,31,232,0.18)]'
-                    : 'bg-white border-gray-200/90 shadow-[0_1px_0_rgba(26,31,232,0.06)] hover:border-[#1A1FE8]/40 hover:shadow-[0_12px_40px_rgba(26,31,232,0.08)]'
+                    ? 'rounded-3xl bg-white border-[#1A1FE8] shadow-[0_8px_30px_rgba(26,31,232,0.12)] hover:shadow-[0_12px_40px_rgba(26,31,232,0.18)]'
+                    : 'rounded-3xl bg-white border-gray-200/90 shadow-[0_1px_0_rgba(26,31,232,0.06)] hover:border-[#1A1FE8]/40 hover:shadow-[0_12px_40px_rgba(26,31,232,0.08)]'
               }`}>
 
                 {vehicle.badge && (

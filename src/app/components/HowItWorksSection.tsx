@@ -97,7 +97,7 @@ export function HowItWorksSection() {
                   <div
                     className={`w-14 h-14 mx-auto mb-5 flex items-center justify-center transition-all duration-300 ${
                       isLight
-                        ? 'border border-white/30 bg-white/10'
+                        ? 'rounded-2xl border border-white/30 bg-white/10'
                         : 'rounded-2xl bg-[#1A1FE8]/10 border border-[#1A1FE8]/25 group-hover:bg-[#1A1FE8]/20 group-hover:border-[#1A1FE8]/50'
                     }`}
                   >
@@ -122,7 +122,7 @@ export function HowItWorksSection() {
 
         <div className="text-center mt-16">
           <button
-            className={`group relative px-10 py-4 rounded-sm font-bold text-base overflow-hidden transition-all duration-300 ${
+            className={`group relative px-10 py-4 rounded-2xl font-bold text-base overflow-hidden transition-all duration-300 ${
               isLight
                 ? 'bg-white text-[#1A1FE8] hover:bg-white/95 shadow-[0_8px_30px_rgba(0,0,0,0.15)]'
                 : 'bg-[#1A1FE8] text-white shadow-[0_0_40px_rgba(26,31,232,0.4)] hover:shadow-[0_0_60px_rgba(26,31,232,0.6)]'

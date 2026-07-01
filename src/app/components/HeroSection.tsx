@@ -64,7 +64,12 @@ export function HeroSection() {
             <div className="absolute inset-0 bg-gradient-to-r from-[#1A1FE8]/8 via-transparent to-transparent" />
           </>
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/15 to-white" />
+          <>
+            {/* Ligero velo arriba solo para legibilidad del texto */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/12 via-black/5 via-35% to-transparent to-50%" />
+            {/* Transición a blanco concentrada en el tercio inferior */}
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent from-58% via-white/25 via-78% to-white" />
+          </>
         )}
       </div>
 
@@ -151,7 +156,7 @@ export function HeroSection() {
       {theme === 'dark' ? (
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#06071A]/90 to-transparent" />
       ) : (
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 h-36 bg-gradient-to-t from-white via-white/80 via-40% to-transparent pointer-events-none" />
       )}
     </section>
   );
