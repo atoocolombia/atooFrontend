@@ -25,6 +25,8 @@ export function getDashboardPath(userType: UserType): string {
       return '/asesor';
     case 'ANALYST':
       return '/analista';
+    case 'WORKSHOP':
+      return '/taller';
     default:
       return '/dashboard';
   }

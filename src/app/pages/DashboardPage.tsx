@@ -10,11 +10,13 @@ import {
   Menu,
   X,
   Loader2,
+  Wrench,
 } from 'lucide-react';
 import { ProgressView } from '../components/dashboard/ProgressView';
 import { VehicleView } from '../components/dashboard/VehicleView';
 import { PaymentsView } from '../components/dashboard/PaymentsView';
 import { DocumentsView } from '../components/dashboard/DocumentsView';
+import { InspectionsView } from '../components/dashboard/InspectionsView';
 import { SupportButton } from '../components/dashboard/SupportButton';
 import { NotificationBell } from '../components/dashboard/NotificationBell';
 import { useTheme } from '../contexts/ThemeContext';
@@ -25,6 +27,7 @@ const menuItems = [
   { id: 'progress', label: 'Mi Progreso', icon: LayoutDashboard },
   { id: 'vehicle', label: 'Mi Vehículo', icon: Car },
   { id: 'payments', label: 'Pagos', icon: CreditCard },
+  { id: 'inspections', label: 'Revisiones', icon: Wrench },
   { id: 'documents', label: 'Documentos', icon: FileText },
   { id: 'settings', label: 'Configuración', icon: Settings },
 ];
@@ -251,6 +254,7 @@ export function DashboardPage() {
           {activeView === 'progress' && <ProgressView />}
           {activeView === 'vehicle' && <VehicleView />}
           {activeView === 'payments' && <PaymentsView />}
+          {activeView === 'inspections' && <InspectionsView />}
           {activeView === 'documents' && <DocumentsView clientName={displayName} />}
           {activeView === 'settings' && (
             <div className={`rounded-2xl shadow-lg p-8 border transition-colors ${

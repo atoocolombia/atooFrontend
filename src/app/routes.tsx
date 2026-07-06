@@ -7,6 +7,7 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { AdvisorDashboard } from "./pages/AdvisorDashboard";
 import { AdminDashboard } from "./pages/AdminDashboard";
 import { AnalystDashboard } from "./pages/AnalystDashboard";
+import { WorkshopDashboard } from "./pages/WorkshopDashboard";
 
 function ErrorBoundary() {
   return (
@@ -66,6 +67,14 @@ export const router = createBrowserRouter([
         element: (
           <RequireAuth allowedTypes={['ANALYST']}>
             <AnalystDashboard />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: "taller",
+        element: (
+          <RequireAuth allowedTypes={['WORKSHOP']}>
+            <WorkshopDashboard />
           </RequireAuth>
         ),
       },

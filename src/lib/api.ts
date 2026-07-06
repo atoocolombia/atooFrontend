@@ -23,7 +23,7 @@ function apiUrl(path: string): string {
   return `${API_BASE}${normalizedPath}`;
 }
 
-export type UserType = 'USER' | 'ADVISOR' | 'ADMIN' | 'ANALYST';
+export type UserType = 'USER' | 'ADVISOR' | 'ADMIN' | 'ANALYST' | 'WORKSHOP';
 
 export interface RegisteredUser {
   id: string;
