@@ -8,7 +8,8 @@ import {
   Settings,
   LogOut,
   Menu,
-  X
+  X,
+  Loader2,
 } from 'lucide-react';
 import { ProgressView } from '../components/dashboard/ProgressView';
 import { VehicleView } from '../components/dashboard/VehicleView';
@@ -18,6 +19,7 @@ import { SupportButton } from '../components/dashboard/SupportButton';
 import { NotificationBell } from '../components/dashboard/NotificationBell';
 import { useTheme } from '../contexts/ThemeContext';
 import { clearUserSession } from '../../lib/authRouting';
+import { useUserProfile } from '../../lib/useUserProfile';
 
 const menuItems = [
   { id: 'progress', label: 'Mi Progreso', icon: LayoutDashboard },
@@ -32,6 +34,11 @@ export function DashboardPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const { theme } = useTheme();
+  const { profile, loading: profileLoading } = useUserProfile();
+
+  const displayName = profile?.displayName ?? 'Usuario';
+  const userEmail = profile?.email ?? '';
+  const userInitials = profile?.initials ?? 'U';
 
   // Estado de pago - En producción vendría del servidor
   // Opciones:
@@ -109,11 +116,17 @@ export function DashboardPage() {
                   ? 'bg-[#1A1FE8]/20 border-[#1A1FE8] shadow-[0_0_15px_rgba(26,31,232,0.3)]'
                   : 'bg-blue-100 border-blue-600'
               }`}>
-                <span className={`font-bold text-lg ${theme === 'dark' ? 'text-[#1A1FE8]' : 'text-blue-700'}`}>JP</span>
+                <span className={`font-bold text-lg ${theme === 'dark' ? 'text-[#1A1FE8]' : 'text-blue-700'}`}>
+                  {profileLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : userInitials}
+                </span>
               </div>
-              <div>
-                <h3 className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Juan Pérez</h3>
-                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>juan@email.com</p>
+              <div className="min-w-0">
+                <h3 className={`font-semibold truncate ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                  {profileLoading ? 'Cargando…' : displayName}
+                </h3>
+                <p className={`text-sm truncate ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {userEmail}
+                </p>
               </div>
             </div>
           </div>
@@ -238,7 +251,7 @@ export function DashboardPage() {
           {activeView === 'progress' && <ProgressView />}
           {activeView === 'vehicle' && <VehicleView />}
           {activeView === 'payments' && <PaymentsView />}
-          {activeView === 'documents' && <DocumentsView />}
+          {activeView === 'documents' && <DocumentsView clientName={displayName} />}
           {activeView === 'settings' && (
             <div className={`rounded-2xl shadow-lg p-8 border transition-colors ${
               theme === 'dark'
@@ -246,7 +259,44 @@ export function DashboardPage() {
                 : 'bg-white border-gray-200'
             }`}>
               <h2 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Configuración</h2>
-              <p className={`mt-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Configuración de tu cuenta</p>
+              <p className={`mt-2 mb-8 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                Datos de tu cuenta
+              </p>
+              {profileLoading ? (
+                <div className="flex items-center gap-2 text-gray-500">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Cargando perfil…
+                </div>
+              ) : (
+                <dl className="grid gap-4 sm:grid-cols-2 max-w-2xl">
+                  {[
+                    { label: 'Nombre', value: displayName },
+                    { label: 'Correo', value: userEmail },
+                    ...(profile?.firstName ? [{ label: 'Nombres', value: profile.firstName }] : []),
+                    ...(profile?.lastName ? [{ label: 'Apellidos', value: profile.lastName }] : []),
+                    ...(profile?.idDocumentNumber
+                      ? [{ label: 'Documento', value: profile.idDocumentNumber }]
+                      : []),
+                    ...(profile?.address ? [{ label: 'Dirección', value: profile.address }] : []),
+                  ].map(({ label, value }) => (
+                    <div
+                      key={label}
+                      className={`rounded-xl p-4 border ${
+                        theme === 'dark' ? 'border-blue-600/20 bg-white/5' : 'border-gray-200 bg-gray-50'
+                      }`}
+                    >
+                      <dt className={`text-xs font-medium uppercase tracking-wide mb-1 ${
+                        theme === 'dark' ? 'text-gray-500' : 'text-gray-500'
+                      }`}>
+                        {label}
+                      </dt>
+                      <dd className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                        {value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
             </div>
           )}
         </div>

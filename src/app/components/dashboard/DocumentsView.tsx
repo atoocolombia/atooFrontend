@@ -24,7 +24,7 @@ interface Document {
   signed?: boolean;
 }
 
-export function DocumentsView() {
+export function DocumentsView({ clientName = 'Cliente' }: { clientName?: string }) {
   const { theme } = useTheme();
 
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
@@ -434,7 +434,7 @@ export function DocumentsView() {
 
                       <div className={`mt-6 pt-6 border-t transition-colors ${theme === 'dark' ? 'border-blue-600/20' : 'border-gray-200'}`}>
                         <p className={`text-sm mb-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                          <strong>Firma Digital:</strong> Juan Pérez
+                          <strong>Firma Digital:</strong> {clientName}
                         </p>
                         <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                           <strong>Fecha:</strong> 15 de Enero, 2026
@@ -451,7 +451,7 @@ export function DocumentsView() {
                         </h4>
                         <p className="text-sm mb-4">
                           Entre <strong>DriveOwn S.A.S.</strong> (El Arrendador) y{' '}
-                          <strong>Juan Pérez</strong> (El Arrendatario)
+                          <strong>{clientName}</strong> (El Arrendatario)
                         </p>
                       </section>
 
@@ -485,7 +485,7 @@ export function DocumentsView() {
                       <div className={`mt-6 pt-6 border-t space-y-4 transition-colors ${theme === 'dark' ? 'border-blue-600/20' : 'border-gray-200'}`}>
                         <div>
                           <p className={`text-sm font-semibold mb-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Firma del Arrendatario:</p>
-                          <p className={`text-sm italic ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Juan Pérez</p>
+                          <p className={`text-sm italic ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>{clientName}</p>
                         </div>
                         <div>
                           <p className={`text-sm font-semibold mb-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Firma de DriveOwn:</p>
