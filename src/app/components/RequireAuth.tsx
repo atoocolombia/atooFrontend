@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router';
 import type { UserType } from '../../lib/api';
-import { getSessionUser, setAuthRedirect } from '../../lib/authRouting';
+import { getSessionUser, getDashboardPath, setAuthRedirect } from '../../lib/authRouting';
 
 const SESSION_CHECK_MS = 15_000;
 
@@ -39,7 +39,7 @@ export function RequireAuth({ children, allowedTypes }: RequireAuthProps) {
   }
 
   if (allowedTypes && !allowedTypes.includes(user.userType)) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={getDashboardPath(user.userType)} replace />;
   }
 
   return children;

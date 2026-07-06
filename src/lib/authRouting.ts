@@ -9,8 +9,8 @@ const USER_SESSION_KEY = 'atooUserSession';
 const AUTH_REDIRECT_KEY = 'atooAuthRedirect';
 const LEGACY_USER_KEY = 'atooUser';
 
-/** Duración de sesión activa (se renueva con cada uso). Prueba: 5 min. Producción: 12 * 60 * 60 * 1000 */
-export const SESSION_TTL_MS = 5 * 60 * 1000;
+/** Duración de sesión activa (se renueva con cada uso). */
+export const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 
 interface StoredUserSession {
   user: RegisteredUser;

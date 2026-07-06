@@ -5,7 +5,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useTheme } from '../contexts/ThemeContext';
 import { GoogleSignInButton } from './GoogleSignInButton';
-import { persistUserSession, resolvePostAuthPathAsync } from '../../lib/authRouting';
+import { persistUserSession, resolvePostAuthPath, resolvePostAuthPathAsync } from '../../lib/authRouting';
+import type { RegisteredUser } from '../../lib/api';
 import { ApiError, authWithGoogle, loginUser } from '../../lib/api';
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '';
@@ -25,10 +26,13 @@ export function LoginModal({ isOpen, onClose, onSwitchToRegister }: LoginModalPr
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
-  const finishLogin = async (user: Parameters<typeof persistUserSession>[0]) => {
+  const finishLogin = async (user: RegisteredUser) => {
     persistUserSession(user);
     onClose();
-    const path = await resolvePostAuthPathAsync(user);
+    const path =
+      user.userType === 'USER'
+        ? await resolvePostAuthPathAsync(user)
+        : resolvePostAuthPath(user);
     navigate(path);
   };
 
