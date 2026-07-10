@@ -21,7 +21,7 @@ export function WorkshopsAdminView() {
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('12345');
+  const [password, setPassword] = useState('Atoo#Tll5hY6c');
   const [phone, setPhone] = useState('');
 
   const load = useCallback(async () => {
@@ -51,7 +51,7 @@ export function WorkshopsAdminView() {
         address: address.trim(),
         city: city.trim(),
         email: email.trim(),
-        password: password.trim() || '12345',
+        password: password.trim() || 'Atoo#Tll5hY6c',
         phone: phone.trim() || undefined,
       });
       setSuccess(
@@ -61,7 +61,7 @@ export function WorkshopsAdminView() {
       setAddress('');
       setCity('');
       setEmail('');
-      setPassword('12345');
+      setPassword('Atoo#Tll5hY6c');
       setPhone('');
       await load();
     } catch (err) {
