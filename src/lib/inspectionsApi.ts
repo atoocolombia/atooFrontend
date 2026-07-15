@@ -67,7 +67,8 @@ export type InspectionAppointmentStatus =
   | 'CONFIRMED'
   | 'REJECTED'
   | 'COMPLETED'
-  | 'CANCELLED';
+  | 'CANCELLED'
+  | 'RESCHEDULE_PENDING';
 
 export interface InspectionAppointment {
   id: string;
@@ -80,11 +81,24 @@ export interface InspectionAppointment {
   status: InspectionAppointmentStatus;
   appointmentDate: string;
   appointmentTime: string | null;
+  proposedAppointmentDate: string | null;
+  proposedAppointmentTime: string | null;
+  rescheduleInitiatedBy: string | null;
   reason: string | null;
   proofOriginalName: string | null;
   workshopNotes: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface UserNotificationItem {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  metadata: Record<string, unknown> | null;
+  read: boolean;
+  createdAt: string;
 }
 
 export async function fetchVehicleInspectionPlan(
@@ -152,4 +166,46 @@ export function inspectionProofUrl(userId: string, appointmentId: string): strin
   return apiUrl(
     `/api/v1/users/${encodeURIComponent(userId)}/inspections/appointments/${encodeURIComponent(appointmentId)}/proof`,
   );
+}
+
+function inspectionsBase(userId: string, suffix: string): string {
+  return apiUrl(`/api/v1/users/${encodeURIComponent(userId)}/inspections${suffix}`);
+}
+
+export async function fetchInspectionNotifications(
+  userId: string,
+): Promise<UserNotificationItem[]> {
+  const res = await fetch(inspectionsBase(userId, '/notifications'));
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
+  return (await res.json()) as UserNotificationItem[];
+}
+
+export async function markInspectionNotificationRead(
+  userId: string,
+  notificationId: string,
+): Promise<void> {
+  const res = await fetch(
+    inspectionsBase(userId, `/notifications/${encodeURIComponent(notificationId)}/read`),
+    { method: 'PATCH' },
+  );
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
+}
+
+export async function respondToReschedule(
+  userId: string,
+  appointmentId: string,
+  input:
+    | { action: 'accept' }
+    | { action: 'counter'; appointmentDate: string; appointmentTime: string },
+): Promise<InspectionAppointment> {
+  const res = await fetch(
+    inspectionsBase(userId, `/appointments/${encodeURIComponent(appointmentId)}/reschedule-response`),
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    },
+  );
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
+  return (await res.json()) as InspectionAppointment;
 }

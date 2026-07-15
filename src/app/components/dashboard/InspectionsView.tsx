@@ -18,6 +18,7 @@ import {
   fetchWorkshopSlots,
   fetchWorkshops,
   requestInspectionAppointment,
+  respondToReschedule,
   type InspectionAppointment,
   type VehicleInspectionPlan,
   type WorkshopAvailabilitySlot,
@@ -30,6 +31,7 @@ const STATUS_LABELS: Record<InspectionAppointment['status'], string> = {
   REJECTED: 'Rechazada',
   COMPLETED: 'Completada',
   CANCELLED: 'Cancelada',
+  RESCHEDULE_PENDING: 'Nueva fecha propuesta',
 };
 
 function formatDate(iso: string): string {
@@ -59,6 +61,9 @@ export function InspectionsView() {
   const [slotId, setSlotId] = useState('');
   const [reason, setReason] = useState('');
   const [proof, setProof] = useState<File | null>(null);
+  const [respondingId, setRespondingId] = useState<string | null>(null);
+  const [counterSlotId, setCounterSlotId] = useState('');
+  const [counterForId, setCounterForId] = useState<string | null>(null);
 
   const selectedSlot = useMemo(
     () => slots.find((s) => s.id === slotId) ?? null,
@@ -146,6 +151,70 @@ export function InspectionsView() {
     }
   };
 
+  const pendingReschedule = useMemo(
+    () =>
+      appointments.filter(
+        (a) =>
+          a.status === 'RESCHEDULE_PENDING' &&
+          a.rescheduleInitiatedBy === 'WORKSHOP' &&
+          a.proposedAppointmentDate,
+      ),
+    [appointments],
+  );
+
+  const handleAcceptReschedule = async (appointmentId: string) => {
+    if (!userId) return;
+    setRespondingId(appointmentId);
+    setError(null);
+    try {
+      await respondToReschedule(userId, appointmentId, { action: 'accept' });
+      setSuccess('Aceptaste la nueva fecha. Tu cita quedó confirmada.');
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo confirmar la fecha');
+    } finally {
+      setRespondingId(null);
+    }
+  };
+
+  const handleCounterReschedule = async (apt: InspectionAppointment) => {
+    if (!userId) return;
+    const slot = slots.find((s) => s.id === counterSlotId);
+    if (!slot) {
+      setError('Elige un horario alternativo');
+      return;
+    }
+
+    setRespondingId(apt.id);
+    setError(null);
+    try {
+      await respondToReschedule(userId, apt.id, {
+        action: 'counter',
+        appointmentDate: slot.date,
+        appointmentTime: slot.startTime,
+      });
+      setSuccess('Enviaste una contra-propuesta al taller.');
+      setCounterForId(null);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo enviar la propuesta');
+    } finally {
+      setRespondingId(null);
+    }
+  };
+
+  const openCounterForm = async (apt: InspectionAppointment) => {
+    setCounterForId(apt.id);
+    setWorkshopId(apt.workshopId);
+    try {
+      const data = await fetchWorkshopSlots(userId, apt.workshopId);
+      setSlots(data);
+      setCounterSlotId(data[0]?.id ?? '');
+    } catch {
+      setCounterSlotId('');
+    }
+  };
+
   const cardClass = `rounded-2xl border p-6 transition-colors ${
     theme === 'dark'
       ? 'bg-[#0D0F2E]/50 border-blue-600/20'
@@ -183,6 +252,95 @@ export function InspectionsView() {
           {success}
         </div>
       )}
+
+      {pendingReschedule.map((apt) => (
+        <div
+          key={apt.id}
+          className="rounded-2xl border border-violet-500/40 bg-violet-500/10 p-5 space-y-4"
+        >
+          <div className="flex items-start gap-3">
+            <Calendar className="w-6 h-6 text-violet-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-violet-900">El taller propuso reagendar tu cita</p>
+              <p className="text-sm text-violet-800 mt-1">
+                {apt.workshopName} sugiere el{' '}
+                <strong>
+                  {apt.proposedAppointmentDate} {apt.proposedAppointmentTime ?? ''}
+                </strong>{' '}
+                en lugar del {apt.appointmentDate} {apt.appointmentTime ?? ''}.
+              </p>
+            </div>
+          </div>
+
+          {counterForId === apt.id ? (
+            <div className="space-y-3 pl-9">
+              <select
+                value={counterSlotId}
+                onChange={(e) => setCounterSlotId(e.target.value)}
+                className={`w-full rounded-xl border px-4 py-3 ${
+                  theme === 'dark'
+                    ? 'bg-white/5 border-blue-600/30 text-white'
+                    : 'bg-white border-gray-200'
+                }`}
+              >
+                {slots.length === 0 ? (
+                  <option value="">Sin cupos disponibles</option>
+                ) : (
+                  slots.map((slot) => (
+                    <option key={slot.id} value={slot.id}>
+                      {slot.date} · {slot.startTime}–{slot.endTime}
+                    </option>
+                  ))
+                )}
+              </select>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={respondingId === apt.id || !slots.length}
+                  onClick={() => handleCounterReschedule(apt)}
+                  className="px-4 py-2 rounded-lg bg-[#1A1FE8] text-white text-sm font-semibold disabled:opacity-50"
+                >
+                  {respondingId === apt.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin inline" />
+                  ) : (
+                    'Enviar otra fecha'
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCounterForId(null)}
+                  className="px-4 py-2 rounded-lg border text-sm font-semibold"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2 pl-9">
+              <button
+                type="button"
+                disabled={respondingId === apt.id}
+                onClick={() => handleAcceptReschedule(apt.id)}
+                className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+              >
+                {respondingId === apt.id ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4" />
+                )}
+                Aceptar nueva fecha
+              </button>
+              <button
+                type="button"
+                onClick={() => openCounterForm(apt)}
+                className="px-4 py-2 rounded-lg border border-[#1A1FE8]/40 text-[#1A1FE8] text-sm font-semibold"
+              >
+                Proponer otra fecha
+              </button>
+            </div>
+          )}
+        </div>
+      ))}
 
       <div className={cardClass}>
         <div className="flex items-start gap-3 mb-4">
@@ -355,7 +513,9 @@ export function InspectionsView() {
                       </p>
                       <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
                         <Clock className="w-3.5 h-3.5" />
-                        {apt.appointmentDate} {apt.appointmentTime ?? ''}
+                        {apt.status === 'RESCHEDULE_PENDING' && apt.proposedAppointmentDate
+                          ? `${apt.proposedAppointmentDate} ${apt.proposedAppointmentTime ?? ''} (propuesta)`
+                          : `${apt.appointmentDate} ${apt.appointmentTime ?? ''}`}
                       </p>
                       {apt.reason && (
                         <p className="text-sm mt-2 text-gray-500">{apt.reason}</p>
@@ -370,9 +530,11 @@ export function InspectionsView() {
                           ? 'bg-green-500/15 text-green-600'
                           : apt.status === 'PENDING'
                             ? 'bg-amber-500/15 text-amber-600'
-                            : apt.status === 'REJECTED'
-                              ? 'bg-red-500/15 text-red-600'
-                              : 'bg-gray-500/15 text-gray-600'
+                            : apt.status === 'RESCHEDULE_PENDING'
+                              ? 'bg-violet-500/15 text-violet-600'
+                              : apt.status === 'REJECTED'
+                                ? 'bg-red-500/15 text-red-600'
+                                : 'bg-gray-500/15 text-gray-600'
                       }`}
                     >
                       {STATUS_LABELS[apt.status]}

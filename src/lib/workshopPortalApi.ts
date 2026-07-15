@@ -52,7 +52,7 @@ export interface WorkshopPortalSummary {
 
 export interface WorkshopNotification {
   id: string;
-  type: 'planned' | 'request';
+  type: 'planned' | 'request' | 'reschedule_counter';
   title: string;
   message: string;
   createdAt: string;
@@ -93,6 +93,23 @@ export async function updateWorkshopAppointmentStatus(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status, workshopNotes }),
   });
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
+  return (await res.json()) as WorkshopInspectionAppointment;
+}
+
+export async function rescheduleWorkshopAppointment(
+  userId: string,
+  appointmentId: string,
+  input: { appointmentDate: string; appointmentTime: string; note?: string },
+): Promise<WorkshopInspectionAppointment> {
+  const res = await fetch(
+    workshopBase(userId, `/appointments/${encodeURIComponent(appointmentId)}/reschedule`),
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    },
+  );
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
   return (await res.json()) as WorkshopInspectionAppointment;
 }

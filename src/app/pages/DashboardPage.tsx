@@ -208,7 +208,11 @@ export function DashboardPage() {
               <h2 className={`text-xl font-bold lg:hidden ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>atoo</h2>
             </div>
             <div className="ml-auto">
-              <NotificationBell paymentStatus={paymentStatus} />
+              <NotificationBell
+                userId={profile?.id}
+                paymentStatus={paymentStatus}
+                onOpenInspections={() => setActiveView('inspections')}
+              />
             </div>
           </div>
 

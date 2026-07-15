@@ -89,6 +89,8 @@ export function WorkshopNotificationBell({ refreshKey = 0 }: WorkshopNotificatio
                     <div className="flex gap-3">
                       {n.type === 'request' ? (
                         <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                      ) : n.type === 'reschedule_counter' ? (
+                        <Calendar className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
                       ) : (
                         <Calendar className="w-5 h-5 text-[#1A1FE8] shrink-0 mt-0.5" />
                       )}
