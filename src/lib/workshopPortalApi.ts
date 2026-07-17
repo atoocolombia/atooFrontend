@@ -2,6 +2,7 @@ import { ApiError } from './api';
 import type {
   InspectionAppointment,
   InspectionAppointmentStatus,
+  InspectionSession,
   WorkshopAvailabilitySlot,
 } from './inspectionsApi';
 
@@ -112,6 +113,89 @@ export async function rescheduleWorkshopAppointment(
   );
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
   return (await res.json()) as WorkshopInspectionAppointment;
+}
+
+export async function startWorkshopInspectionSession(
+  userId: string,
+  appointmentId: string,
+): Promise<InspectionSession> {
+  const res = await fetch(
+    workshopBase(userId, `/appointments/${encodeURIComponent(appointmentId)}/session/start`),
+    { method: 'POST' },
+  );
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
+  return (await res.json()) as InspectionSession;
+}
+
+export async function fetchWorkshopInspectionSession(
+  userId: string,
+  appointmentId: string,
+): Promise<InspectionSession> {
+  const res = await fetch(
+    workshopBase(userId, `/appointments/${encodeURIComponent(appointmentId)}/session`),
+  );
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
+  return (await res.json()) as InspectionSession;
+}
+
+export async function updateWorkshopChecklistItem(
+  userId: string,
+  appointmentId: string,
+  itemId: string,
+  completed: boolean,
+): Promise<InspectionSession> {
+  const res = await fetch(
+    workshopBase(
+      userId,
+      `/appointments/${encodeURIComponent(appointmentId)}/session/checklist/${encodeURIComponent(itemId)}`,
+    ),
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ completed }),
+    },
+  );
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
+  return (await res.json()) as InspectionSession;
+}
+
+export async function suggestWorkshopProcedure(
+  userId: string,
+  appointmentId: string,
+  input: {
+    title: string;
+    description?: string;
+    estimatedCostCop?: number | null;
+    isUrgent?: boolean;
+  },
+): Promise<InspectionSession> {
+  const res = await fetch(
+    workshopBase(userId, `/appointments/${encodeURIComponent(appointmentId)}/session/suggestions`),
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    },
+  );
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
+  return (await res.json()) as InspectionSession;
+}
+
+export async function completeWorkshopInspectionSession(
+  userId: string,
+  appointmentId: string,
+  notes?: string,
+): Promise<InspectionSession> {
+  const res = await fetch(
+    workshopBase(userId, `/appointments/${encodeURIComponent(appointmentId)}/session/complete`),
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes }),
+    },
+  );
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
+  return (await res.json()) as InspectionSession;
 }
 
 export async function fetchWorkshopAvailability(

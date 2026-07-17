@@ -65,10 +65,70 @@ export type InspectionAppointmentKind = 'BUSINESS_PLANNED' | 'CLIENT_REQUESTED';
 export type InspectionAppointmentStatus =
   | 'PENDING'
   | 'CONFIRMED'
+  | 'IN_PROGRESS'
   | 'REJECTED'
   | 'COMPLETED'
   | 'CANCELLED'
   | 'RESCHEDULE_PENDING';
+
+export type ProcedureSuggestionStatus =
+  | 'PENDING_ADMIN'
+  | 'APPROVED_IMMEDIATE'
+  | 'APPROVED_CLIENT_SCHEDULE'
+  | 'REJECTED';
+
+export interface InspectionChecklistItem {
+  id: string;
+  title: string;
+  description: string | null;
+  sortOrder: number;
+  completed: boolean;
+  completedAt: string | null;
+}
+
+export interface InspectionProcedureSuggestion {
+  id: string;
+  title: string;
+  description: string | null;
+  estimatedCostCop: number | null;
+  isUrgent: boolean;
+  status: ProcedureSuggestionStatus;
+  adminNotes: string | null;
+  reviewedAt: string | null;
+  deadlineAt: string | null;
+  createdAt: string;
+}
+
+export interface InspectionSession {
+  id: string;
+  appointmentId: string;
+  status: 'IN_PROGRESS' | 'COMPLETED';
+  startedAt: string;
+  completedAt: string | null;
+  notes: string | null;
+  reason: string | null;
+  appointmentDate: string;
+  appointmentTime: string | null;
+  workshopName: string;
+  clientEmail: string | null;
+  clientDisplayName: string | null;
+  checklistItems: InspectionChecklistItem[];
+  suggestions: InspectionProcedureSuggestion[];
+}
+
+export interface ClientProcedureAction {
+  id: string;
+  title: string;
+  description: string | null;
+  estimatedCostCop: number | null;
+  isUrgent: boolean;
+  status: ProcedureSuggestionStatus;
+  deadlineAt: string | null;
+  reviewedAt: string | null;
+  workshopName: string;
+  workshopCity: string;
+  appointmentId: string;
+}
 
 export interface InspectionAppointment {
   id: string;
@@ -208,4 +268,12 @@ export async function respondToReschedule(
   );
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
   return (await res.json()) as InspectionAppointment;
+}
+
+export async function fetchClientProcedureActions(
+  userId: string,
+): Promise<ClientProcedureAction[]> {
+  const res = await fetch(inspectionsBase(userId, '/procedure-actions'));
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
+  return (await res.json()) as ClientProcedureAction[];
 }

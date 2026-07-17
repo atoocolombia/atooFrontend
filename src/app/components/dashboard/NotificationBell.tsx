@@ -46,11 +46,15 @@ function formatRelativeTime(iso: string): string {
 }
 
 function mapRemoteNotification(n: UserNotificationItem): Notification {
-  const isReschedule = n.type.startsWith('reschedule');
+  const isUrgent = n.type.includes('urgent') || n.type.includes('procedure_authorization');
+  const isSuccess =
+    n.type.includes('accepted') ||
+    n.type.includes('approved_immediate') ||
+    n.type.includes('completed');
   return {
     id: n.id,
     type: 'inspection',
-    severity: isReschedule ? 'warning' : 'success',
+    severity: isUrgent ? 'warning' : isSuccess ? 'success' : 'info',
     title: n.title,
     message: n.message,
     time: formatRelativeTime(n.createdAt),

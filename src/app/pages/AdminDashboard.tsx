@@ -12,6 +12,7 @@ import {
   X,
   LayoutTemplate,
   Wrench,
+  ClipboardCheck,
 } from 'lucide-react';
 import { AdminMetricsView } from '../components/admin/AdminMetricsView';
 import { DeliveredVehiclesView } from '../components/admin/DeliveredVehiclesView';
@@ -21,6 +22,7 @@ import { FinancialReportsView } from '../components/admin/FinancialReportsView';
 import { ActiveUsersView } from '../components/admin/ActiveUsersView';
 import { LandingAdminView } from '../components/admin/LandingAdminView';
 import { WorkshopsAdminView } from '../components/admin/WorkshopsAdminView';
+import { ProceduresAdminView } from '../components/admin/ProceduresAdminView';
 import { useTheme } from '../contexts/ThemeContext';
 import { clearUserSession } from '../../lib/authRouting';
 
@@ -28,6 +30,7 @@ const menuItems = [
   { id: 'metrics', label: 'Dashboard General', icon: LayoutDashboard },
   { id: 'landing', label: 'Landing Page', icon: LayoutTemplate },
   { id: 'workshops', label: 'Talleres', icon: Wrench },
+  { id: 'procedures', label: 'Procedimientos', icon: ClipboardCheck },
   { id: 'delivered', label: 'Vehículos Entregados', icon: Car },
   { id: 'risk', label: 'Pagos en Riesgo', icon: AlertTriangle },
   { id: 'retained', label: 'Vehículos Retenidos', icon: Lock },
@@ -151,6 +154,7 @@ export function AdminDashboard() {
           {activeView === 'metrics' && <AdminMetricsView />}
           {activeView === 'landing' && <LandingAdminView />}
           {activeView === 'workshops' && <WorkshopsAdminView />}
+          {activeView === 'procedures' && <ProceduresAdminView />}
           {activeView === 'delivered' && <DeliveredVehiclesView />}
           {activeView === 'risk' && <PaymentRiskView />}
           {activeView === 'retained' && <RetainedVehiclesView />}

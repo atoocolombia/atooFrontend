@@ -13,12 +13,14 @@ import {
 import { useTheme } from '../../contexts/ThemeContext';
 import { getSessionUser } from '../../../lib/authRouting';
 import {
+  fetchClientProcedureActions,
   fetchInspectionAppointments,
   fetchVehicleInspectionPlan,
   fetchWorkshopSlots,
   fetchWorkshops,
   requestInspectionAppointment,
   respondToReschedule,
+  type ClientProcedureAction,
   type InspectionAppointment,
   type VehicleInspectionPlan,
   type WorkshopAvailabilitySlot,
@@ -28,6 +30,7 @@ import {
 const STATUS_LABELS: Record<InspectionAppointment['status'], string> = {
   PENDING: 'Pendiente',
   CONFIRMED: 'Confirmada',
+  IN_PROGRESS: 'En revisión',
   REJECTED: 'Rechazada',
   COMPLETED: 'Completada',
   CANCELLED: 'Cancelada',
@@ -51,6 +54,7 @@ export function InspectionsView() {
   const [plan, setPlan] = useState<VehicleInspectionPlan | null>(null);
   const [workshops, setWorkshops] = useState<WorkshopSummary[]>([]);
   const [appointments, setAppointments] = useState<InspectionAppointment[]>([]);
+  const [procedureActions, setProcedureActions] = useState<ClientProcedureAction[]>([]);
   const [slots, setSlots] = useState<WorkshopAvailabilitySlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -75,14 +79,16 @@ export function InspectionsView() {
     setLoading(true);
     setError(null);
     try {
-      const [planData, workshopData, appointmentData] = await Promise.all([
+      const [planData, workshopData, appointmentData, procedureData] = await Promise.all([
         fetchVehicleInspectionPlan(userId),
         fetchWorkshops(userId),
         fetchInspectionAppointments(userId),
+        fetchClientProcedureActions(userId),
       ]);
       setPlan(planData);
       setWorkshops(workshopData);
       setAppointments(appointmentData);
+      setProcedureActions(procedureData);
       if (!workshopId && workshopData[0]) {
         setWorkshopId(workshopData[0].id);
       }
@@ -342,6 +348,61 @@ export function InspectionsView() {
         </div>
       ))}
 
+      {procedureActions
+        .filter((p) => p.status === 'APPROVED_IMMEDIATE' || p.status === 'APPROVED_CLIENT_SCHEDULE')
+        .map((proc) => (
+          <div
+            key={proc.id}
+            className={`rounded-2xl border p-5 ${
+              proc.status === 'APPROVED_IMMEDIATE'
+                ? 'border-emerald-500/40 bg-emerald-500/10'
+                : proc.isUrgent
+                  ? 'border-orange-500/40 bg-orange-500/10'
+                  : 'border-sky-500/40 bg-sky-500/10'
+            }`}
+          >
+            <p
+              className={`font-bold ${
+                proc.status === 'APPROVED_IMMEDIATE'
+                  ? 'text-emerald-900'
+                  : proc.isUrgent
+                    ? 'text-orange-900'
+                    : 'text-sky-900'
+              }`}
+            >
+              {proc.status === 'APPROVED_IMMEDIATE'
+                ? 'Ajuste autorizado en tu cita actual'
+                : proc.isUrgent
+                  ? 'Ajuste urgente con costo — agenda en 7 días'
+                  : 'Ajuste con costo autorizado'}
+            </p>
+            <p className="text-sm mt-2 text-gray-700">
+              <strong>{proc.title}</strong>
+              {proc.estimatedCostCop != null && proc.estimatedCostCop > 0
+                ? ` · $${proc.estimatedCostCop.toLocaleString('es-CO')}`
+                : ' · Sin costo'}
+              {' · '}
+              {proc.workshopName}
+            </p>
+            {proc.status === 'APPROVED_IMMEDIATE' ? (
+              <p className="text-sm mt-1 text-emerald-800">
+                El taller puede realizar este procedimiento durante la revisión en curso.
+              </p>
+            ) : (
+              <p className="text-sm mt-1 text-gray-700">
+                {proc.isUrgent && proc.deadlineAt
+                  ? `Tienes hasta el ${new Date(proc.deadlineAt).toLocaleDateString('es-CO', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })} para agendar e ir a completar el ajuste.`
+                  : 'Agenda una cita en el taller para completar el ajuste.'}
+              </p>
+            )}
+          </div>
+        ))}
+
       <div className={cardClass}>
         <div className="flex items-start gap-3 mb-4">
           <div className="w-10 h-10 rounded-xl bg-[#1A1FE8]/15 flex items-center justify-center">
@@ -528,7 +589,9 @@ export function InspectionsView() {
                       className={`text-xs font-semibold px-2.5 py-1 rounded-full shrink-0 ${
                         apt.status === 'CONFIRMED'
                           ? 'bg-green-500/15 text-green-600'
-                          : apt.status === 'PENDING'
+                          : apt.status === 'IN_PROGRESS'
+                            ? 'bg-sky-500/15 text-sky-600'
+                            : apt.status === 'PENDING'
                             ? 'bg-amber-500/15 text-amber-600'
                             : apt.status === 'RESCHEDULE_PENDING'
                               ? 'bg-violet-500/15 text-violet-600'
