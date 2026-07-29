@@ -24,7 +24,11 @@ function formatCop(amount: number | null): string {
   }).format(amount);
 }
 
-export function ProceduresAdminView() {
+interface ProceduresAdminViewProps {
+  onPendingCountChange?: (count: number) => void;
+}
+
+export function ProceduresAdminView({ onPendingCountChange }: ProceduresAdminViewProps) {
   const { theme } = useTheme();
   const [items, setItems] = useState<AdminProcedureSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,6 +47,7 @@ export function ProceduresAdminView() {
     try {
       const data = await adminFetchProcedureSuggestions(filter);
       setItems(data);
+      if (filter === 'PENDING_ADMIN') onPendingCountChange?.(data.length);
       const costs: Record<string, string> = {};
       const urgents: Record<string, boolean> = {};
       for (const item of data) {
@@ -59,10 +64,17 @@ export function ProceduresAdminView() {
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, [filter, onPendingCountChange]);
 
   useEffect(() => {
-    load();
+    void load();
+    const interval = window.setInterval(() => void load(), 15_000);
+    const handleFocus = () => void load();
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [load]);
 
   const review = async (item: AdminProcedureSuggestion, action: 'approve' | 'reject') => {

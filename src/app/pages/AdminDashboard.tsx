@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   LayoutDashboard,
@@ -23,8 +23,10 @@ import { ActiveUsersView } from '../components/admin/ActiveUsersView';
 import { LandingAdminView } from '../components/admin/LandingAdminView';
 import { WorkshopsAdminView } from '../components/admin/WorkshopsAdminView';
 import { ProceduresAdminView } from '../components/admin/ProceduresAdminView';
+import { AdminNotificationBell } from '../components/admin/AdminNotificationBell';
 import { useTheme } from '../contexts/ThemeContext';
 import { clearUserSession } from '../../lib/authRouting';
+import { adminFetchProcedureSuggestions } from '../../lib/adminInspectionsApi';
 
 const menuItems = [
   { id: 'metrics', label: 'Dashboard General', icon: LayoutDashboard },
@@ -41,8 +43,29 @@ const menuItems = [
 export function AdminDashboard() {
   const [activeView, setActiveView] = useState('metrics');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [pendingProcedureCount, setPendingProcedureCount] = useState(0);
   const navigate = useNavigate();
   const { theme } = useTheme();
+
+  const refreshPendingProcedures = useCallback(async () => {
+    try {
+      const pending = await adminFetchProcedureSuggestions('PENDING_ADMIN');
+      setPendingProcedureCount(pending.length);
+    } catch {
+      // La vista correspondiente mostrará el error detallado si el admin la abre.
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshPendingProcedures();
+    const interval = window.setInterval(() => void refreshPendingProcedures(), 15_000);
+    const handleFocus = () => void refreshPendingProcedures();
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [refreshPendingProcedures]);
 
   const handleLogout = () => {
     clearUserSession();
@@ -122,6 +145,12 @@ export function AdminDashboard() {
                 >
                   <Icon className="w-5 h-5" />
                   <span className="font-medium">{item.label}</span>
+                  {(item.id === 'workshops' || item.id === 'procedures') &&
+                    pendingProcedureCount > 0 && (
+                      <span className="ml-auto min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center">
+                        {pendingProcedureCount > 9 ? '9+' : pendingProcedureCount}
+                      </span>
+                    )}
                 </button>
               );
             })}
@@ -149,12 +178,41 @@ export function AdminDashboard() {
       )}
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
+      <main className="relative flex-1 overflow-auto">
+        <div className="sticky top-4 z-30 h-0 flex justify-end pr-6 lg:pr-8">
+          <AdminNotificationBell onOpenProcedures={() => setActiveView('procedures')} />
+        </div>
         <div className="p-6 lg:p-8">
           {activeView === 'metrics' && <AdminMetricsView />}
           {activeView === 'landing' && <LandingAdminView />}
-          {activeView === 'workshops' && <WorkshopsAdminView />}
-          {activeView === 'procedures' && <ProceduresAdminView />}
+          {activeView === 'workshops' && (
+            <div className="space-y-6">
+              {pendingProcedureCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setActiveView('procedures')}
+                  className="w-full rounded-xl border border-orange-300 bg-orange-50 px-4 py-3 text-left text-orange-800 flex items-center justify-between gap-3 hover:bg-orange-100"
+                >
+                  <span>
+                    <strong>
+                      {pendingProcedureCount}{' '}
+                      {pendingProcedureCount === 1
+                        ? 'solicitud pendiente del taller'
+                        : 'solicitudes pendientes de talleres'}
+                    </strong>
+                    <span className="block text-sm mt-0.5">
+                      Revisa y autoriza los procedimientos sugeridos.
+                    </span>
+                  </span>
+                  <span className="text-sm font-semibold shrink-0">Ver solicitudes →</span>
+                </button>
+              )}
+              <WorkshopsAdminView />
+            </div>
+          )}
+          {activeView === 'procedures' && (
+            <ProceduresAdminView onPendingCountChange={setPendingProcedureCount} />
+          )}
           {activeView === 'delivered' && <DeliveredVehiclesView />}
           {activeView === 'risk' && <PaymentRiskView />}
           {activeView === 'retained' && <RetainedVehiclesView />}
