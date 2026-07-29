@@ -47,6 +47,7 @@ export interface WorkshopSummary {
   phone: string | null;
   latitude: number | null;
   longitude: number | null;
+  openBooking: boolean;
   upcomingSlots: WorkshopAvailabilitySlot[];
 }
 
@@ -110,10 +111,50 @@ export interface InspectionSession {
   appointmentDate: string;
   appointmentTime: string | null;
   workshopName: string;
+  vehicleName: string | null;
+  vin: string | null;
   clientEmail: string | null;
   clientDisplayName: string | null;
+  progress: {
+    totalSteps: number;
+    completedSteps: number;
+    percent: number;
+    currentStepTitle: string | null;
+  };
+  survey: InspectionSurvey | null;
   checklistItems: InspectionChecklistItem[];
   suggestions: InspectionProcedureSuggestion[];
+}
+
+export interface InspectionSurvey {
+  id: string;
+  status: 'PENDING' | 'SUBMITTED';
+  rating: number | null;
+  comment: string | null;
+  submittedAt: string | null;
+}
+
+export interface InspectionHistoryItem {
+  appointmentId: string;
+  sessionId: string;
+  completedAt: string | null;
+  appointmentDate: string;
+  appointmentTime: string | null;
+  workshopName: string;
+  workshopCity: string;
+  reason: string | null;
+  notes: string | null;
+  vehicleName: string | null;
+  vin: string | null;
+  checklistSummary: { total: number; completed: number };
+  procedures: Array<{
+    id: string;
+    title: string;
+    status: ProcedureSuggestionStatus;
+    estimatedCostCop: number | null;
+    isUrgent: boolean;
+  }>;
+  survey: Omit<InspectionSurvey, 'id'> | null;
 }
 
 export interface ClientProcedureAction {
@@ -147,6 +188,8 @@ export interface InspectionAppointment {
   reason: string | null;
   proofOriginalName: string | null;
   workshopNotes: string | null;
+  vehicleName: string | null;
+  vin: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -197,6 +240,48 @@ export async function fetchInspectionAppointments(
   const res = await fetch(url);
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
   return (await res.json()) as InspectionAppointment[];
+}
+
+export async function fetchInspectionHistory(
+  userId: string,
+): Promise<InspectionHistoryItem[]> {
+  const res = await fetch(
+    apiUrl(`/api/v1/users/${encodeURIComponent(userId)}/inspections/history`),
+  );
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
+  return (await res.json()) as InspectionHistoryItem[];
+}
+
+export async function fetchClientInspectionSession(
+  userId: string,
+  appointmentId: string,
+): Promise<InspectionSession> {
+  const res = await fetch(
+    apiUrl(
+      `/api/v1/users/${encodeURIComponent(userId)}/inspections/appointments/${encodeURIComponent(appointmentId)}/session`,
+    ),
+  );
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
+  return (await res.json()) as InspectionSession;
+}
+
+export async function submitInspectionSurvey(
+  userId: string,
+  appointmentId: string,
+  input: { rating: number; comment?: string },
+): Promise<InspectionSurvey> {
+  const res = await fetch(
+    apiUrl(
+      `/api/v1/users/${encodeURIComponent(userId)}/inspections/appointments/${encodeURIComponent(appointmentId)}/survey`,
+    ),
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    },
+  );
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
+  return (await res.json()) as InspectionSurvey;
 }
 
 export async function requestInspectionAppointment(

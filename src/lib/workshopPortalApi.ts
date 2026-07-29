@@ -2,6 +2,7 @@ import { ApiError } from './api';
 import type {
   InspectionAppointment,
   InspectionAppointmentStatus,
+  InspectionHistoryItem,
   InspectionSession,
   WorkshopAvailabilitySlot,
 } from './inspectionsApi';
@@ -81,6 +82,17 @@ export async function fetchWorkshopAppointments(
   const res = await fetch(workshopBase(userId, '/appointments'));
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
   return (await res.json()) as WorkshopInspectionAppointment[];
+}
+
+export async function fetchWorkshopClientHistory(
+  userId: string,
+  clientUserId: string,
+): Promise<InspectionHistoryItem[]> {
+  const res = await fetch(
+    workshopBase(userId, `/clients/${encodeURIComponent(clientUserId)}/history`),
+  );
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
+  return (await res.json()) as InspectionHistoryItem[];
 }
 
 export async function updateWorkshopAppointmentStatus(

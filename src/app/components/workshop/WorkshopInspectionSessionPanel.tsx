@@ -204,6 +204,17 @@ export function WorkshopInspectionSessionPanel({
                         {completedCount}/{totalCount} completados
                       </span>
                     </div>
+                    <div className={`h-2 rounded-full overflow-hidden mb-4 ${theme === 'dark' ? 'bg-white/10' : 'bg-gray-200'}`}>
+                      <div
+                        className="h-full bg-[#1A1FE8] transition-all duration-300"
+                        style={{ width: `${session.progress.percent}%` }}
+                      />
+                    </div>
+                    {session.progress.currentStepTitle && (
+                      <p className="text-xs text-gray-500 mb-3">
+                        Paso actual: <strong>{session.progress.currentStepTitle}</strong>
+                      </p>
+                    )}
                     <ul className="space-y-2">
                       {session.checklistItems.map((item) => (
                         <li key={item.id}>

@@ -9,19 +9,26 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
+  History,
+  Star,
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getSessionUser } from '../../../lib/authRouting';
 import {
   fetchClientProcedureActions,
+  fetchClientInspectionSession,
   fetchInspectionAppointments,
+  fetchInspectionHistory,
   fetchVehicleInspectionPlan,
   fetchWorkshopSlots,
   fetchWorkshops,
   requestInspectionAppointment,
   respondToReschedule,
+  submitInspectionSurvey,
   type ClientProcedureAction,
   type InspectionAppointment,
+  type InspectionHistoryItem,
+  type InspectionSession,
   type VehicleInspectionPlan,
   type WorkshopAvailabilitySlot,
   type WorkshopSummary,
@@ -37,6 +44,15 @@ const STATUS_LABELS: Record<InspectionAppointment['status'], string> = {
   RESCHEDULE_PENDING: 'Nueva fecha propuesta',
 };
 
+const TEST_OPEN_BOOKING_WORKSHOP_ID = 'TLLBOG01';
+
+function allowsOpenBooking(workshop: WorkshopSummary | undefined | null): boolean {
+  return Boolean(
+    workshop &&
+      (workshop.openBooking === true || workshop.id === TEST_OPEN_BOOKING_WORKSHOP_ID),
+  );
+}
+
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('es-CO', {
     weekday: 'long',
@@ -44,6 +60,12 @@ function formatDate(iso: string): string {
     month: 'long',
     day: 'numeric',
   });
+}
+
+function localDateInputValue(): string {
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60_000;
+  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
 }
 
 export function InspectionsView() {
@@ -55,6 +77,8 @@ export function InspectionsView() {
   const [workshops, setWorkshops] = useState<WorkshopSummary[]>([]);
   const [appointments, setAppointments] = useState<InspectionAppointment[]>([]);
   const [procedureActions, setProcedureActions] = useState<ClientProcedureAction[]>([]);
+  const [history, setHistory] = useState<InspectionHistoryItem[]>([]);
+  const [activeSessions, setActiveSessions] = useState<Record<string, InspectionSession>>({});
   const [slots, setSlots] = useState<WorkshopAvailabilitySlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -63,11 +87,24 @@ export function InspectionsView() {
 
   const [workshopId, setWorkshopId] = useState('');
   const [slotId, setSlotId] = useState('');
+  const [openBookingDate, setOpenBookingDate] = useState(localDateInputValue);
+  const [openBookingTime, setOpenBookingTime] = useState('08:00');
   const [reason, setReason] = useState('');
   const [proof, setProof] = useState<File | null>(null);
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const [counterSlotId, setCounterSlotId] = useState('');
+  const [counterDate, setCounterDate] = useState(localDateInputValue);
+  const [counterTime, setCounterTime] = useState('08:00');
   const [counterForId, setCounterForId] = useState<string | null>(null);
+  const [surveyRating, setSurveyRating] = useState<Record<string, number>>({});
+  const [surveyComment, setSurveyComment] = useState<Record<string, string>>({});
+
+  const selectedWorkshop = useMemo(
+    () => workshops.find((w) => w.id === workshopId) ?? null,
+    [workshops, workshopId],
+  );
+
+  const isOpenBookingWorkshop = allowsOpenBooking(selectedWorkshop);
 
   const selectedSlot = useMemo(
     () => slots.find((s) => s.id === slotId) ?? null,
@@ -79,18 +116,22 @@ export function InspectionsView() {
     setLoading(true);
     setError(null);
     try {
-      const [planData, workshopData, appointmentData, procedureData] = await Promise.all([
+      const [planData, workshopData, appointmentData, procedureData, historyData] = await Promise.all([
         fetchVehicleInspectionPlan(userId),
         fetchWorkshops(userId),
         fetchInspectionAppointments(userId),
         fetchClientProcedureActions(userId),
+        fetchInspectionHistory(userId),
       ]);
       setPlan(planData);
       setWorkshops(workshopData);
       setAppointments(appointmentData);
       setProcedureActions(procedureData);
+      setHistory(historyData);
       if (!workshopId && workshopData[0]) {
-        setWorkshopId(workshopData[0].id);
+        const testWorkshop =
+          workshopData.find((workshop) => allowsOpenBooking(workshop)) ?? workshopData[0];
+        setWorkshopId(testWorkshop.id);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No pudimos cargar las revisiones');
@@ -104,7 +145,47 @@ export function InspectionsView() {
   }, [userId]);
 
   useEffect(() => {
+    const inProgress = appointments.filter((appointment) => appointment.status === 'IN_PROGRESS');
+    if (!userId || inProgress.length === 0) {
+      setActiveSessions({});
+      return;
+    }
+
+    let cancelled = false;
+    const refreshProgress = async () => {
+      const results = await Promise.all(
+        inProgress.map(async (appointment) => {
+          try {
+            const session = await fetchClientInspectionSession(userId, appointment.id);
+            return [appointment.id, session] as const;
+          } catch {
+            return null;
+          }
+        }),
+      );
+      if (!cancelled) {
+        setActiveSessions(
+          Object.fromEntries(results.filter((result): result is readonly [string, InspectionSession] => result !== null)),
+        );
+      }
+    };
+
+    refreshProgress();
+    const timer = window.setInterval(refreshProgress, 5_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [userId, appointments.map((appointment) => `${appointment.id}:${appointment.status}`).join('|')]);
+
+  useEffect(() => {
     if (!userId || !workshopId) {
+      setSlots([]);
+      setSlotId('');
+      return;
+    }
+
+    if (isOpenBookingWorkshop) {
       setSlots([]);
       setSlotId('');
       return;
@@ -126,11 +207,18 @@ export function InspectionsView() {
     return () => {
       cancelled = true;
     };
-  }, [userId, workshopId]);
+  }, [userId, workshopId, isOpenBookingWorkshop]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userId || !workshopId || !selectedSlot || !reason.trim() || !proof) {
+    const appointmentDate = isOpenBookingWorkshop
+      ? openBookingDate
+      : selectedSlot?.date;
+    const appointmentTime = isOpenBookingWorkshop
+      ? openBookingTime
+      : selectedSlot?.startTime;
+
+    if (!userId || !workshopId || !appointmentDate || !appointmentTime || !reason.trim() || !proof) {
       setError('Completa taller, horario, motivo y adjunta la prueba');
       return;
     }
@@ -141,8 +229,8 @@ export function InspectionsView() {
     try {
       await requestInspectionAppointment(userId, {
         workshopId,
-        appointmentDate: selectedSlot.date,
-        appointmentTime: selectedSlot.startTime,
+        appointmentDate,
+        appointmentTime,
         reason: reason.trim(),
         proof,
       });
@@ -185,8 +273,12 @@ export function InspectionsView() {
 
   const handleCounterReschedule = async (apt: InspectionAppointment) => {
     if (!userId) return;
-    const slot = slots.find((s) => s.id === counterSlotId);
-    if (!slot) {
+    const openBooking = allowsOpenBooking(workshops.find((w) => w.id === apt.workshopId));
+    const slot = openBooking ? null : slots.find((s) => s.id === counterSlotId);
+    const appointmentDate = openBooking ? counterDate : slot?.date;
+    const appointmentTime = openBooking ? counterTime : slot?.startTime;
+
+    if (!appointmentDate || !appointmentTime) {
       setError('Elige un horario alternativo');
       return;
     }
@@ -196,8 +288,8 @@ export function InspectionsView() {
     try {
       await respondToReschedule(userId, apt.id, {
         action: 'counter',
-        appointmentDate: slot.date,
-        appointmentTime: slot.startTime,
+        appointmentDate,
+        appointmentTime,
       });
       setSuccess('Enviaste una contra-propuesta al taller.');
       setCounterForId(null);
@@ -212,12 +304,41 @@ export function InspectionsView() {
   const openCounterForm = async (apt: InspectionAppointment) => {
     setCounterForId(apt.id);
     setWorkshopId(apt.workshopId);
+    if (allowsOpenBooking(workshops.find((w) => w.id === apt.workshopId))) {
+      setCounterDate(apt.proposedAppointmentDate ?? apt.appointmentDate);
+      setCounterTime(apt.proposedAppointmentTime ?? apt.appointmentTime ?? '08:00');
+      setSlots([]);
+      setCounterSlotId('');
+      return;
+    }
     try {
       const data = await fetchWorkshopSlots(userId, apt.workshopId);
       setSlots(data);
       setCounterSlotId(data[0]?.id ?? '');
     } catch {
       setCounterSlotId('');
+    }
+  };
+
+  const handleSurveySubmit = async (item: InspectionHistoryItem) => {
+    const rating = surveyRating[item.appointmentId] ?? 0;
+    if (rating < 1) {
+      setError('Selecciona una calificación de 1 a 5 estrellas');
+      return;
+    }
+    setRespondingId(item.appointmentId);
+    setError(null);
+    try {
+      await submitInspectionSurvey(userId, item.appointmentId, {
+        rating,
+        comment: surveyComment[item.appointmentId]?.trim() || undefined,
+      });
+      setSuccess('Gracias por calificar la atención del taller.');
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo enviar la calificación');
+    } finally {
+      setRespondingId(null);
     }
   };
 
@@ -280,29 +401,60 @@ export function InspectionsView() {
 
           {counterForId === apt.id ? (
             <div className="space-y-3 pl-9">
-              <select
-                value={counterSlotId}
-                onChange={(e) => setCounterSlotId(e.target.value)}
-                className={`w-full rounded-xl border px-4 py-3 ${
-                  theme === 'dark'
-                    ? 'bg-white/5 border-blue-600/30 text-white'
-                    : 'bg-white border-gray-200'
-                }`}
-              >
-                {slots.length === 0 ? (
-                  <option value="">Sin cupos disponibles</option>
-                ) : (
-                  slots.map((slot) => (
-                    <option key={slot.id} value={slot.id}>
-                      {slot.date} · {slot.startTime}–{slot.endTime}
-                    </option>
-                  ))
-                )}
-              </select>
+              {allowsOpenBooking(workshops.find((w) => w.id === apt.workshopId)) ? (
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <input
+                    type="date"
+                    min={localDateInputValue()}
+                    value={counterDate}
+                    onChange={(e) => setCounterDate(e.target.value)}
+                    className={`w-full rounded-xl border px-4 py-3 ${
+                      theme === 'dark'
+                        ? 'bg-white/5 border-blue-600/30 text-white'
+                        : 'bg-white border-gray-200'
+                    }`}
+                  />
+                  <input
+                    type="time"
+                    value={counterTime}
+                    onChange={(e) => setCounterTime(e.target.value)}
+                    className={`w-full rounded-xl border px-4 py-3 ${
+                      theme === 'dark'
+                        ? 'bg-white/5 border-blue-600/30 text-white'
+                        : 'bg-white border-gray-200'
+                    }`}
+                  />
+                </div>
+              ) : (
+                <select
+                  value={counterSlotId}
+                  onChange={(e) => setCounterSlotId(e.target.value)}
+                  className={`w-full rounded-xl border px-4 py-3 ${
+                    theme === 'dark'
+                      ? 'bg-white/5 border-blue-600/30 text-white'
+                      : 'bg-white border-gray-200'
+                  }`}
+                >
+                  {slots.length === 0 ? (
+                    <option value="">Sin cupos disponibles</option>
+                  ) : (
+                    slots.map((slot) => (
+                      <option key={slot.id} value={slot.id}>
+                        {slot.date} · {slot.startTime}–{slot.endTime}
+                      </option>
+                    ))
+                  )}
+                </select>
+              )}
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  disabled={respondingId === apt.id || !slots.length}
+                  disabled={
+                    respondingId === apt.id ||
+                    (allowsOpenBooking(workshops.find((w) => w.id === apt.workshopId))
+                      ? !counterDate || !counterTime
+                      : !slots.length)
+                  }
                   onClick={() => handleCounterReschedule(apt)}
                   className="px-4 py-2 rounded-lg bg-[#1A1FE8] text-white text-sm font-semibold disabled:opacity-50"
                 >
@@ -444,6 +596,118 @@ export function InspectionsView() {
         )}
       </div>
 
+      <div className={cardClass}>
+        <div className="flex items-center gap-3 mb-4">
+          <History className="w-5 h-5 text-[#1A1FE8]" />
+          <div>
+            <h2 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              Historial del vehículo
+            </h2>
+            <p className="text-sm text-gray-500">Revisiones anteriores, resultados y procedimientos.</p>
+          </div>
+        </div>
+
+        {history.length === 0 ? (
+          <p className="text-sm text-gray-500">Aún no hay revisiones completadas.</p>
+        ) : (
+          <div className="space-y-3">
+            {history.map((item) => (
+              <div
+                key={item.sessionId}
+                className={`rounded-xl border p-4 ${
+                  theme === 'dark' ? 'border-blue-600/20 bg-white/5' : 'border-gray-100 bg-gray-50'
+                }`}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                  <div>
+                    <p className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                      {item.vehicleName ?? 'Vehículo'} · {item.appointmentDate}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {item.workshopName} · {item.checklistSummary.completed}/{item.checklistSummary.total} pasos completados
+                    </p>
+                    {item.reason && <p className="text-sm text-gray-500 mt-1">Motivo: {item.reason}</p>}
+                    {item.notes && <p className="text-sm text-gray-500 mt-1">Resultado: {item.notes}</p>}
+                    {item.procedures.length > 0 && (
+                      <p className="text-xs text-gray-400 mt-2">
+                        Procedimientos: {item.procedures.map((procedure) => procedure.title).join(', ')}
+                      </p>
+                    )}
+                  </div>
+                  {item.survey?.status === 'SUBMITTED' && item.survey.rating && (
+                    <div className="flex items-center gap-1 text-amber-500 shrink-0">
+                      {Array.from({ length: 5 }, (_, index) => (
+                        <Star
+                          key={index}
+                          className={`w-4 h-4 ${index < item.survey!.rating! ? 'fill-current' : ''}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {(!item.survey || item.survey.status === 'PENDING') && (
+                  <div className="mt-4 pt-4 border-t border-gray-200/60">
+                    <p className={`text-sm font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                      ¿Cómo fue tu experiencia?
+                    </p>
+                    <div className="flex gap-1 mb-3">
+                      {Array.from({ length: 5 }, (_, index) => {
+                        const value = index + 1;
+                        return (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() =>
+                              setSurveyRating((previous) => ({
+                                ...previous,
+                                [item.appointmentId]: value,
+                              }))
+                            }
+                            className="p-1 text-amber-500"
+                            aria-label={`${value} estrellas`}
+                          >
+                            <Star
+                              className={`w-6 h-6 ${
+                                value <= (surveyRating[item.appointmentId] ?? 0) ? 'fill-current' : ''
+                              }`}
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <textarea
+                      value={surveyComment[item.appointmentId] ?? ''}
+                      onChange={(event) =>
+                        setSurveyComment((previous) => ({
+                          ...previous,
+                          [item.appointmentId]: event.target.value,
+                        }))
+                      }
+                      rows={2}
+                      placeholder="Comentario opcional"
+                      className={`w-full rounded-xl border px-3 py-2 text-sm resize-none ${
+                        theme === 'dark'
+                          ? 'bg-white/5 border-blue-600/30 text-white'
+                          : 'bg-white border-gray-200'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      disabled={respondingId === item.appointmentId}
+                      onClick={() => handleSurveySubmit(item)}
+                      className="mt-2 px-4 py-2 rounded-lg bg-[#1A1FE8] text-white text-sm font-semibold disabled:opacity-50"
+                    >
+                      {respondingId === item.appointmentId ? 'Enviando…' : 'Enviar calificación'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="grid lg:grid-cols-2 gap-6">
         <form onSubmit={handleSubmit} className={cardClass}>
           <div className="flex items-center gap-3 mb-5">
@@ -481,25 +745,56 @@ export function InspectionsView() {
 
             <div>
               <label className="block text-sm font-medium mb-2">Fecha y horario disponible</label>
-              <select
-                value={slotId}
-                onChange={(e) => setSlotId(e.target.value)}
-                className={`w-full rounded-xl border px-4 py-3 ${
-                  theme === 'dark'
-                    ? 'bg-white/5 border-blue-600/30 text-white'
-                    : 'bg-white border-gray-200'
-                }`}
-              >
-                {slots.length === 0 ? (
-                  <option value="">Sin cupos publicados</option>
-                ) : (
-                  slots.map((slot) => (
-                    <option key={slot.id} value={slot.id}>
-                      {slot.date} · {slot.startTime}–{slot.endTime} ({slot.remainingCapacity} cupos)
-                    </option>
-                  ))
-                )}
-              </select>
+              {isOpenBookingWorkshop ? (
+                <>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <input
+                      type="date"
+                      min={localDateInputValue()}
+                      value={openBookingDate}
+                      onChange={(e) => setOpenBookingDate(e.target.value)}
+                      className={`w-full rounded-xl border px-4 py-3 ${
+                        theme === 'dark'
+                          ? 'bg-white/5 border-blue-600/30 text-white'
+                          : 'bg-white border-gray-200'
+                      }`}
+                    />
+                    <input
+                      type="time"
+                      value={openBookingTime}
+                      onChange={(e) => setOpenBookingTime(e.target.value)}
+                      className={`w-full rounded-xl border px-4 py-3 ${
+                        theme === 'dark'
+                          ? 'bg-white/5 border-blue-600/30 text-white'
+                          : 'bg-white border-gray-200'
+                      }`}
+                    />
+                  </div>
+                  <p className="text-xs text-[#1A1FE8] mt-2">
+                    Taller de prueba: puedes elegir cualquier hora.
+                  </p>
+                </>
+              ) : (
+                <select
+                  value={slotId}
+                  onChange={(e) => setSlotId(e.target.value)}
+                  className={`w-full rounded-xl border px-4 py-3 ${
+                    theme === 'dark'
+                      ? 'bg-white/5 border-blue-600/30 text-white'
+                      : 'bg-white border-gray-200'
+                  }`}
+                >
+                  {slots.length === 0 ? (
+                    <option value="">Sin cupos publicados</option>
+                  ) : (
+                    slots.map((slot) => (
+                      <option key={slot.id} value={slot.id}>
+                        {slot.date} · {slot.startTime}–{slot.endTime} ({slot.remainingCapacity} cupos)
+                      </option>
+                    ))
+                  )}
+                </select>
+              )}
             </div>
 
             <div>
@@ -541,7 +836,12 @@ export function InspectionsView() {
 
             <button
               type="submit"
-              disabled={submitting || !slots.length}
+              disabled={
+                submitting ||
+                (isOpenBookingWorkshop
+                  ? !openBookingDate || !openBookingTime
+                  : !slots.length)
+              }
               className="w-full py-3 rounded-xl bg-[#1A1FE8] text-white font-semibold hover:bg-[#1217C8] disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Calendar className="w-5 h-5" />}
@@ -603,6 +903,37 @@ export function InspectionsView() {
                       {STATUS_LABELS[apt.status]}
                     </span>
                   </div>
+                  {apt.status === 'IN_PROGRESS' && activeSessions[apt.id] && (
+                    <div className="mt-4 pt-4 border-t border-gray-200/60">
+                      <div className="flex items-center justify-between text-xs mb-2">
+                        <span className="font-semibold text-sky-600">Seguimiento en tiempo real</span>
+                        <span className="text-gray-500">{activeSessions[apt.id].progress.percent}%</span>
+                      </div>
+                      <div className={`h-2 rounded-full overflow-hidden ${theme === 'dark' ? 'bg-white/10' : 'bg-gray-200'}`}>
+                        <div
+                          className="h-full bg-sky-500 transition-all duration-500"
+                          style={{ width: `${activeSessions[apt.id].progress.percent}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        {activeSessions[apt.id].progress.currentStepTitle
+                          ? `En proceso: ${activeSessions[apt.id].progress.currentStepTitle}`
+                          : 'Todos los pasos fueron completados'}
+                      </p>
+                      <div className="mt-3 space-y-1">
+                        {activeSessions[apt.id].checklistItems.map((step) => (
+                          <p
+                            key={step.id}
+                            className={`text-xs flex items-center gap-2 ${
+                              step.completed ? 'text-emerald-600' : 'text-gray-400'
+                            }`}
+                          >
+                            {step.completed ? '✓' : '○'} {step.title}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

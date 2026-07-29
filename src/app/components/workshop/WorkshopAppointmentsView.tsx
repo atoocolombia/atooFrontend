@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CalendarClock,
+  History,
   PlayCircle,
   X,
 } from 'lucide-react';
@@ -17,12 +18,14 @@ import { getSessionUser } from '../../../lib/authRouting';
 import {
   fetchWorkshopAppointments,
   fetchWorkshopAvailability,
+  fetchWorkshopClientHistory,
   rescheduleWorkshopAppointment,
   updateWorkshopAppointmentStatus,
   workshopProofUrl,
   type WorkshopInspectionAppointment,
 } from '../../../lib/workshopPortalApi';
 import type { WorkshopAvailabilitySlot } from '../../../lib/inspectionsApi';
+import type { InspectionHistoryItem } from '../../../lib/inspectionsApi';
 import { WorkshopInspectionSessionPanel } from './WorkshopInspectionSessionPanel';
 
 const STATUS_LABELS: Record<WorkshopInspectionAppointment['status'], string> = {
@@ -36,6 +39,8 @@ const STATUS_LABELS: Record<WorkshopInspectionAppointment['status'], string> = {
 };
 
 const WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+const TEST_OPEN_BOOKING_WORKSHOP_ID = 'TLLBOG01';
+type CalendarView = 'month' | 'week' | 'day';
 const MONTHS = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
@@ -43,6 +48,38 @@ const MONTHS = [
 
 function calendarDateKey(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function localDateInputValue(): string {
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60_000;
+  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
+}
+
+function dateFromKey(dateKey: string): Date {
+  return new Date(`${dateKey}T12:00:00`);
+}
+
+function dateKeyFromDate(date: Date): string {
+  const offset = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 10);
+}
+
+function addCalendarDays(dateKey: string, days: number): string {
+  const date = dateFromKey(dateKey);
+  date.setDate(date.getDate() + days);
+  return dateKeyFromDate(date);
+}
+
+function weekDateKeys(dateKey: string): string[] {
+  const date = dateFromKey(dateKey);
+  const mondayOffset = (date.getDay() + 6) % 7;
+  date.setDate(date.getDate() - mondayOffset);
+  return Array.from({ length: 7 }, (_, index) => {
+    const day = new Date(date);
+    day.setDate(date.getDate() + index);
+    return dateKeyFromDate(day);
+  });
 }
 
 function displayDateForAppointment(apt: WorkshopInspectionAppointment): string {
@@ -100,12 +137,18 @@ export function WorkshopAppointmentsView({ onUpdated }: WorkshopAppointmentsView
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
   });
+  const [calendarView, setCalendarView] = useState<CalendarView>('month');
+  const [focusedDate, setFocusedDate] = useState(localDateInputValue);
   const [selected, setSelected] = useState<WorkshopInspectionAppointment | null>(null);
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const [rescheduleSlotId, setRescheduleSlotId] = useState('');
+  const [rescheduleDate, setRescheduleDate] = useState(localDateInputValue);
+  const [rescheduleTime, setRescheduleTime] = useState('08:00');
   const [rescheduleNote, setRescheduleNote] = useState('');
   const [rescheduleError, setRescheduleError] = useState<string | null>(null);
   const [sessionApt, setSessionApt] = useState<WorkshopInspectionAppointment | null>(null);
+  const [clientHistory, setClientHistory] = useState<InspectionHistoryItem[] | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const load = async () => {
     if (!userId) return;
@@ -125,6 +168,10 @@ export function WorkshopAppointmentsView({ onUpdated }: WorkshopAppointmentsView
   useEffect(() => {
     load();
   }, [userId]);
+
+  useEffect(() => {
+    setClientHistory(null);
+  }, [selected?.id]);
 
   const appointmentsByDate = useMemo(() => {
     const map = new Map<string, WorkshopInspectionAppointment[]>();
@@ -153,6 +200,40 @@ export function WorkshopAppointmentsView({ onUpdated }: WorkshopAppointmentsView
     return cells;
   }, [viewMonth]);
 
+  const currentWeek = useMemo(() => weekDateKeys(focusedDate), [focusedDate]);
+
+  const calendarHeading =
+    calendarView === 'month'
+      ? `${MONTHS[viewMonth.month]} ${viewMonth.year}`
+      : calendarView === 'week'
+        ? `${new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short' }).format(dateFromKey(currentWeek[0]))} – ${new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }).format(dateFromKey(currentWeek[6]))}`
+        : new Intl.DateTimeFormat('es-CO', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          }).format(dateFromKey(focusedDate));
+
+  const moveCalendar = (direction: -1 | 1) => {
+    if (calendarView === 'month') {
+      setViewMonth((current) => {
+        const next = new Date(current.year, current.month + direction, 1);
+        return { year: next.getFullYear(), month: next.getMonth() };
+      });
+      return;
+    }
+    setFocusedDate((current) =>
+      addCalendarDays(current, direction * (calendarView === 'week' ? 7 : 1)),
+    );
+  };
+
+  const goToToday = () => {
+    const today = localDateInputValue();
+    const date = dateFromKey(today);
+    setFocusedDate(today);
+    setViewMonth({ year: date.getFullYear(), month: date.getMonth() });
+  };
+
   const pendingCount = appointments.filter((a) => a.status === 'PENDING').length;
   const clientCounterCount = appointments.filter(
     (a) => a.status === 'RESCHEDULE_PENDING' && a.rescheduleInitiatedBy === 'CLIENT',
@@ -176,8 +257,12 @@ export function WorkshopAppointmentsView({ onUpdated }: WorkshopAppointmentsView
 
   const handleReschedule = async () => {
     if (!userId || !selected) return;
-    const slot = slots.find((s) => s.id === rescheduleSlotId);
-    if (!slot) {
+    const openBooking = selected.workshopId === TEST_OPEN_BOOKING_WORKSHOP_ID;
+    const slot = openBooking ? null : slots.find((s) => s.id === rescheduleSlotId);
+    const appointmentDate = openBooking ? rescheduleDate : slot?.date;
+    const appointmentTime = openBooking ? rescheduleTime : slot?.startTime;
+
+    if (!appointmentDate || !appointmentTime) {
       setRescheduleError('Elige un horario disponible');
       return;
     }
@@ -186,8 +271,8 @@ export function WorkshopAppointmentsView({ onUpdated }: WorkshopAppointmentsView
     setRescheduleError(null);
     try {
       await rescheduleWorkshopAppointment(userId, selected.id, {
-        appointmentDate: slot.date,
-        appointmentTime: slot.startTime,
+        appointmentDate,
+        appointmentTime,
         note: rescheduleNote.trim() || undefined,
       });
       setRescheduleOpen(false);
@@ -206,8 +291,22 @@ export function WorkshopAppointmentsView({ onUpdated }: WorkshopAppointmentsView
     setSelected(apt);
     setRescheduleOpen(true);
     setRescheduleSlotId(slots[0]?.id ?? '');
+    setRescheduleDate(apt.proposedAppointmentDate ?? apt.appointmentDate);
+    setRescheduleTime(apt.proposedAppointmentTime ?? apt.appointmentTime ?? '08:00');
     setRescheduleNote('');
     setRescheduleError(null);
+  };
+
+  const loadClientHistory = async () => {
+    if (!selected) return;
+    setHistoryLoading(true);
+    try {
+      setClientHistory(await fetchWorkshopClientHistory(userId, selected.userId));
+    } catch {
+      setClientHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
   };
 
   const cardClass =
@@ -258,90 +357,238 @@ export function WorkshopAppointmentsView({ onUpdated }: WorkshopAppointmentsView
       </div>
 
       <div className={`rounded-2xl border p-5 ${cardClass}`}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+          <div className={`inline-flex rounded-xl p-1 ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-100'}`}>
+            {([
+              ['month', 'Mes'],
+              ['week', 'Semana'],
+              ['day', 'Día'],
+            ] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setCalendarView(value)}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  calendarView === value
+                    ? 'bg-[#1A1FE8] text-white shadow-sm'
+                    : theme === 'dark'
+                      ? 'text-gray-300 hover:bg-white/5'
+                      : 'text-gray-600 hover:bg-white'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={goToToday}
+            className="px-3 py-2 rounded-lg border border-[#1A1FE8]/30 text-[#1A1FE8] text-sm font-semibold"
+          >
+            Hoy
+          </button>
+        </div>
+
         <div className="flex items-center justify-between mb-5">
           <button
             type="button"
-            onClick={() =>
-              setViewMonth((m) =>
-                m.month === 0 ? { year: m.year - 1, month: 11 } : { year: m.year, month: m.month - 1 },
-              )
-            }
+            onClick={() => moveCalendar(-1)}
             className="p-2 rounded-lg hover:bg-black/5"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <h2 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            {MONTHS[viewMonth.month]} {viewMonth.year}
+            {calendarHeading}
           </h2>
           <button
             type="button"
-            onClick={() =>
-              setViewMonth((m) =>
-                m.month === 11 ? { year: m.year + 1, month: 0 } : { year: m.year, month: m.month + 1 },
-              )
-            }
+            onClick={() => moveCalendar(1)}
             className="p-2 rounded-lg hover:bg-black/5"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="grid grid-cols-7 gap-1 mb-1">
-          {WEEKDAYS.map((d) => (
-            <div key={d} className="text-center text-xs font-semibold text-gray-500 py-2">
-              {d}
-            </div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-7 gap-1">
-          {calendarCells.map((cell, idx) => {
-            if (!cell.day || !cell.dateKey) {
-              return <div key={`empty-${idx}`} className="min-h-[88px]" />;
-            }
-
-            const dayAppointments = appointmentsByDate.get(cell.dateKey) ?? [];
-            const isToday = cell.dateKey === new Date().toISOString().slice(0, 10);
-
-            return (
-              <div
-                key={cell.dateKey}
-                className={`min-h-[88px] rounded-xl border p-1.5 ${
-                  isToday
-                    ? 'border-[#1A1FE8]/50 bg-[#1A1FE8]/5'
-                    : theme === 'dark'
-                      ? 'border-blue-600/10 bg-white/[0.02]'
-                      : 'border-gray-100 bg-gray-50/50'
-                }`}
-              >
-                <p
-                  className={`text-xs font-semibold mb-1 ${
-                    isToday ? 'text-[#1A1FE8]' : theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                  }`}
-                >
-                  {cell.day}
-                </p>
-                <div className="space-y-0.5">
-                  {dayAppointments.slice(0, 3).map((apt) => (
-                    <button
-                      key={apt.id}
-                      type="button"
-                      onClick={() => setSelected(apt)}
-                      className={`w-full text-left text-[10px] leading-tight px-1 py-0.5 rounded truncate ${appointmentColorClass(apt)}`}
-                      title={`${apt.clientDisplayName ?? apt.clientEmail} · ${displayTimeForAppointment(apt) ?? ''}`}
-                    >
-                      {displayTimeForAppointment(apt) ?? '—'}{' '}
-                      {(apt.clientDisplayName ?? apt.clientEmail ?? 'Cliente').split(' ')[0]}
-                    </button>
-                  ))}
-                  {dayAppointments.length > 3 && (
-                    <p className="text-[10px] text-gray-500 px-1">+{dayAppointments.length - 3} más</p>
-                  )}
+        {calendarView === 'month' && (
+          <>
+            <div className="grid grid-cols-7 gap-1 mb-1">
+              {WEEKDAYS.map((day) => (
+                <div key={day} className="text-center text-xs font-semibold text-gray-500 py-2">
+                  {day}
                 </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-1">
+              {calendarCells.map((cell, index) => {
+                if (!cell.day || !cell.dateKey) {
+                  return <div key={`empty-${index}`} className="min-h-[88px]" />;
+                }
+
+                const dayAppointments = appointmentsByDate.get(cell.dateKey) ?? [];
+                const isToday = cell.dateKey === localDateInputValue();
+
+                return (
+                  <div
+                    key={cell.dateKey}
+                    className={`min-h-[88px] rounded-xl border p-1.5 ${
+                      isToday
+                        ? 'border-[#1A1FE8]/50 bg-[#1A1FE8]/5'
+                        : theme === 'dark'
+                          ? 'border-blue-600/10 bg-white/[0.02]'
+                          : 'border-gray-100 bg-gray-50/50'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFocusedDate(cell.dateKey!);
+                        setCalendarView('day');
+                      }}
+                      className={`text-xs font-semibold mb-1 ${
+                        isToday
+                          ? 'text-[#1A1FE8]'
+                          : theme === 'dark'
+                            ? 'text-gray-400'
+                            : 'text-gray-600'
+                      }`}
+                    >
+                      {cell.day}
+                    </button>
+                    <div className="space-y-0.5">
+                      {dayAppointments.slice(0, 3).map((appointment) => (
+                        <button
+                          key={appointment.id}
+                          type="button"
+                          onClick={() => setSelected(appointment)}
+                          className={`w-full text-left text-[10px] leading-tight px-1 py-0.5 rounded truncate ${appointmentColorClass(appointment)}`}
+                          title={`${appointment.clientDisplayName ?? appointment.clientEmail} · ${displayTimeForAppointment(appointment) ?? ''}`}
+                        >
+                          {displayTimeForAppointment(appointment) ?? '—'}{' '}
+                          {(appointment.clientDisplayName ?? appointment.clientEmail ?? 'Cliente').split(' ')[0]}
+                        </button>
+                      ))}
+                      {dayAppointments.length > 3 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFocusedDate(cell.dateKey!);
+                            setCalendarView('day');
+                          }}
+                          className="text-[10px] text-gray-500 px-1"
+                        >
+                          +{dayAppointments.length - 3} más
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {calendarView === 'week' && (
+          <div className="overflow-x-auto">
+            <div className="grid grid-cols-7 gap-2 min-w-[760px]">
+              {currentWeek.map((dateKey, index) => {
+                const dayAppointments = appointmentsByDate.get(dateKey) ?? [];
+                const isToday = dateKey === localDateInputValue();
+                return (
+                  <div
+                    key={dateKey}
+                    className={`min-h-[300px] rounded-xl border p-2 ${
+                      isToday
+                        ? 'border-[#1A1FE8]/50 bg-[#1A1FE8]/5'
+                        : theme === 'dark'
+                          ? 'border-blue-600/20 bg-white/[0.02]'
+                          : 'border-gray-200 bg-gray-50/50'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFocusedDate(dateKey);
+                        setCalendarView('day');
+                      }}
+                      className={`w-full text-center mb-3 ${isToday ? 'text-[#1A1FE8]' : ''}`}
+                    >
+                      <span className="block text-xs font-semibold">{WEEKDAYS[index]}</span>
+                      <span className="block text-xl font-bold">{dateFromKey(dateKey).getDate()}</span>
+                    </button>
+                    <div className="space-y-2">
+                      {dayAppointments.map((appointment) => (
+                        <button
+                          key={appointment.id}
+                          type="button"
+                          onClick={() => setSelected(appointment)}
+                          className={`w-full text-left rounded-lg p-2 text-xs ${appointmentColorClass(appointment)}`}
+                        >
+                          <span className="block font-bold">{displayTimeForAppointment(appointment) ?? '—'}</span>
+                          <span className="block truncate mt-1">
+                            {appointment.clientDisplayName ?? appointment.clientEmail ?? 'Cliente'}
+                          </span>
+                        </button>
+                      ))}
+                      {dayAppointments.length === 0 && (
+                        <p className="text-xs text-center text-gray-400 py-4">Sin citas</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {calendarView === 'day' && (
+          <div className="space-y-3">
+            {(appointmentsByDate.get(focusedDate) ?? []).length === 0 ? (
+              <div className={`rounded-xl border border-dashed p-10 text-center ${theme === 'dark' ? 'border-blue-600/20' : 'border-gray-200'}`}>
+                <Calendar className="w-10 h-10 mx-auto text-gray-300 mb-3" />
+                <p className="text-sm text-gray-500">No hay citas programadas para este día.</p>
               </div>
-            );
-          })}
-        </div>
+            ) : (
+              (appointmentsByDate.get(focusedDate) ?? [])
+                .sort((first, second) =>
+                  (displayTimeForAppointment(first) ?? '').localeCompare(
+                    displayTimeForAppointment(second) ?? '',
+                  ),
+                )
+                .map((appointment) => (
+                  <button
+                    key={appointment.id}
+                    type="button"
+                    onClick={() => setSelected(appointment)}
+                    className={`w-full rounded-xl border p-4 text-left transition-colors ${
+                      theme === 'dark'
+                        ? 'border-blue-600/20 bg-white/[0.02] hover:bg-white/5'
+                        : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className={`rounded-lg px-3 py-2 text-center shrink-0 ${appointmentColorClass(appointment)}`}>
+                        <span className="block text-sm font-bold">
+                          {displayTimeForAppointment(appointment) ?? '—'}
+                        </span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                          {appointment.clientDisplayName ?? appointment.clientEmail ?? 'Cliente'}
+                        </p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {appointment.reason ?? 'Sin motivo registrado'}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-2">
+                          {appointmentLegendLabel(appointment)}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                ))
+            )}
+          </div>
+        )}
       </div>
 
       {appointments.length === 0 && (
@@ -384,6 +631,38 @@ export function WorkshopAppointmentsView({ onUpdated }: WorkshopAppointmentsView
                 <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
                   <strong>Motivo:</strong> {selected.reason}
                 </p>
+              )}
+              <button
+                type="button"
+                onClick={loadClientHistory}
+                disabled={historyLoading}
+                className="inline-flex items-center gap-2 text-[#1A1FE8] hover:underline disabled:opacity-50"
+              >
+                {historyLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <History className="w-4 h-4" />
+                )}
+                Revisiones anteriores del vehículo
+              </button>
+              {clientHistory && (
+                <div className={`rounded-xl p-3 space-y-2 ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}>
+                  {clientHistory.length === 0 ? (
+                    <p className="text-xs text-gray-500">No hay revisiones anteriores.</p>
+                  ) : (
+                    clientHistory.slice(0, 5).map((item) => (
+                      <div key={item.sessionId} className="text-xs border-b last:border-0 pb-2 last:pb-0">
+                        <p className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                          {item.vehicleName ?? 'Vehículo'} · {item.appointmentDate}
+                        </p>
+                        <p className="text-gray-500">
+                          {item.workshopName} · {item.checklistSummary.completed}/{item.checklistSummary.total} pasos
+                        </p>
+                        {item.notes && <p className="text-gray-500 mt-1">{item.notes}</p>}
+                      </div>
+                    ))
+                  )}
+                </div>
               )}
               {selected.proofOriginalName && userId && (
                 <a
@@ -519,25 +798,56 @@ export function WorkshopAppointmentsView({ onUpdated }: WorkshopAppointmentsView
             )}
 
             <label className="block text-sm font-medium mb-2">Nuevo horario disponible</label>
-            <select
-              value={rescheduleSlotId}
-              onChange={(e) => setRescheduleSlotId(e.target.value)}
-              className={`w-full rounded-xl border px-4 py-3 mb-4 ${
-                theme === 'dark'
-                  ? 'bg-white/5 border-blue-600/30 text-white'
-                  : 'bg-white border-gray-200'
-              }`}
-            >
-              {slots.length === 0 ? (
-                <option value="">Sin cupos publicados</option>
-              ) : (
-                slots.map((slot) => (
-                  <option key={slot.id} value={slot.id}>
-                    {slot.date} · {slot.startTime}–{slot.endTime} ({slot.remainingCapacity} cupos)
-                  </option>
-                ))
-              )}
-            </select>
+            {selected.workshopId === TEST_OPEN_BOOKING_WORKSHOP_ID ? (
+              <>
+                <div className="grid grid-cols-2 gap-3 mb-2">
+                  <input
+                    type="date"
+                    min={localDateInputValue()}
+                    value={rescheduleDate}
+                    onChange={(e) => setRescheduleDate(e.target.value)}
+                    className={`w-full rounded-xl border px-4 py-3 ${
+                      theme === 'dark'
+                        ? 'bg-white/5 border-blue-600/30 text-white'
+                        : 'bg-white border-gray-200'
+                    }`}
+                  />
+                  <input
+                    type="time"
+                    value={rescheduleTime}
+                    onChange={(e) => setRescheduleTime(e.target.value)}
+                    className={`w-full rounded-xl border px-4 py-3 ${
+                      theme === 'dark'
+                        ? 'bg-white/5 border-blue-600/30 text-white'
+                        : 'bg-white border-gray-200'
+                    }`}
+                  />
+                </div>
+                <p className="text-xs text-[#1A1FE8] mb-4">
+                  Taller de prueba: puedes elegir cualquier hora.
+                </p>
+              </>
+            ) : (
+              <select
+                value={rescheduleSlotId}
+                onChange={(e) => setRescheduleSlotId(e.target.value)}
+                className={`w-full rounded-xl border px-4 py-3 mb-4 ${
+                  theme === 'dark'
+                    ? 'bg-white/5 border-blue-600/30 text-white'
+                    : 'bg-white border-gray-200'
+                }`}
+              >
+                {slots.length === 0 ? (
+                  <option value="">Sin cupos publicados</option>
+                ) : (
+                  slots.map((slot) => (
+                    <option key={slot.id} value={slot.id}>
+                      {slot.date} · {slot.startTime}–{slot.endTime} ({slot.remainingCapacity} cupos)
+                    </option>
+                  ))
+                )}
+              </select>
+            )}
 
             <label className="block text-sm font-medium mb-2">Nota para el cliente (opcional)</label>
             <textarea
@@ -561,7 +871,12 @@ export function WorkshopAppointmentsView({ onUpdated }: WorkshopAppointmentsView
               </button>
               <button
                 type="button"
-                disabled={!slots.length || actingId === selected.id}
+                disabled={
+                  actingId === selected.id ||
+                  (selected.workshopId === TEST_OPEN_BOOKING_WORKSHOP_ID
+                    ? !rescheduleDate || !rescheduleTime
+                    : !slots.length)
+                }
                 onClick={handleReschedule}
                 className="flex-1 py-2.5 rounded-xl bg-[#1A1FE8] text-white text-sm font-semibold hover:bg-[#1217C8] disabled:opacity-50 flex items-center justify-center gap-2"
               >

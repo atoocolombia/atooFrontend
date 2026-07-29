@@ -89,6 +89,16 @@ export function NotificationBell({
     loadRemote();
   }, [loadRemote]);
 
+  useEffect(() => {
+    if (isOpen) loadRemote();
+  }, [isOpen, loadRemote]);
+
+  useEffect(() => {
+    const onFocus = () => loadRemote();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [loadRemote]);
+
   const generateMockNotifications = (): Notification[] => {
     const baseNotifications: Notification[] = [
       {
