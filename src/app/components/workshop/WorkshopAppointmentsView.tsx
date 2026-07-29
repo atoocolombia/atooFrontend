@@ -234,6 +234,11 @@ export function WorkshopAppointmentsView({ onUpdated }: WorkshopAppointmentsView
     setViewMonth({ year: date.getFullYear(), month: date.getMonth() });
   };
 
+  const openDay = (dateKey: string) => {
+    setFocusedDate(dateKey);
+    setCalendarView('day');
+  };
+
   const pendingCount = appointments.filter((a) => a.status === 'PENDING').length;
   const clientCounterCount = appointments.filter(
     (a) => a.status === 'RESCHEDULE_PENDING' && a.rescheduleInitiatedBy === 'CLIENT',
@@ -431,7 +436,19 @@ export function WorkshopAppointmentsView({ onUpdated }: WorkshopAppointmentsView
                 return (
                   <div
                     key={cell.dateKey}
-                    className={`min-h-[88px] rounded-xl border p-1.5 ${
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openDay(cell.dateKey!)}
+                    onKeyDown={(event) => {
+                      if (
+                        event.currentTarget === event.target &&
+                        (event.key === 'Enter' || event.key === ' ')
+                      ) {
+                        event.preventDefault();
+                        openDay(cell.dateKey!);
+                      }
+                    }}
+                    className={`min-h-[88px] rounded-xl border p-1.5 cursor-pointer transition-colors hover:border-[#1A1FE8]/50 ${
                       isToday
                         ? 'border-[#1A1FE8]/50 bg-[#1A1FE8]/5'
                         : theme === 'dark'
@@ -441,10 +458,7 @@ export function WorkshopAppointmentsView({ onUpdated }: WorkshopAppointmentsView
                   >
                     <button
                       type="button"
-                      onClick={() => {
-                        setFocusedDate(cell.dateKey!);
-                        setCalendarView('day');
-                      }}
+                      onClick={() => openDay(cell.dateKey!)}
                       className={`text-xs font-semibold mb-1 ${
                         isToday
                           ? 'text-[#1A1FE8]'
@@ -460,7 +474,10 @@ export function WorkshopAppointmentsView({ onUpdated }: WorkshopAppointmentsView
                         <button
                           key={appointment.id}
                           type="button"
-                          onClick={() => setSelected(appointment)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setSelected(appointment);
+                          }}
                           className={`w-full text-left text-[10px] leading-tight px-1 py-0.5 rounded truncate ${appointmentColorClass(appointment)}`}
                           title={`${appointment.clientDisplayName ?? appointment.clientEmail} · ${displayTimeForAppointment(appointment) ?? ''}`}
                         >
@@ -471,10 +488,7 @@ export function WorkshopAppointmentsView({ onUpdated }: WorkshopAppointmentsView
                       {dayAppointments.length > 3 && (
                         <button
                           type="button"
-                          onClick={() => {
-                            setFocusedDate(cell.dateKey!);
-                            setCalendarView('day');
-                          }}
+                          onClick={() => openDay(cell.dateKey!)}
                           className="text-[10px] text-gray-500 px-1"
                         >
                           +{dayAppointments.length - 3} más
@@ -497,7 +511,19 @@ export function WorkshopAppointmentsView({ onUpdated }: WorkshopAppointmentsView
                 return (
                   <div
                     key={dateKey}
-                    className={`min-h-[300px] rounded-xl border p-2 ${
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openDay(dateKey)}
+                    onKeyDown={(event) => {
+                      if (
+                        event.currentTarget === event.target &&
+                        (event.key === 'Enter' || event.key === ' ')
+                      ) {
+                        event.preventDefault();
+                        openDay(dateKey);
+                      }
+                    }}
+                    className={`min-h-[300px] rounded-xl border p-2 cursor-pointer transition-colors hover:border-[#1A1FE8]/50 ${
                       isToday
                         ? 'border-[#1A1FE8]/50 bg-[#1A1FE8]/5'
                         : theme === 'dark'
@@ -507,10 +533,7 @@ export function WorkshopAppointmentsView({ onUpdated }: WorkshopAppointmentsView
                   >
                     <button
                       type="button"
-                      onClick={() => {
-                        setFocusedDate(dateKey);
-                        setCalendarView('day');
-                      }}
+                      onClick={() => openDay(dateKey)}
                       className={`w-full text-center mb-3 ${isToday ? 'text-[#1A1FE8]' : ''}`}
                     >
                       <span className="block text-xs font-semibold">{WEEKDAYS[index]}</span>
@@ -521,7 +544,10 @@ export function WorkshopAppointmentsView({ onUpdated }: WorkshopAppointmentsView
                         <button
                           key={appointment.id}
                           type="button"
-                          onClick={() => setSelected(appointment)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setSelected(appointment);
+                          }}
                           className={`w-full text-left rounded-lg p-2 text-xs ${appointmentColorClass(appointment)}`}
                         >
                           <span className="block font-bold">{displayTimeForAppointment(appointment) ?? '—'}</span>
