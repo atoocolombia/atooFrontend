@@ -150,9 +150,9 @@ export function WorkshopAppointmentsView({ onUpdated }: WorkshopAppointmentsView
   const [clientHistory, setClientHistory] = useState<InspectionHistoryItem[] | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
 
-  const load = async () => {
+  const load = async (showLoader = true) => {
     if (!userId) return;
-    setLoading(true);
+    if (showLoader) setLoading(true);
     try {
       const [apts, availability] = await Promise.all([
         fetchWorkshopAppointments(userId),
@@ -161,12 +161,12 @@ export function WorkshopAppointmentsView({ onUpdated }: WorkshopAppointmentsView
       setAppointments(apts);
       setSlots(availability.filter((s) => s.remainingCapacity > 0));
     } finally {
-      setLoading(false);
+      if (showLoader) setLoading(false);
     }
   };
 
   useEffect(() => {
-    load();
+    void load();
   }, [userId]);
 
   useEffect(() => {
@@ -769,7 +769,9 @@ export function WorkshopAppointmentsView({ onUpdated }: WorkshopAppointmentsView
           userId={userId}
           appointment={sessionApt}
           onClose={() => setSessionApt(null)}
-          onUpdated={load}
+          onUpdated={() => {
+            void load(false);
+          }}
         />
       )}
 
