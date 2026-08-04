@@ -57,7 +57,7 @@ export const catalogVehicles: CatalogVehicle[] = [
     ],
     badge: 'Más Popular',
     popular: true,
-    weeklyPriceCop: 207_000,
+    weeklyPriceCop: 900_000,
   },
   {
     id: 'dongfeng-aeolus-sky-ev01',
@@ -93,7 +93,7 @@ export const catalogVehicles: CatalogVehicle[] = [
     ],
     badge: null,
     popular: false,
-    weeklyPriceCop: 207_000,
+    weeklyPriceCop: 1_100_000,
   },
 ];
 

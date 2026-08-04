@@ -93,7 +93,7 @@ function emptyVehicleForm(sortOrder: number): VehicleForm {
     subtitle: '',
     type: 'carro',
     badge: '',
-    weeklyPriceCop: 207_000,
+    weeklyPriceCop: 900_000,
     popular: false,
     active: true,
     sortOrder,
