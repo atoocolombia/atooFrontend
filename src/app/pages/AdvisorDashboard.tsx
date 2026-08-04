@@ -33,8 +33,7 @@ export function AdvisorDashboard() {
   const { theme } = useTheme();
 
   const handleLogout = () => {
-    clearUserSession();
-    navigate('/');
+    void clearUserSession().then(() => navigate('/'));
   };
 
   return (

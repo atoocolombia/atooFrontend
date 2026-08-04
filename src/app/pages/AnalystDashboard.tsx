@@ -27,8 +27,7 @@ export function AnalystDashboard() {
   const { theme } = useTheme();
 
   const handleLogout = () => {
-    clearUserSession();
-    navigate('/');
+    void clearUserSession().then(() => navigate('/'));
   };
 
   return (

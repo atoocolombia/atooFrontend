@@ -25,7 +25,7 @@ import { WorkshopsAdminView } from '../components/admin/WorkshopsAdminView';
 import { ProceduresAdminView } from '../components/admin/ProceduresAdminView';
 import { AdminNotificationBell } from '../components/admin/AdminNotificationBell';
 import { useTheme } from '../contexts/ThemeContext';
-import { clearUserSession } from '../../lib/authRouting';
+import { clearUserSession, getSessionUser } from '../../lib/authRouting';
 import { adminFetchProcedureSuggestions } from '../../lib/adminInspectionsApi';
 
 const menuItems = [
@@ -46,6 +46,9 @@ export function AdminDashboard() {
   const [pendingProcedureCount, setPendingProcedureCount] = useState(0);
   const navigate = useNavigate();
   const { theme } = useTheme();
+  const sessionUser = getSessionUser({ refresh: false });
+  const adminEmail = sessionUser?.email ?? 'admin';
+  const adminInitials = adminEmail.slice(0, 2).toUpperCase();
 
   const refreshPendingProcedures = useCallback(async () => {
     try {
@@ -68,8 +71,7 @@ export function AdminDashboard() {
   }, [refreshPendingProcedures]);
 
   const handleLogout = () => {
-    clearUserSession();
-    navigate('/');
+    void clearUserSession().then(() => navigate('/'));
   };
 
   return (
@@ -116,11 +118,11 @@ export function AdminDashboard() {
           <div className="p-6 border-b border-blue-600/20">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-[#1A1FE8]/20 rounded-full flex items-center justify-center backdrop-blur-sm border-2 border-[#1A1FE8] shadow-[0_0_15px_rgba(26,31,232,0.3)]">
-                <span className="text-[#1A1FE8] font-bold text-lg">AD</span>
+                <span className="text-[#1A1FE8] font-bold text-lg">{adminInitials}</span>
               </div>
               <div>
                 <h3 className="font-semibold">Administrador</h3>
-                <p className="text-sm text-gray-400">admin@gmail.com</p>
+                <p className="text-sm text-gray-400 break-all">{adminEmail}</p>
               </div>
             </div>
           </div>

@@ -17,6 +17,10 @@ function normalizeApiBase(raw: string): string {
 
 const API_BASE = normalizeApiBase(import.meta.env.VITE_API_URL ?? '');
 
+async function fetchWithCreds(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  return fetch(input, { ...init, credentials: 'include' });
+}
+
 function apiUrl(path: string): string {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   if (!API_BASE) {
@@ -60,7 +64,7 @@ export async function listUserDocuments(userId: string): Promise<UserDocumentMet
 
   let res: Response;
   try {
-    res = await fetch(url);
+    res = await fetchWithCreds(url);
   } catch {
     throw new ApiError(
       'No se pudo conectar con el servidor. Revisa tu conexión o la configuración del API.',
@@ -95,7 +99,7 @@ export async function uploadUserDocument(
 
   let res: Response;
   try {
-    res = await fetch(url, { method: 'POST', body: form });
+    res = await fetchWithCreds(url, { method: 'POST', body: form });
   } catch {
     throw new ApiError(
       'No se pudo conectar con el servidor. Revisa tu conexión o la configuración del API.',

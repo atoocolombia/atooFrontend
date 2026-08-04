@@ -1,5 +1,4 @@
 import { ApiError } from './api';
-import { getSessionUserEmail } from './authRouting';
 import type { ProcedureSuggestionStatus } from './inspectionsApi';
 
 function normalizeApiBase(raw: string): string {
@@ -18,6 +17,10 @@ function normalizeApiBase(raw: string): string {
 
 const API_BASE = normalizeApiBase(import.meta.env.VITE_API_URL ?? '');
 
+async function fetchWithCreds(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  return fetch(input, { ...init, credentials: 'include' });
+}
+
 function apiUrl(path: string): string {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   if (!API_BASE) return normalizedPath;
@@ -34,12 +37,6 @@ async function parseErrorResponse(res: Response): Promise<string> {
   return `Error del servidor (${res.status})`;
 }
 
-function adminJsonHeaders(): Record<string, string> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  const email = getSessionUserEmail();
-  if (email) headers['X-Actor-Email'] = email;
-  return headers;
-}
 
 export interface AdminProcedureSuggestion {
   id: string;
@@ -76,9 +73,9 @@ export interface AdminNotificationItem {
 export async function adminFetchProcedureSuggestions(
   status: 'PENDING_ADMIN' | 'ALL' = 'PENDING_ADMIN',
 ): Promise<AdminProcedureSuggestion[]> {
-  const res = await fetch(
+  const res = await fetchWithCreds(
     apiUrl(`/api/v1/admin/inspections/procedure-suggestions?status=${encodeURIComponent(status)}`),
-    { headers: adminJsonHeaders() },
+    { headers: { 'Content-Type': 'application/json' } },
   );
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
   return (await res.json()) as AdminProcedureSuggestion[];
@@ -93,11 +90,11 @@ export async function adminReviewProcedureSuggestion(
     isUrgent?: boolean;
   },
 ): Promise<AdminProcedureSuggestion> {
-  const res = await fetch(
+  const res = await fetchWithCreds(
     apiUrl(`/api/v1/admin/inspections/procedure-suggestions/${encodeURIComponent(suggestionId)}`),
     {
       method: 'PATCH',
-      headers: adminJsonHeaders(),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),
     },
   );
@@ -106,17 +103,17 @@ export async function adminReviewProcedureSuggestion(
 }
 
 export async function adminFetchNotifications(): Promise<AdminNotificationItem[]> {
-  const res = await fetch(apiUrl('/api/v1/admin/inspections/notifications'), {
-    headers: adminJsonHeaders(),
+  const res = await fetchWithCreds(apiUrl('/api/v1/admin/inspections/notifications'), {
+    headers: { 'Content-Type': 'application/json' },
   });
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
   return (await res.json()) as AdminNotificationItem[];
 }
 
 export async function adminMarkNotificationRead(notificationId: string): Promise<void> {
-  const res = await fetch(
+  const res = await fetchWithCreds(
     apiUrl(`/api/v1/admin/inspections/notifications/${encodeURIComponent(notificationId)}/read`),
-    { method: 'PATCH', headers: adminJsonHeaders() },
+    { method: 'PATCH', headers: { 'Content-Type': 'application/json' } },
   );
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
 }

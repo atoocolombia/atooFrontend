@@ -19,6 +19,7 @@ import { DocumentsView } from '../components/dashboard/DocumentsView';
 import { InspectionsView } from '../components/dashboard/InspectionsView';
 import { SupportButton } from '../components/dashboard/SupportButton';
 import { NotificationBell } from '../components/dashboard/NotificationBell';
+import { ProfileSettingsView } from '../components/dashboard/ProfileSettingsView';
 import { useTheme } from '../contexts/ThemeContext';
 import { clearUserSession } from '../../lib/authRouting';
 import { useUserProfile } from '../../lib/useUserProfile';
@@ -37,7 +38,7 @@ export function DashboardPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const { theme } = useTheme();
-  const { profile, loading: profileLoading } = useUserProfile();
+  const { profile, loading: profileLoading, reload: reloadProfile } = useUserProfile();
 
   const displayName = profile?.displayName ?? 'Usuario';
   const userEmail = profile?.email ?? '';
@@ -51,8 +52,7 @@ export function DashboardPage() {
   const paymentStatus = 'current'; // 👈 Cambiar a 'warning' o 'critical' para probar el sombreado
 
   const handleLogout = () => {
-    clearUserSession();
-    navigate('/');
+    void clearUserSession().then(() => navigate('/'));
   };
 
   const getPageOverlay = () => {
@@ -261,51 +261,12 @@ export function DashboardPage() {
           {activeView === 'inspections' && <InspectionsView />}
           {activeView === 'documents' && <DocumentsView clientName={displayName} />}
           {activeView === 'settings' && (
-            <div className={`rounded-2xl shadow-lg p-8 border transition-colors ${
-              theme === 'dark'
-                ? 'bg-[#0D0F2E]/50 backdrop-blur-xl border-blue-600/20'
-                : 'bg-white border-gray-200'
-            }`}>
-              <h2 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Configuración</h2>
-              <p className={`mt-2 mb-8 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                Datos de tu cuenta
-              </p>
-              {profileLoading ? (
-                <div className="flex items-center gap-2 text-gray-500">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Cargando perfil…
-                </div>
-              ) : (
-                <dl className="grid gap-4 sm:grid-cols-2 max-w-2xl">
-                  {[
-                    { label: 'Nombre', value: displayName },
-                    { label: 'Correo', value: userEmail },
-                    ...(profile?.firstName ? [{ label: 'Nombres', value: profile.firstName }] : []),
-                    ...(profile?.lastName ? [{ label: 'Apellidos', value: profile.lastName }] : []),
-                    ...(profile?.idDocumentNumber
-                      ? [{ label: 'Documento', value: profile.idDocumentNumber }]
-                      : []),
-                    ...(profile?.address ? [{ label: 'Dirección', value: profile.address }] : []),
-                  ].map(({ label, value }) => (
-                    <div
-                      key={label}
-                      className={`rounded-xl p-4 border ${
-                        theme === 'dark' ? 'border-blue-600/20 bg-white/5' : 'border-gray-200 bg-gray-50'
-                      }`}
-                    >
-                      <dt className={`text-xs font-medium uppercase tracking-wide mb-1 ${
-                        theme === 'dark' ? 'text-gray-500' : 'text-gray-500'
-                      }`}>
-                        {label}
-                      </dt>
-                      <dd className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                        {value}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              )}
-            </div>
+            <ProfileSettingsView
+              profile={profile}
+              profileLoading={profileLoading}
+              userEmail={userEmail}
+              onProfileUpdated={() => void reloadProfile()}
+            />
           )}
         </div>
       </main>

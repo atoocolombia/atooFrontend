@@ -21,8 +21,7 @@ export function WorkshopDashboard() {
   const user = getSessionUser();
 
   const handleLogout = () => {
-    clearUserSession();
-    navigate('/');
+    void clearUserSession().then(() => navigate('/'));
   };
 
   return (

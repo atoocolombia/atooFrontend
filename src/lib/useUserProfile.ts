@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { getSessionUser } from './authRouting';
 import { fetchUserProfile, type UserProfile } from './userProfileApi';
 
@@ -44,37 +44,29 @@ export function useUserProfile() {
   const [loading, setLoading] = useState(Boolean(sessionUser));
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const reload = useCallback(async () => {
     if (!sessionUser) {
       setProfile(null);
       setLoading(false);
       return;
     }
 
-    let cancelled = false;
-
-    (async () => {
-      setLoading(true);
-      try {
-        const data = await fetchUserProfile(sessionUser.id);
-        if (!cancelled) {
-          setProfile(data);
-          setError(null);
-        }
-      } catch {
-        if (!cancelled) {
-          setProfile(fallbackProfileFromSession());
-          setError('No pudimos cargar tu perfil. Mostramos datos básicos de la sesión.');
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
+    setLoading(true);
+    try {
+      const data = await fetchUserProfile(sessionUser.id);
+      setProfile(data);
+      setError(null);
+    } catch {
+      setProfile(fallbackProfileFromSession());
+      setError('No pudimos cargar tu perfil. Mostramos datos básicos de la sesión.');
+    } finally {
+      setLoading(false);
+    }
   }, [sessionUser?.id]);
 
-  return { profile, loading, error };
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  return { profile, loading, error, reload };
 }

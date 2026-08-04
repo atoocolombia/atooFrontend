@@ -16,6 +16,10 @@ function normalizeApiBase(raw: string): string {
 
 const API_BASE = normalizeApiBase(import.meta.env.VITE_API_URL ?? '');
 
+async function fetchWithCreds(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  return fetch(input, { ...init, credentials: 'include' });
+}
+
 function apiUrl(path: string): string {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   if (!API_BASE) return normalizedPath;
@@ -208,7 +212,7 @@ export async function fetchVehicleInspectionPlan(
   userId: string,
 ): Promise<VehicleInspectionPlan | null> {
   const url = apiUrl(`/api/v1/users/${encodeURIComponent(userId)}/inspections/vehicle-plan`);
-  const res = await fetch(url);
+  const res = await fetchWithCreds(url);
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
   const data = await res.json();
   return data as VehicleInspectionPlan | null;
@@ -216,7 +220,7 @@ export async function fetchVehicleInspectionPlan(
 
 export async function fetchWorkshops(userId: string): Promise<WorkshopSummary[]> {
   const url = apiUrl(`/api/v1/users/${encodeURIComponent(userId)}/inspections/workshops`);
-  const res = await fetch(url);
+  const res = await fetchWithCreds(url);
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
   return (await res.json()) as WorkshopSummary[];
 }
@@ -228,7 +232,7 @@ export async function fetchWorkshopSlots(
   const url = apiUrl(
     `/api/v1/users/${encodeURIComponent(userId)}/inspections/workshops/${encodeURIComponent(workshopId)}/slots`,
   );
-  const res = await fetch(url);
+  const res = await fetchWithCreds(url);
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
   return (await res.json()) as WorkshopAvailabilitySlot[];
 }
@@ -237,7 +241,7 @@ export async function fetchInspectionAppointments(
   userId: string,
 ): Promise<InspectionAppointment[]> {
   const url = apiUrl(`/api/v1/users/${encodeURIComponent(userId)}/inspections/appointments`);
-  const res = await fetch(url);
+  const res = await fetchWithCreds(url);
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
   return (await res.json()) as InspectionAppointment[];
 }
@@ -245,7 +249,7 @@ export async function fetchInspectionAppointments(
 export async function fetchInspectionHistory(
   userId: string,
 ): Promise<InspectionHistoryItem[]> {
-  const res = await fetch(
+  const res = await fetchWithCreds(
     apiUrl(`/api/v1/users/${encodeURIComponent(userId)}/inspections/history`),
   );
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
@@ -256,7 +260,7 @@ export async function fetchClientInspectionSession(
   userId: string,
   appointmentId: string,
 ): Promise<InspectionSession> {
-  const res = await fetch(
+  const res = await fetchWithCreds(
     apiUrl(
       `/api/v1/users/${encodeURIComponent(userId)}/inspections/appointments/${encodeURIComponent(appointmentId)}/session`,
     ),
@@ -270,7 +274,7 @@ export async function submitInspectionSurvey(
   appointmentId: string,
   input: { rating: number; comment?: string },
 ): Promise<InspectionSurvey> {
-  const res = await fetch(
+  const res = await fetchWithCreds(
     apiUrl(
       `/api/v1/users/${encodeURIComponent(userId)}/inspections/appointments/${encodeURIComponent(appointmentId)}/survey`,
     ),
@@ -302,7 +306,7 @@ export async function requestInspectionAppointment(
   form.append('proof', input.proof);
 
   const url = apiUrl(`/api/v1/users/${encodeURIComponent(userId)}/inspections/appointments`);
-  const res = await fetch(url, { method: 'POST', body: form });
+  const res = await fetchWithCreds(url, { method: 'POST', body: form });
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
   return (await res.json()) as InspectionAppointment;
 }
@@ -320,7 +324,7 @@ function inspectionsBase(userId: string, suffix: string): string {
 export async function fetchInspectionNotifications(
   userId: string,
 ): Promise<UserNotificationItem[]> {
-  const res = await fetch(inspectionsBase(userId, '/notifications'));
+  const res = await fetchWithCreds(inspectionsBase(userId, '/notifications'));
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
   return (await res.json()) as UserNotificationItem[];
 }
@@ -329,7 +333,7 @@ export async function markInspectionNotificationRead(
   userId: string,
   notificationId: string,
 ): Promise<void> {
-  const res = await fetch(
+  const res = await fetchWithCreds(
     inspectionsBase(userId, `/notifications/${encodeURIComponent(notificationId)}/read`),
     { method: 'PATCH' },
   );
@@ -343,7 +347,7 @@ export async function respondToReschedule(
     | { action: 'accept' }
     | { action: 'counter'; appointmentDate: string; appointmentTime: string },
 ): Promise<InspectionAppointment> {
-  const res = await fetch(
+  const res = await fetchWithCreds(
     inspectionsBase(userId, `/appointments/${encodeURIComponent(appointmentId)}/reschedule-response`),
     {
       method: 'PATCH',
@@ -358,7 +362,7 @@ export async function respondToReschedule(
 export async function fetchClientProcedureActions(
   userId: string,
 ): Promise<ClientProcedureAction[]> {
-  const res = await fetch(inspectionsBase(userId, '/procedure-actions'));
+  const res = await fetchWithCreds(inspectionsBase(userId, '/procedure-actions'));
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
   return (await res.json()) as ClientProcedureAction[];
 }

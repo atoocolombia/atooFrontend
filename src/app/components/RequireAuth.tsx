@@ -1,7 +1,12 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router';
 import type { UserType } from '../../lib/api';
-import { getSessionUser, getDashboardPath, setAuthRedirect } from '../../lib/authRouting';
+import {
+  getSessionUser,
+  getDashboardPath,
+  setAuthRedirect,
+  refreshSessionFromServer,
+} from '../../lib/authRouting';
 
 const SESSION_CHECK_MS = 15_000;
 
@@ -20,19 +25,43 @@ function RedirectHome({ from }: { from: string }) {
 
 export function RequireAuth({ children, allowedTypes }: RequireAuthProps) {
   const location = useLocation();
-  const [user, setUser] = useState(() => getSessionUser());
+  const [user, setUser] = useState(() => getSessionUser({ refresh: false }));
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    const sync = (refresh: boolean) => setUser(getSessionUser({ refresh }));
-    sync(true);
-    const id = window.setInterval(() => sync(false), SESSION_CHECK_MS);
-    const onFocus = () => sync(true);
+    let cancelled = false;
+
+    (async () => {
+      const remote = await refreshSessionFromServer();
+      if (cancelled) return;
+      setUser(remote);
+      setChecking(false);
+    })();
+
+    const id = window.setInterval(() => {
+      if (!cancelled) setUser(getSessionUser({ refresh: false }));
+    }, SESSION_CHECK_MS);
+
+    const onFocus = () => {
+      void refreshSessionFromServer().then((remote) => {
+        if (!cancelled) setUser(remote);
+      });
+    };
     window.addEventListener('focus', onFocus);
     return () => {
+      cancelled = true;
       window.clearInterval(id);
       window.removeEventListener('focus', onFocus);
     };
   }, [location.pathname]);
+
+  if (checking && !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Verificando sesión…
+      </div>
+    );
+  }
 
   if (!user) {
     return <RedirectHome from={location.pathname} />;

@@ -23,6 +23,10 @@ function normalizeApiBase(raw: string): string {
 
 const API_BASE = normalizeApiBase(import.meta.env.VITE_API_URL ?? '');
 
+async function fetchWithCreds(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  return fetch(input, { ...init, credentials: 'include' });
+}
+
 function apiUrl(path: string): string {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   if (!API_BASE) return normalizedPath;
@@ -71,7 +75,7 @@ function workshopBase(userId: string, suffix: string): string {
 }
 
 export async function fetchWorkshopSummary(userId: string): Promise<WorkshopPortalSummary> {
-  const res = await fetch(workshopBase(userId, '/summary'));
+  const res = await fetchWithCreds(workshopBase(userId, '/summary'));
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
   return (await res.json()) as WorkshopPortalSummary;
 }
@@ -79,7 +83,7 @@ export async function fetchWorkshopSummary(userId: string): Promise<WorkshopPort
 export async function fetchWorkshopAppointments(
   userId: string,
 ): Promise<WorkshopInspectionAppointment[]> {
-  const res = await fetch(workshopBase(userId, '/appointments'));
+  const res = await fetchWithCreds(workshopBase(userId, '/appointments'));
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
   return (await res.json()) as WorkshopInspectionAppointment[];
 }
@@ -88,7 +92,7 @@ export async function fetchWorkshopClientHistory(
   userId: string,
   clientUserId: string,
 ): Promise<InspectionHistoryItem[]> {
-  const res = await fetch(
+  const res = await fetchWithCreds(
     workshopBase(userId, `/clients/${encodeURIComponent(clientUserId)}/history`),
   );
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
@@ -101,7 +105,7 @@ export async function updateWorkshopAppointmentStatus(
   status: InspectionAppointmentStatus,
   workshopNotes?: string,
 ): Promise<WorkshopInspectionAppointment> {
-  const res = await fetch(workshopBase(userId, `/appointments/${encodeURIComponent(appointmentId)}`), {
+  const res = await fetchWithCreds(workshopBase(userId, `/appointments/${encodeURIComponent(appointmentId)}`), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status, workshopNotes }),
@@ -115,7 +119,7 @@ export async function rescheduleWorkshopAppointment(
   appointmentId: string,
   input: { appointmentDate: string; appointmentTime: string; note?: string },
 ): Promise<WorkshopInspectionAppointment> {
-  const res = await fetch(
+  const res = await fetchWithCreds(
     workshopBase(userId, `/appointments/${encodeURIComponent(appointmentId)}/reschedule`),
     {
       method: 'POST',
@@ -131,7 +135,7 @@ export async function startWorkshopInspectionSession(
   userId: string,
   appointmentId: string,
 ): Promise<InspectionSession> {
-  const res = await fetch(
+  const res = await fetchWithCreds(
     workshopBase(userId, `/appointments/${encodeURIComponent(appointmentId)}/session/start`),
     { method: 'POST' },
   );
@@ -143,7 +147,7 @@ export async function fetchWorkshopInspectionSession(
   userId: string,
   appointmentId: string,
 ): Promise<InspectionSession> {
-  const res = await fetch(
+  const res = await fetchWithCreds(
     workshopBase(userId, `/appointments/${encodeURIComponent(appointmentId)}/session`),
   );
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
@@ -156,7 +160,7 @@ export async function updateWorkshopChecklistItem(
   itemId: string,
   completed: boolean,
 ): Promise<InspectionSession> {
-  const res = await fetch(
+  const res = await fetchWithCreds(
     workshopBase(
       userId,
       `/appointments/${encodeURIComponent(appointmentId)}/session/checklist/${encodeURIComponent(itemId)}`,
@@ -181,7 +185,7 @@ export async function suggestWorkshopProcedure(
     isUrgent?: boolean;
   },
 ): Promise<InspectionSession> {
-  const res = await fetch(
+  const res = await fetchWithCreds(
     workshopBase(userId, `/appointments/${encodeURIComponent(appointmentId)}/session/suggestions`),
     {
       method: 'POST',
@@ -198,7 +202,7 @@ export async function completeWorkshopInspectionSession(
   appointmentId: string,
   notes?: string,
 ): Promise<InspectionSession> {
-  const res = await fetch(
+  const res = await fetchWithCreds(
     workshopBase(userId, `/appointments/${encodeURIComponent(appointmentId)}/session/complete`),
     {
       method: 'POST',
@@ -213,7 +217,7 @@ export async function completeWorkshopInspectionSession(
 export async function fetchWorkshopAvailability(
   userId: string,
 ): Promise<WorkshopAvailabilitySlot[]> {
-  const res = await fetch(workshopBase(userId, '/availability'));
+  const res = await fetchWithCreds(workshopBase(userId, '/availability'));
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
   return (await res.json()) as WorkshopAvailabilitySlot[];
 }
@@ -227,7 +231,7 @@ export async function createWorkshopAvailabilitySlot(
     maxAppointments: number;
   },
 ): Promise<WorkshopAvailabilitySlot> {
-  const res = await fetch(workshopBase(userId, '/availability'), {
+  const res = await fetchWithCreds(workshopBase(userId, '/availability'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
@@ -245,7 +249,7 @@ export async function updateWorkshopAvailabilitySlot(
     maxAppointments: number;
   }>,
 ): Promise<WorkshopAvailabilitySlot> {
-  const res = await fetch(workshopBase(userId, `/availability/${encodeURIComponent(slotId)}`), {
+  const res = await fetchWithCreds(workshopBase(userId, `/availability/${encodeURIComponent(slotId)}`), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
@@ -258,7 +262,7 @@ export async function deleteWorkshopAvailabilitySlot(
   userId: string,
   slotId: string,
 ): Promise<void> {
-  const res = await fetch(workshopBase(userId, `/availability/${encodeURIComponent(slotId)}`), {
+  const res = await fetchWithCreds(workshopBase(userId, `/availability/${encodeURIComponent(slotId)}`), {
     method: 'DELETE',
   });
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
@@ -267,7 +271,7 @@ export async function deleteWorkshopAvailabilitySlot(
 export async function fetchWorkshopNotifications(
   userId: string,
 ): Promise<WorkshopNotification[]> {
-  const res = await fetch(workshopBase(userId, '/notifications'));
+  const res = await fetchWithCreds(workshopBase(userId, '/notifications'));
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
   return (await res.json()) as WorkshopNotification[];
 }

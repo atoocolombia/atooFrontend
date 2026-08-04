@@ -3,13 +3,14 @@ import {
   hasLocalApplicationInProgress,
   isApplicationCompleted,
 } from './applicationProgress';
+import { fetchAuthMe, logoutAuthSession } from './authApi';
 import { listUserDocuments } from './documentsApi';
 
 const USER_SESSION_KEY = 'atooUserSession';
 const AUTH_REDIRECT_KEY = 'atooAuthRedirect';
 const LEGACY_USER_KEY = 'atooUser';
 
-/** Duración de sesión activa (se renueva con cada uso). */
+/** Duración de sesión en UI (el JWT HttpOnly también dura 12h). */
 export const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 
 interface StoredUserSession {
@@ -66,7 +67,8 @@ export function persistUserSession(user: RegisteredUser): void {
   localStorage.removeItem(LEGACY_USER_KEY);
 }
 
-export function clearUserSession(): void {
+export async function clearUserSession(): Promise<void> {
+  await logoutAuthSession();
   sessionStorage.removeItem(USER_SESSION_KEY);
   sessionStorage.removeItem(AUTH_REDIRECT_KEY);
   sessionStorage.removeItem(LEGACY_USER_KEY);
@@ -81,7 +83,7 @@ export function getSessionUser(options: { refresh?: boolean } = {}): RegisteredU
   }
 
   if (Date.now() > stored.expiresAt) {
-    clearUserSession();
+    void clearUserSession();
     return null;
   }
 
@@ -93,6 +95,18 @@ export function getSessionUser(options: { refresh?: boolean } = {}): RegisteredU
   }
 
   return stored.user;
+}
+
+/** Valida la cookie JWT del servidor y sincroniza sessionStorage. */
+export async function refreshSessionFromServer(): Promise<RegisteredUser | null> {
+  try {
+    const user = await fetchAuthMe();
+    persistUserSession(user);
+    return user;
+  } catch {
+    sessionStorage.removeItem(USER_SESSION_KEY);
+    return null;
+  }
 }
 
 export function getSessionUserEmail(): string | null {

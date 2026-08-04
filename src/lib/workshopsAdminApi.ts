@@ -1,5 +1,4 @@
 import { ApiError } from './api';
-import { getSessionUserEmail } from './authRouting';
 
 function normalizeApiBase(raw: string): string {
   let base = raw
@@ -17,6 +16,10 @@ function normalizeApiBase(raw: string): string {
 
 const API_BASE = normalizeApiBase(import.meta.env.VITE_API_URL ?? '');
 
+async function fetchWithCreds(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  return fetch(input, { ...init, credentials: 'include' });
+}
+
 function apiUrl(path: string): string {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   if (!API_BASE) return normalizedPath;
@@ -33,12 +36,6 @@ async function parseErrorResponse(res: Response): Promise<string> {
   return `Error del servidor (${res.status})`;
 }
 
-function adminJsonHeaders(): Record<string, string> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  const email = getSessionUserEmail();
-  if (email) headers['X-Actor-Email'] = email;
-  return headers;
-}
 
 export interface AdminWorkshop {
   id: string;
@@ -67,8 +64,8 @@ export interface CreateAdminWorkshopResult extends AdminWorkshop {
 }
 
 export async function adminFetchWorkshops(): Promise<AdminWorkshop[]> {
-  const res = await fetch(apiUrl('/api/v1/admin/workshops'), {
-    headers: adminJsonHeaders(),
+  const res = await fetchWithCreds(apiUrl('/api/v1/admin/workshops'), {
+    headers: { 'Content-Type': 'application/json' },
   });
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
   return (await res.json()) as AdminWorkshop[];
@@ -77,9 +74,9 @@ export async function adminFetchWorkshops(): Promise<AdminWorkshop[]> {
 export async function adminCreateWorkshop(
   input: CreateAdminWorkshopInput,
 ): Promise<CreateAdminWorkshopResult> {
-  const res = await fetch(apiUrl('/api/v1/admin/workshops'), {
+  const res = await fetchWithCreds(apiUrl('/api/v1/admin/workshops'), {
     method: 'POST',
-    headers: adminJsonHeaders(),
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
@@ -96,9 +93,9 @@ export async function adminUpdateWorkshop(
     active: boolean;
   }>,
 ): Promise<AdminWorkshop> {
-  const res = await fetch(apiUrl(`/api/v1/admin/workshops/${encodeURIComponent(workshopId)}`), {
+  const res = await fetchWithCreds(apiUrl(`/api/v1/admin/workshops/${encodeURIComponent(workshopId)}`), {
     method: 'PATCH',
-    headers: adminJsonHeaders(),
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
