@@ -5,15 +5,15 @@ import {
   isApplicationCompleted,
 } from './applicationProgress';
 import { fetchAuthMe, logoutAuthSession } from './authApi';
-import { clearAuthToken } from './authTokenStorage';
+import { clearAuthToken, getAuthToken } from './authTokenStorage';
 import { listUserDocuments } from './documentsApi';
 
 const USER_SESSION_KEY = 'atooUserSession';
 const AUTH_REDIRECT_KEY = 'atooAuthRedirect';
 const LEGACY_USER_KEY = 'atooUser';
 
-/** Duración de sesión en UI (el JWT HttpOnly también dura 12h). */
-export const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
+/** Alineado con el JWT del backend. En iOS sessionStorage se borra al cerrar la PWA. */
+export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 interface StoredUserSession {
   user: RegisteredUser;
@@ -35,9 +35,49 @@ export function getDashboardPath(userType: UserType): string {
   }
 }
 
+function readStorageItem(key: string): string | null {
+  try {
+    const fromSession = sessionStorage.getItem(key);
+    if (fromSession) return fromSession;
+  } catch {
+    // Safari privado u origen sin storage
+  }
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeStorageItem(key: string, value: string): void {
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {
+    // ignore
+  }
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // ignore
+  }
+}
+
+function removeStorageItem(key: string): void {
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    // ignore
+  }
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // ignore
+  }
+}
+
 function readStoredSession(): StoredUserSession | null {
   try {
-    const raw = sessionStorage.getItem(USER_SESSION_KEY);
+    const raw = readStorageItem(USER_SESSION_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<StoredUserSession>;
     const user = parsed.user;
@@ -57,7 +97,13 @@ function readStoredSession(): StoredUserSession | null {
 }
 
 function writeStoredSession(session: StoredUserSession): void {
-  sessionStorage.setItem(USER_SESSION_KEY, JSON.stringify(session));
+  writeStorageItem(USER_SESSION_KEY, JSON.stringify(session));
+}
+
+function dropLocalSession(): void {
+  removeStorageItem(USER_SESSION_KEY);
+  removeStorageItem(AUTH_REDIRECT_KEY);
+  removeStorageItem(LEGACY_USER_KEY);
 }
 
 export function persistUserSession(user: RegisteredUser): void {
@@ -65,16 +111,12 @@ export function persistUserSession(user: RegisteredUser): void {
     user,
     expiresAt: Date.now() + SESSION_TTL_MS,
   });
-  sessionStorage.removeItem(LEGACY_USER_KEY);
-  localStorage.removeItem(LEGACY_USER_KEY);
+  removeStorageItem(LEGACY_USER_KEY);
 }
 
 export async function clearUserSession(): Promise<void> {
   await logoutAuthSession();
-  sessionStorage.removeItem(USER_SESSION_KEY);
-  sessionStorage.removeItem(AUTH_REDIRECT_KEY);
-  sessionStorage.removeItem(LEGACY_USER_KEY);
-  localStorage.removeItem(LEGACY_USER_KEY);
+  dropLocalSession();
 }
 
 export function getSessionUser(options: { refresh?: boolean } = {}): RegisteredUser | null {
@@ -85,8 +127,11 @@ export function getSessionUser(options: { refresh?: boolean } = {}): RegisteredU
   }
 
   if (Date.now() > stored.expiresAt) {
-    void clearUserSession();
-    return null;
+    if (!getAuthToken()) {
+      dropLocalSession();
+      return null;
+    }
+    // El JWT puede seguir vigente; no cerrar sesión solo por el reloj local.
   }
 
   if (refresh) {
@@ -99,7 +144,7 @@ export function getSessionUser(options: { refresh?: boolean } = {}): RegisteredU
   return stored.user;
 }
 
-/** Valida la sesión JWT del servidor y sincroniza sessionStorage. */
+/** Valida la sesión JWT del servidor y sincroniza el almacenamiento local. */
 export async function refreshSessionFromServer(): Promise<RegisteredUser | null> {
   try {
     const user = await fetchAuthMe();
@@ -108,7 +153,7 @@ export async function refreshSessionFromServer(): Promise<RegisteredUser | null>
   } catch (err) {
     if (err instanceof ApiError && err.status === 401) {
       clearAuthToken();
-      sessionStorage.removeItem(USER_SESSION_KEY);
+      dropLocalSession();
       return null;
     }
     return getSessionUser({ refresh: false });
@@ -121,12 +166,12 @@ export function getSessionUserEmail(): string | null {
 }
 
 export function setAuthRedirect(path: string): void {
-  sessionStorage.setItem(AUTH_REDIRECT_KEY, path);
+  writeStorageItem(AUTH_REDIRECT_KEY, path);
 }
 
 export function consumeAuthRedirect(): string | null {
-  const path = sessionStorage.getItem(AUTH_REDIRECT_KEY);
-  sessionStorage.removeItem(AUTH_REDIRECT_KEY);
+  const path = readStorageItem(AUTH_REDIRECT_KEY);
+  removeStorageItem(AUTH_REDIRECT_KEY);
   return path?.trim() ? path.trim() : null;
 }
 

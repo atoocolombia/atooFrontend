@@ -1,6 +1,7 @@
 import { Bell } from 'lucide-react';
 import { useState } from 'react';
 import { getSessionUser } from '../../lib/authRouting';
+import { getAuthToken } from '../../lib/authTokenStorage';
 import {
   isPushActivated,
   isStandalonePwa,
@@ -16,7 +17,7 @@ export function PushActivateChip() {
   const [error, setError] = useState('');
 
   if (hidden) return null;
-  if (!getSessionUser({ refresh: false })) return null;
+  if (!getSessionUser({ refresh: false }) && !getAuthToken()) return null;
   if (!notificationsSupported()) return null;
   if (!isStandalonePwa() && /iPhone|iPad|iPod/i.test(navigator.userAgent)) return null;
 
