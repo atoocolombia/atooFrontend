@@ -1,5 +1,5 @@
 import { ApiError } from './api';
-import { apiFetch, API_BASE, parseErrorResponse } from './http';
+import { apiFetch, isApiConfigured, parseErrorResponse } from './http';
 
 export interface UserProfile {
   id: string;
@@ -14,7 +14,7 @@ export interface UserProfile {
 }
 
 export async function fetchUserProfile(userId: string): Promise<UserProfile> {
-  if (!API_BASE) {
+  if (!isApiConfigured()) {
     throw new ApiError(
       'No está configurada la URL del API. Define VITE_API_URL en Vercel o en frontend/.env.',
       0,

@@ -1,43 +1,5 @@
 import { ApiError } from './api';
-import { fetchWithCreds } from './http';
-
-/** Normaliza VITE_API_URL: protocolo https, sin barra final ni sufijos /api duplicados. */
-function normalizeApiBase(raw: string): string {
-  let base = raw
-    .trim()
-    .replace(/\/+$/, '')
-    .replace(/\/api\/v1$/i, '')
-    .replace(/\/api$/i, '');
-
-  if (base && !/^https?:\/\//i.test(base)) {
-    base = `https://${base}`;
-  }
-
-  return base;
-}
-
-const API_BASE = normalizeApiBase(import.meta.env.VITE_API_URL ?? '');
-
-
-function apiUrl(path: string): string {
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  if (!API_BASE) {
-    return normalizedPath;
-  }
-  return `${API_BASE}${normalizedPath}`;
-}
-
-async function parseErrorResponse(res: Response): Promise<string> {
-  try {
-    const data = (await res.json()) as { error?: string };
-    if (typeof data.error === 'string' && data.error.trim()) {
-      return data.error;
-    }
-  } catch {
-    // ignore
-  }
-  return `Error del servidor (${res.status})`;
-}
+import { fetchWithCreds, apiUrl, parseErrorResponse, isApiConfigured } from './http';
 
 export interface UserDocumentMeta {
   id: string;
@@ -51,7 +13,7 @@ export interface UserDocumentMeta {
 }
 
 export async function listUserDocuments(userId: string): Promise<UserDocumentMeta[]> {
-  if (!API_BASE) {
+  if (!isApiConfigured()) {
     throw new ApiError(
       'No está configurada la URL del API. Define VITE_API_URL en Vercel o en frontend/.env.',
       0,
@@ -82,7 +44,7 @@ export async function uploadUserDocument(
   documentKind: string,
   file: File,
 ): Promise<UserDocumentMeta> {
-  if (!API_BASE) {
+  if (!isApiConfigured()) {
     throw new ApiError(
       'No está configurada la URL del API. Define VITE_API_URL en Vercel o en frontend/.env.',
       0,

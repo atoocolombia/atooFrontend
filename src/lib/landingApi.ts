@@ -1,40 +1,7 @@
 import { ApiError } from './api';
-import { fetchWithCreds } from './http';
+import { fetchWithCreds, apiUrl, parseErrorResponse, isApiConfigured, getApiBase } from './http';
 import type { CatalogVehicle, VehicleSpec } from '../app/data/vehicles';
 import type { LandingContent } from '../app/data/landingContent';
-
-function normalizeApiBase(raw: string): string {
-  let base = raw
-    .trim()
-    .replace(/\/+$/, '')
-    .replace(/\/api\/v1$/i, '')
-    .replace(/\/api$/i, '');
-
-  if (base && !/^https?:\/\//i.test(base)) {
-    base = `https://${base}`;
-  }
-
-  return base;
-}
-
-const API_BASE = normalizeApiBase(import.meta.env.VITE_API_URL ?? '');
-
-
-function apiUrl(path: string): string {
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  if (!API_BASE) return normalizedPath;
-  return `${API_BASE}${normalizedPath}`;
-}
-
-async function parseErrorResponse(res: Response): Promise<string> {
-  try {
-    const data = (await res.json()) as { error?: string };
-    if (typeof data.error === 'string' && data.error.trim()) return data.error;
-  } catch {
-    /* ignore */
-  }
-  return `Error del servidor (${res.status})`;
-}
 
 
 
@@ -74,7 +41,7 @@ function mapVehicleDto(raw: AdminCatalogVehicle): AdminCatalogVehicle {
 }
 
 export async function fetchLandingVehicles(): Promise<CatalogVehicle[]> {
-  if (!API_BASE) return [];
+  if (!isApiConfigured()) return [];
   const res = await fetchWithCreds(apiUrl('/api/v1/landing/vehicles'));
   if (!res.ok) return [];
   const data = (await res.json()) as AdminCatalogVehicle[];
@@ -82,7 +49,7 @@ export async function fetchLandingVehicles(): Promise<CatalogVehicle[]> {
 }
 
 export async function fetchLandingSettings(): Promise<LandingSettings | null> {
-  if (!API_BASE) return null;
+  if (!isApiConfigured()) return null;
   const res = await fetchWithCreds(apiUrl('/api/v1/landing/settings'));
   if (!res.ok) return null;
   return (await res.json()) as LandingSettings;
@@ -91,7 +58,10 @@ export async function fetchLandingSettings(): Promise<LandingSettings | null> {
 function resolveMediaUrl(url: string): string {
   if (!url) return url;
   if (/^https?:\/\//i.test(url)) return url;
-  if (url.startsWith('/api/') && API_BASE) return `${API_BASE}${url}`;
+  if (url.startsWith('/api/')) {
+    const base = getApiBase();
+    if (base) return `${base}${url}`;
+  }
   return url;
 }
 
@@ -109,7 +79,7 @@ function mapLandingContentDto(raw: LandingContent): LandingContent {
 }
 
 export async function fetchLandingContent(): Promise<LandingContent | null> {
-  if (!API_BASE) return null;
+  if (!isApiConfigured()) return null;
   const res = await fetchWithCreds(apiUrl('/api/v1/landing/content'));
   if (!res.ok) return null;
   return mapLandingContentDto((await res.json()) as LandingContent);
@@ -303,5 +273,5 @@ export async function adminFetchLandingAuditLogs(limit = 50): Promise<LandingAud
 }
 
 export function isLandingApiConfigured(): boolean {
-  return Boolean(API_BASE);
+  return isApiConfigured();
 }

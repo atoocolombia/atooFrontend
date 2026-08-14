@@ -34,7 +34,7 @@ export function RequireAuth({ children, allowedTypes }: RequireAuthProps) {
     (async () => {
       const remote = await refreshSessionFromServer();
       if (cancelled) return;
-      setUser(remote);
+      setUser(remote ?? getSessionUser({ refresh: false }));
       setChecking(false);
     })();
 
@@ -44,7 +44,7 @@ export function RequireAuth({ children, allowedTypes }: RequireAuthProps) {
 
     const onFocus = () => {
       void refreshSessionFromServer().then((remote) => {
-        if (!cancelled) setUser(remote);
+        if (!cancelled) setUser(remote ?? getSessionUser({ refresh: false }));
       });
     };
     window.addEventListener('focus', onFocus);
@@ -55,7 +55,7 @@ export function RequireAuth({ children, allowedTypes }: RequireAuthProps) {
     };
   }, [location.pathname]);
 
-  if (checking && !user) {
+  if (checking) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-500">
         Verificando sesión…

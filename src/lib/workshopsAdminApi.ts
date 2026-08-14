@@ -1,38 +1,5 @@
 import { ApiError } from './api';
-import { fetchWithCreds } from './http';
-
-function normalizeApiBase(raw: string): string {
-  let base = raw
-    .trim()
-    .replace(/\/+$/, '')
-    .replace(/\/api\/v1$/i, '')
-    .replace(/\/api$/i, '');
-
-  if (base && !/^https?:\/\//i.test(base)) {
-    base = `https://${base}`;
-  }
-
-  return base;
-}
-
-const API_BASE = normalizeApiBase(import.meta.env.VITE_API_URL ?? '');
-
-
-function apiUrl(path: string): string {
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  if (!API_BASE) return normalizedPath;
-  return `${API_BASE}${normalizedPath}`;
-}
-
-async function parseErrorResponse(res: Response): Promise<string> {
-  try {
-    const data = (await res.json()) as { error?: string };
-    if (typeof data.error === 'string' && data.error.trim()) return data.error;
-  } catch {
-    /* ignore */
-  }
-  return `Error del servidor (${res.status})`;
-}
+import { fetchWithCreds, apiUrl, parseErrorResponse } from './http';
 
 
 export interface AdminWorkshop {
