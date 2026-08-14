@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Loader2, Lock, Save, UserRound } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
-import { ApiError } from '../../../lib/api';
 import { changeAuthPassword, updateAuthProfile } from '../../../lib/authApi';
 import type { UserProfile } from '../../../lib/userProfileApi';
 
@@ -64,7 +63,7 @@ export function ProfileSettingsView({
       setProfileMsg('Perfil actualizado correctamente.');
       onProfileUpdated();
     } catch (err) {
-      setProfileError(err instanceof ApiError ? err.message : 'No se pudo guardar el perfil');
+      setProfileError(err instanceof Error ? err.message : 'No se pudo guardar el perfil');
     } finally {
       setSavingProfile(false);
     }
@@ -91,7 +90,7 @@ export function ProfileSettingsView({
       setNewPassword('');
       setConfirmPassword('');
     } catch (err) {
-      setPasswordError(err instanceof ApiError ? err.message : 'No se pudo cambiar la contraseña');
+      setPasswordError(err instanceof Error ? err.message : 'No se pudo cambiar la contraseña');
     } finally {
       setSavingPassword(false);
     }

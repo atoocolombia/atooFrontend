@@ -1,3 +1,5 @@
+import { assertOnlineForWrite } from './offline';
+
 /** Normaliza VITE_API_URL: protocolo https, sin barra final ni sufijos /api duplicados. */
 export function normalizeApiBase(raw: string): string {
   let base = raw
@@ -31,16 +33,23 @@ export async function parseErrorResponse(res: Response): Promise<string> {
   return `Error del servidor (${res.status})`;
 }
 
-/** Fetch autenticado: envía cookie HttpOnly JWT en cross-origin. */
+/** Fetch autenticado: envía cookie HttpOnly JWT y bloquea escrituras sin red. */
+export async function fetchWithCreds(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+): Promise<Response> {
+  assertOnlineForWrite(init.method);
+  return fetch(input, { ...init, credentials: 'include' });
+}
+
 export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
   const headers = new Headers(init.headers ?? undefined);
   if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 
-  return fetch(apiUrl(path), {
+  return fetchWithCreds(apiUrl(path), {
     ...init,
     headers,
-    credentials: 'include',
   });
 }

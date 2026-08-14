@@ -1,4 +1,5 @@
 import { apiFetch, API_BASE, parseErrorResponse } from './http';
+import { OfflineError } from './offline';
 
 export type UserType = 'USER' | 'ADVISOR' | 'ADMIN' | 'ANALYST' | 'WORKSHOP';
 
@@ -46,7 +47,10 @@ export async function registerUser(input: {
         userType: 'USER',
       }),
     });
-  } catch {
+  } catch (err) {
+    if (err instanceof OfflineError) {
+      throw new ApiError(err.message, 0);
+    }
     throw new ApiError(
       'No se pudo conectar con el servidor. Revisa tu conexión o la configuración del API.',
       0,
@@ -79,7 +83,10 @@ export async function loginUser(input: {
         password: input.password,
       }),
     });
-  } catch {
+  } catch (err) {
+    if (err instanceof OfflineError) {
+      throw new ApiError(err.message, 0);
+    }
     throw new ApiError(
       'No se pudo conectar con el servidor. Revisa tu conexión o la configuración del API.',
       0,
@@ -105,7 +112,10 @@ export async function authWithGoogle(credential: string): Promise<RegisteredUser
         userType: 'USER',
       }),
     });
-  } catch {
+  } catch (err) {
+    if (err instanceof OfflineError) {
+      throw new ApiError(err.message, 0);
+    }
     throw new ApiError(
       'No se pudo conectar con el servidor. Revisa tu conexión o la configuración del API.',
       0,

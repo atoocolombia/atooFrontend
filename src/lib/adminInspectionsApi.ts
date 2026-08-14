@@ -1,4 +1,5 @@
 import { ApiError } from './api';
+import { fetchWithCreds } from './http';
 import type { ProcedureSuggestionStatus } from './inspectionsApi';
 
 function normalizeApiBase(raw: string): string {
@@ -17,9 +18,6 @@ function normalizeApiBase(raw: string): string {
 
 const API_BASE = normalizeApiBase(import.meta.env.VITE_API_URL ?? '');
 
-async function fetchWithCreds(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
-  return fetch(input, { ...init, credentials: 'include' });
-}
 
 function apiUrl(path: string): string {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
