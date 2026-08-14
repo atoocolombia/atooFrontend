@@ -19,6 +19,7 @@ import { SupportButton } from '../components/dashboard/SupportButton';
 import { NotificationBell } from '../components/dashboard/NotificationBell';
 import { ProfileSettingsView } from '../components/dashboard/ProfileSettingsView';
 import { MobileAppBar } from '../components/MobileAppBar';
+import { PushActivateChip } from '../components/PushActivateChip';
 import { useTheme } from '../contexts/ThemeContext';
 import { clearUserSession } from '../../lib/authRouting';
 import { useUserProfile } from '../../lib/useUserProfile';
@@ -188,11 +189,14 @@ export function DashboardPage() {
           isSidebarOpen={isSidebarOpen}
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
           right={
-            <NotificationBell
-              userId={profile?.id}
-              paymentStatus={paymentStatus}
-              onOpenInspections={() => setActiveView('inspections')}
-            />
+            <>
+              <PushActivateChip />
+              <NotificationBell
+                userId={profile?.id}
+                paymentStatus={paymentStatus}
+                onOpenInspections={() => setActiveView('inspections')}
+              />
+            </>
           }
         >
 
