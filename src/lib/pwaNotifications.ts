@@ -2,6 +2,7 @@ import { getSessionUser } from './authRouting';
 import { fetchPushConfig, savePushSubscription, sendPushTest } from './pushApi';
 
 const DISMISS_KEY = 'atooPwaNotifPromptDismissed';
+const ACTIVATED_KEY = 'atooPushActivated';
 
 export function isIosDevice(): boolean {
   if (typeof navigator === 'undefined') return false;
@@ -31,9 +32,27 @@ export function notificationsSupported(): boolean {
   );
 }
 
-export function isNotifPromptDismissed(): boolean {
+export function isPushActivated(): boolean {
   try {
-    return localStorage.getItem(DISMISS_KEY) === '1';
+    return localStorage.getItem(ACTIVATED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function markPushActivated(): void {
+  try {
+    localStorage.setItem(ACTIVATED_KEY, '1');
+    localStorage.setItem(DISMISS_KEY, '1');
+  } catch {
+    // ignore
+  }
+}
+
+export function isNotifPromptDismissed(): boolean {
+  if (isPushActivated()) return true;
+  try {
+    return sessionStorage.getItem(DISMISS_KEY) === '1';
   } catch {
     return false;
   }
@@ -41,7 +60,7 @@ export function isNotifPromptDismissed(): boolean {
 
 export function dismissNotifPrompt(): void {
   try {
-    localStorage.setItem(DISMISS_KEY, '1');
+    sessionStorage.setItem(DISMISS_KEY, '1');
   } catch {
     // ignore
   }
@@ -90,6 +109,7 @@ export async function subscribeDeviceToPush(): Promise<PushSubscribeResult> {
   }
 
   await savePushSubscription(subscription.toJSON());
+  markPushActivated();
   return 'subscribed';
 }
 
