@@ -7,8 +7,6 @@ import {
   BarChart3,
   Car,
   LogOut,
-  Menu,
-  X,
 } from 'lucide-react';
 import { AppointmentsView } from '../components/advisor/AppointmentsView';
 import { DocumentGeneratorView } from '../components/advisor/DocumentGeneratorView';
@@ -17,6 +15,7 @@ import { MetricsView } from '../components/advisor/MetricsView';
 import { VehiclesView } from '../components/advisor/VehiclesView';
 import { useTheme } from '../contexts/ThemeContext';
 import { clearUserSession } from '../../lib/authRouting';
+import { MobileAppBar } from '../components/MobileAppBar';
 
 const menuItems = [
   { id: 'metrics', label: 'Métricas', icon: BarChart3 },
@@ -40,22 +39,6 @@ export function AdvisorDashboard() {
     <div className={`min-h-screen flex transition-colors ${
       theme === 'dark' ? 'bg-[#06071A]' : 'bg-gray-50'
     }`}>
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className={`lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg shadow-lg transition-colors ${
-          theme === 'dark'
-            ? 'bg-[#0D0F2E] text-white'
-            : 'bg-white text-gray-600'
-        }`}
-      >
-        {isSidebarOpen ? (
-          <X className="w-6 h-6" />
-        ) : (
-          <Menu className="w-6 h-6" />
-        )}
-      </button>
-
       {/* Sidebar */}
       <aside
         className={`fixed lg:static inset-y-0 left-0 z-40 w-64 transform transition-all duration-300 ${
@@ -66,7 +49,10 @@ export function AdvisorDashboard() {
             : 'bg-gradient-to-b from-gray-900 to-gray-800 text-white'
         }`}
       >
-        <div className="flex flex-col h-full">
+        <div
+          className="flex flex-col h-full"
+          style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+        >
           {/* Logo */}
           <div className="p-6 border-b border-blue-600/20">
             <div className="flex flex-col mb-2">
@@ -137,6 +123,10 @@ export function AdvisorDashboard() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
+        <MobileAppBar
+          isSidebarOpen={isSidebarOpen}
+          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        />
         <div className="p-6 lg:p-8">
           {activeView === 'metrics' && <MetricsView />}
           {activeView === 'appointments' && <AppointmentsView />}

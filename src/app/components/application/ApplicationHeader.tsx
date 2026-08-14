@@ -9,11 +9,14 @@ export function ApplicationHeader({ onBack }: ApplicationHeaderProps) {
   const { theme } = useTheme();
 
   return (
-    <header className={`border-b transition-colors ${
+    <header
+      className={`border-b transition-colors ${
       theme === 'dark'
         ? 'bg-[#0D0F2E] border-blue-600/20'
         : 'bg-white border-gray-200'
-    }`}>
+    }`}
+      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Desktop Layout */}
         <div className="hidden sm:flex items-center justify-between">

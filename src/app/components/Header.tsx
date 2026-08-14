@@ -10,11 +10,14 @@ export function Header() {
 
   return (
     <>
-      <header className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 ${
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 ${
         theme === 'dark' 
           ? 'bg-[#06071A]/90 backdrop-blur-md border-b border-blue-600/20 shadow-[0_0_30px_rgba(26,31,232,0.2)]'
           : 'bg-white border-b border-gray-200/80'
-      }`}>
+      }`}
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Desktop Layout */}
           <div className="hidden md:flex justify-between items-center h-16">

@@ -8,8 +8,6 @@ import {
   DollarSign,
   Users,
   LogOut,
-  Menu,
-  X,
   LayoutTemplate,
   Wrench,
   ClipboardCheck,
@@ -24,6 +22,7 @@ import { LandingAdminView } from '../components/admin/LandingAdminView';
 import { WorkshopsAdminView } from '../components/admin/WorkshopsAdminView';
 import { ProceduresAdminView } from '../components/admin/ProceduresAdminView';
 import { AdminNotificationBell } from '../components/admin/AdminNotificationBell';
+import { MobileAppBar } from '../components/MobileAppBar';
 import { useTheme } from '../contexts/ThemeContext';
 import { clearUserSession, getSessionUser } from '../../lib/authRouting';
 import { adminFetchProcedureSuggestions } from '../../lib/adminInspectionsApi';
@@ -78,22 +77,6 @@ export function AdminDashboard() {
     <div className={`min-h-screen flex transition-colors ${
       theme === 'dark' ? 'bg-[#06071A]' : 'bg-gray-50'
     }`}>
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className={`lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg shadow-lg transition-colors ${
-          theme === 'dark'
-            ? 'bg-[#0D0F2E] text-white'
-            : 'bg-white text-gray-600'
-        }`}
-      >
-        {isSidebarOpen ? (
-          <X className="w-6 h-6" />
-        ) : (
-          <Menu className="w-6 h-6" />
-        )}
-      </button>
-
       {/* Sidebar */}
       <aside
         className={`fixed lg:static inset-y-0 left-0 z-40 w-64 transform transition-all duration-300 ${
@@ -104,7 +87,10 @@ export function AdminDashboard() {
             : 'bg-gradient-to-b from-gray-900 to-gray-800 text-white'
         }`}
       >
-        <div className="flex flex-col h-full">
+        <div
+          className="flex flex-col h-full"
+          style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+        >
           {/* Logo */}
           <div className="p-6 border-b border-blue-600/20">
             <div className="flex flex-col mb-2">
@@ -181,9 +167,13 @@ export function AdminDashboard() {
 
       {/* Main Content */}
       <main className="relative flex-1 overflow-auto">
-        <div className="sticky top-4 z-30 h-0 flex justify-end pr-6 lg:pr-8">
-          <AdminNotificationBell onOpenProcedures={() => setActiveView('procedures')} />
-        </div>
+        <MobileAppBar
+          isSidebarOpen={isSidebarOpen}
+          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+          right={
+            <AdminNotificationBell onOpenProcedures={() => setActiveView('procedures')} />
+          }
+        />
         <div className="p-6 lg:p-8">
           {activeView === 'metrics' && <AdminMetricsView />}
           {activeView === 'landing' && <LandingAdminView />}
