@@ -7,8 +7,6 @@ import {
   FileText,
   Settings,
   LogOut,
-  Menu,
-  X,
   Loader2,
   Wrench,
 } from 'lucide-react';
@@ -20,6 +18,7 @@ import { InspectionsView } from '../components/dashboard/InspectionsView';
 import { SupportButton } from '../components/dashboard/SupportButton';
 import { NotificationBell } from '../components/dashboard/NotificationBell';
 import { ProfileSettingsView } from '../components/dashboard/ProfileSettingsView';
+import { MobileAppBar } from '../components/MobileAppBar';
 import { useTheme } from '../contexts/ThemeContext';
 import { clearUserSession } from '../../lib/authRouting';
 import { useUserProfile } from '../../lib/useUserProfile';
@@ -71,22 +70,6 @@ export function DashboardPage() {
       {/* Support Button */}
       <SupportButton />
 
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className={`lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg shadow-lg transition-colors ${
-          theme === 'dark'
-            ? 'bg-[#0D0F2E] text-white'
-            : 'bg-white text-gray-600'
-        }`}
-      >
-        {isSidebarOpen ? (
-          <X className="w-6 h-6" />
-        ) : (
-          <Menu className="w-6 h-6" />
-        )}
-      </button>
-
       {/* Sidebar */}
       <aside
         className={`fixed lg:static inset-y-0 left-0 z-40 w-64 transform transition-all duration-300 ${
@@ -97,7 +80,10 @@ export function DashboardPage() {
             : 'bg-white border-r border-gray-200'
         }`}
       >
-        <div className="flex flex-col h-full">
+        <div
+          className="flex flex-col h-full"
+          style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+        >
           {/* Logo */}
           <div className={`p-6 border-b ${
             theme === 'dark' ? 'border-blue-600/20' : 'border-gray-200'
@@ -198,23 +184,17 @@ export function DashboardPage() {
         )}
 
         {/* Header with Notification Bell */}
-        <div className={`sticky top-0 z-20 border-b px-6 lg:px-8 py-4 transition-colors ${
-          theme === 'dark'
-            ? 'bg-[#0D0F2E]/90 backdrop-blur-md border-blue-600/20'
-            : 'bg-white border-gray-200'
-        }`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className={`text-xl font-bold lg:hidden ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>atoo</h2>
-            </div>
-            <div className="ml-auto">
-              <NotificationBell
-                userId={profile?.id}
-                paymentStatus={paymentStatus}
-                onOpenInspections={() => setActiveView('inspections')}
-              />
-            </div>
-          </div>
+        <MobileAppBar
+          isSidebarOpen={isSidebarOpen}
+          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+          right={
+            <NotificationBell
+              userId={profile?.id}
+              paymentStatus={paymentStatus}
+              onOpenInspections={() => setActiveView('inspections')}
+            />
+          }
+        >
 
           {/* Payment Status Banner */}
           {paymentStatus === 'critical' && (
@@ -252,7 +232,7 @@ export function DashboardPage() {
               </button>
             </div>
           )}
-        </div>
+        </MobileAppBar>
 
         <div className="p-6 lg:p-8 relative z-0">
           {activeView === 'progress' && <ProgressView />}

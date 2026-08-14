@@ -5,11 +5,10 @@ import {
   CheckCircle,
   XCircle,
   LogOut,
-  Menu,
-  X,
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { clearUserSession } from '../../lib/authRouting';
+import { MobileAppBar } from '../components/MobileAppBar';
 import { PendingApplicationsView } from '../components/analyst/PendingApplicationsView';
 import { ApprovedApplicationsView } from '../components/analyst/ApprovedApplicationsView';
 import { RejectedApplicationsView } from '../components/analyst/RejectedApplicationsView';
@@ -34,22 +33,6 @@ export function AnalystDashboard() {
     <div className={`min-h-screen flex transition-colors ${
       theme === 'dark' ? 'bg-[#06071A]' : 'bg-gray-50'
     }`}>
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className={`lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg shadow-lg transition-colors ${
-          theme === 'dark'
-            ? 'bg-[#0D0F2E] text-white'
-            : 'bg-white text-gray-600'
-        }`}
-      >
-        {isSidebarOpen ? (
-          <X className="w-6 h-6" />
-        ) : (
-          <Menu className="w-6 h-6" />
-        )}
-      </button>
-
       {/* Sidebar */}
       <aside
         className={`fixed lg:static inset-y-0 left-0 z-40 w-64 transition-all duration-300 ${
@@ -60,7 +43,10 @@ export function AnalystDashboard() {
             : 'bg-gradient-to-b from-gray-900 to-gray-800 text-white'
         }`}
       >
-        <div className="flex flex-col h-full">
+        <div
+          className="flex flex-col h-full"
+          style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+        >
           {/* Logo */}
           <div className="p-6 border-b border-blue-600/20">
             <div className="flex flex-col mb-2">
@@ -131,6 +117,10 @@ export function AnalystDashboard() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
+        <MobileAppBar
+          isSidebarOpen={isSidebarOpen}
+          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        />
         <div className="p-6 lg:p-8">
           {activeView === 'pending' && <PendingApplicationsView />}
           {activeView === 'approved' && <ApprovedApplicationsView />}

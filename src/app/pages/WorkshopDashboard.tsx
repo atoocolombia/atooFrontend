@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Calendar, Clock, LogOut, Menu, X, Wrench } from 'lucide-react';
+import { Calendar, Clock, LogOut, Wrench } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { clearUserSession, getSessionUser } from '../../lib/authRouting';
 import { WorkshopAppointmentsView } from '../components/workshop/WorkshopAppointmentsView';
 import { WorkshopAvailabilityView } from '../components/workshop/WorkshopAvailabilityView';
 import { WorkshopNotificationBell } from '../components/workshop/WorkshopNotificationBell';
+import { MobileAppBar } from '../components/MobileAppBar';
 
 const menuItems = [
   { id: 'appointments', label: 'Citas', icon: Calendar },
@@ -28,15 +29,6 @@ export function WorkshopDashboard() {
     <div className={`min-h-screen flex transition-colors ${
       theme === 'dark' ? 'bg-[#06071A]' : 'bg-gray-50'
     }`}>
-      <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className={`lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg shadow-lg ${
-          theme === 'dark' ? 'bg-[#0D0F2E] text-white' : 'bg-white text-gray-600'
-        }`}
-      >
-        {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-      </button>
-
       <aside
         className={`fixed lg:static inset-y-0 left-0 z-40 w-64 transform transition-all duration-300 ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
@@ -46,7 +38,10 @@ export function WorkshopDashboard() {
             : 'bg-gradient-to-b from-gray-900 to-gray-800 text-white'
         }`}
       >
-        <div className="flex flex-col h-full">
+        <div
+          className="flex flex-col h-full"
+          style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+        >
           <div className="p-6 border-b border-blue-600/20">
             <div className="flex flex-col mb-2">
               <span className="text-3xl font-bold tracking-wide text-white">atoo</span>
@@ -106,15 +101,11 @@ export function WorkshopDashboard() {
       )}
 
       <main className="flex-1 overflow-auto">
-        <div className={`sticky top-0 z-20 border-b px-6 lg:px-8 py-4 ${
-          theme === 'dark'
-            ? 'bg-[#0D0F2E]/90 backdrop-blur-md border-blue-600/20'
-            : 'bg-white border-gray-200'
-        }`}>
-          <div className="flex items-center justify-end">
-            <WorkshopNotificationBell refreshKey={notifRefresh} />
-          </div>
-        </div>
+        <MobileAppBar
+          isSidebarOpen={isSidebarOpen}
+          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+          right={<WorkshopNotificationBell refreshKey={notifRefresh} />}
+        />
 
         <div className="p-6 lg:p-8">
           {activeView === 'appointments' && (
