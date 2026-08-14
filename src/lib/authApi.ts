@@ -1,21 +1,32 @@
 import { ApiError, type RegisteredUser, type UserType } from './api';
-import { apiFetch, API_BASE, parseErrorResponse } from './http';
+import { captureAuthTokenFromPayload, clearAuthToken } from './authTokenStorage';
+import { apiFetch, isApiConfigured, parseErrorResponse } from './http';
 
 export async function fetchAuthMe(): Promise<RegisteredUser> {
-  if (!API_BASE) {
+  if (!isApiConfigured()) {
     throw new ApiError('No está configurada la URL del API.', 0);
   }
   const res = await apiFetch('/api/v1/auth/me');
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
-  return (await res.json()) as RegisteredUser;
+  const data = (await res.json()) as RegisteredUser & { token?: string };
+  captureAuthTokenFromPayload(data);
+  return {
+    id: data.id,
+    email: data.email,
+    userType: data.userType,
+    createdAt: data.createdAt,
+  };
 }
 
 export async function logoutAuthSession(): Promise<void> {
-  if (!API_BASE) return;
   try {
-    await apiFetch('/api/v1/auth/logout', { method: 'POST' });
+    if (isApiConfigured()) {
+      await apiFetch('/api/v1/auth/logout', { method: 'POST' });
+    }
   } catch {
     // ignore network errors on logout
+  } finally {
+    clearAuthToken();
   }
 }
 

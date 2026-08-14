@@ -48,6 +48,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,svg,woff2,png}'],
         globIgnores: ['**/vehicles/**', '**/*.mp4', '**/*.pdf'],
         navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
             urlPattern: ({ request }) => request.destination === 'image' || request.destination === 'font',

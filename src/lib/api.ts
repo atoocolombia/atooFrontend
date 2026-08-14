@@ -1,4 +1,5 @@
-import { apiFetch, API_BASE, parseErrorResponse } from './http';
+import { captureAuthTokenFromPayload } from './authTokenStorage';
+import { apiFetch, isApiConfigured, parseErrorResponse } from './http';
 import { OfflineError } from './offline';
 
 export type UserType = 'USER' | 'ADVISOR' | 'ADMIN' | 'ANALYST' | 'WORKSHOP';
@@ -21,12 +22,22 @@ export class ApiError extends Error {
 }
 
 function ensureApiBase(): void {
-  if (!API_BASE) {
+  if (!isApiConfigured()) {
     throw new ApiError(
       'No está configurada la URL del API. Define VITE_API_URL en Vercel o en frontend/.env.',
       0,
     );
   }
+}
+
+function readAuthUser(data: RegisteredUser & { token?: string }): RegisteredUser {
+  captureAuthTokenFromPayload(data);
+  return {
+    id: data.id,
+    email: data.email,
+    userType: data.userType,
+    createdAt: data.createdAt,
+  };
 }
 
 export async function registerUser(input: {
@@ -65,7 +76,7 @@ export async function registerUser(input: {
     throw new ApiError((await parseErrorResponse(res)) + hint, res.status);
   }
 
-  return (await res.json()) as RegisteredUser;
+  return readAuthUser((await res.json()) as RegisteredUser & { token?: string });
 }
 
 export async function loginUser(input: {
@@ -97,7 +108,7 @@ export async function loginUser(input: {
     throw new ApiError(await parseErrorResponse(res), res.status);
   }
 
-  return (await res.json()) as RegisteredUser;
+  return readAuthUser((await res.json()) as RegisteredUser & { token?: string });
 }
 
 export async function authWithGoogle(credential: string): Promise<RegisteredUser> {
@@ -126,5 +137,5 @@ export async function authWithGoogle(credential: string): Promise<RegisteredUser
     throw new ApiError(await parseErrorResponse(res), res.status);
   }
 
-  return (await res.json()) as RegisteredUser;
+  return readAuthUser((await res.json()) as RegisteredUser & { token?: string });
 }

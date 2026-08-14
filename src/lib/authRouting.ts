@@ -1,9 +1,11 @@
 import type { RegisteredUser, UserType } from './api';
+import { ApiError } from './api';
 import {
   hasLocalApplicationInProgress,
   isApplicationCompleted,
 } from './applicationProgress';
 import { fetchAuthMe, logoutAuthSession } from './authApi';
+import { clearAuthToken } from './authTokenStorage';
 import { listUserDocuments } from './documentsApi';
 
 const USER_SESSION_KEY = 'atooUserSession';
@@ -97,15 +99,19 @@ export function getSessionUser(options: { refresh?: boolean } = {}): RegisteredU
   return stored.user;
 }
 
-/** Valida la cookie JWT del servidor y sincroniza sessionStorage. */
+/** Valida la sesión JWT del servidor y sincroniza sessionStorage. */
 export async function refreshSessionFromServer(): Promise<RegisteredUser | null> {
   try {
     const user = await fetchAuthMe();
     persistUserSession(user);
     return user;
-  } catch {
-    sessionStorage.removeItem(USER_SESSION_KEY);
-    return null;
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 401) {
+      clearAuthToken();
+      sessionStorage.removeItem(USER_SESSION_KEY);
+      return null;
+    }
+    return getSessionUser({ refresh: false });
   }
 }
 
