@@ -1,40 +1,52 @@
 import { Bell, X } from 'lucide-react';
 import { useState } from 'react';
+import { getSessionUser } from '../../lib/authRouting';
 import {
   dismissNotifPrompt,
+  isAndroidDevice,
   isIosDevice,
   isNotifPromptDismissed,
   isStandalonePwa,
   notificationsSupported,
-  showAtooTestNotification,
+  subscribeAndSendTestPush,
 } from '../../lib/pwaNotifications';
 
 export function PwaNotificationPrompt() {
   const [hidden, setHidden] = useState(() => isNotifPromptDismissed());
   const [busy, setBusy] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'shown' | 'denied' | 'need-standalone' | 'unsupported'>(
-    'idle',
-  );
+  const [status, setStatus] = useState<
+    | 'idle'
+    | 'subscribed'
+    | 'denied'
+    | 'need-standalone'
+    | 'need-login'
+    | 'unsupported'
+    | 'not-configured'
+  >('idle');
 
   if (hidden) return null;
 
   const ios = isIosDevice();
+  const android = isAndroidDevice();
   const standalone = isStandalonePwa();
   const supported = notificationsSupported();
+  const loggedIn = Boolean(getSessionUser({ refresh: false }));
 
-  if (!ios && !standalone) return null;
+  if (!ios && !android && !standalone) return null;
 
   const close = () => {
     dismissNotifPrompt();
     setHidden(true);
   };
 
-  const onTest = async () => {
+  const onActivate = async () => {
     setBusy(true);
-    const result = await showAtooTestNotification();
+    const result = await subscribeAndSendTestPush();
     setStatus(result);
     setBusy(false);
   };
+
+  const canActivate = supported && loggedIn && (standalone || !ios) && status !== 'subscribed';
 
   return (
     <div className="fixed bottom-0 inset-x-0 z-[75] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pointer-events-none">
@@ -42,46 +54,56 @@ export function PwaNotificationPrompt() {
         <div className="flex items-start gap-3">
           <Bell className="w-5 h-5 shrink-0 mt-0.5" />
           <div className="text-sm flex-1 min-w-0">
-            <p className="font-semibold">Probar aviso en el iPhone</p>
+            <p className="font-semibold">Avisos en el celular</p>
             {ios && !standalone ? (
               <p className="mt-1 leading-snug text-white/90">
                 En Safari no llegan. Toca Compartir → Agregar a pantalla de inicio, abre Atoo
-                desde el ícono y vuelve a este aviso.
+                desde el ícono, inicia sesión y activa los avisos.
+              </p>
+            ) : !loggedIn ? (
+              <p className="mt-1 leading-snug text-white/90">
+                Inicia sesión y luego activa los avisos. Así te llegarán citas y reagendamientos
+                aunque no tengas Atoo abierta.
               </p>
             ) : !supported ? (
               <p className="mt-1 leading-snug text-white/90">
-                Este iPhone necesita iOS 16.4 o posterior para avisos. Actualiza el sistema y
-                abre Atoo desde el ícono.
+                Este iPhone necesita iOS 16.4 o posterior. Actualiza el sistema y abre Atoo desde
+                el ícono.
               </p>
-            ) : status === 'shown' ? (
+            ) : status === 'subscribed' ? (
               <p className="mt-1 leading-snug text-white/90">
-                Si viste la notificación, funciona. No hace falta volver a descargar desde Safari:
-                el ícono se queda y la app se actualiza sola. Cierra Atoo del todo y ábrela de
-                nuevo para traer cambios.
+                Listo. Te llegará un aviso de prueba. Desde ahora, lo que aparezca en la campana
+                (cita, reagendamiento, revisión) también llega al celular con la app cerrada.
               </p>
             ) : status === 'denied' ? (
               <p className="mt-1 leading-snug text-white/90">
                 Bloqueaste los avisos. En Ajustes → Notificaciones → atoo, actívalos y prueba otra
                 vez.
               </p>
+            ) : status === 'not-configured' ? (
+              <p className="mt-1 leading-snug text-white/90">
+                El servidor aún no tiene configurados los avisos. Hay que agregar las claves VAPID
+                en Railway.
+              </p>
             ) : (
               <p className="mt-1 leading-snug text-white/90">
-                Abre Atoo desde el ícono (no desde Safari), toca el botón y acepta el permiso.
+                Actívalos una vez. Te avisaremos si reagendan una cita, hay una solicitud o llega
+                algo a la campana, aunque no tengas la app abierta.
               </p>
             )}
 
-            {supported && standalone && status !== 'shown' ? (
+            {canActivate ? (
               <button
                 type="button"
-                onClick={() => void onTest()}
+                onClick={() => void onActivate()}
                 disabled={busy}
                 className="mt-3 rounded-lg bg-white text-[#1A1FE8] font-semibold text-sm px-3 py-2 disabled:opacity-60"
               >
-                {busy ? 'Enviando…' : 'Enviar aviso de prueba'}
+                {busy ? 'Activando…' : 'Activar avisos en el celular'}
               </button>
             ) : null}
 
-            {status === 'shown' ? (
+            {status === 'subscribed' ? (
               <button
                 type="button"
                 onClick={close}
