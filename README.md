@@ -1,7 +1,13 @@
 
-  # Cambio color
+  # atoo frontend
 
-  This is a code bundle for Cambio color. The original project is available at https://www.figma.com/design/8UzHDhK8aCYQhQfr9SclSu/Cambio-color.
+  ## Ambientes
+
+  - Clientes: rama `main` → https://www.atoo.io
+  - Pruebas: rama `develop` → preview de Vercel / https://staging.atoo.io
+
+  Features y fixes se abren desde `develop` y el PR va a `develop`.
+  A `main` solo llega lo que ya se validó en pruebas.
 
   ## Running the code
 
