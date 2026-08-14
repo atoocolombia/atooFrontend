@@ -1,12 +1,16 @@
 import { Menu, X, Sun, Moon } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router';
 import { useAuthModal } from '../contexts/AuthModalContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { getDashboardPath, getSessionUser } from '../../lib/authRouting';
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { openLogin, openRegister } = useAuthModal();
   const { theme, toggleTheme } = useTheme();
+  const sessionUser = getSessionUser({ refresh: false });
+  const dashboardPath = sessionUser ? getDashboardPath(sessionUser.userType) : null;
 
   return (
     <>
@@ -67,27 +71,43 @@ export function Header() {
               >
                 {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
-              <button
-                onClick={openLogin}
-                className={`px-4 py-2 transition-colors ${
-                  theme === 'dark'
-                    ? 'text-blue-400 hover:text-blue-200'
-                    : 'text-blue-700 hover:text-blue-800'
-                }`}
-              >
-                Iniciar Sesión
-              </button>
-              <button
-                onClick={openRegister}
-                className={`group relative px-6 py-2 bg-[#1A1FE8] text-white overflow-hidden transition-all ${
-                  theme === 'dark'
-                    ? 'rounded-lg shadow-[0_0_20px_rgba(26,31,232,0.4)] hover:shadow-[0_0_30px_rgba(26,31,232,0.6)]'
-                    : 'rounded-lg hover:bg-[#1217C8]'
-                }`}
-              >
-                <span className="relative z-10">Registrarse</span>
-                <div className="absolute inset-0 bg-[#1217C8] opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              </button>
+              {dashboardPath ? (
+                <Link
+                  to={dashboardPath}
+                  className={`group relative px-6 py-2 bg-[#1A1FE8] text-white overflow-hidden transition-all ${
+                    theme === 'dark'
+                      ? 'rounded-lg shadow-[0_0_20px_rgba(26,31,232,0.4)] hover:shadow-[0_0_30px_rgba(26,31,232,0.6)]'
+                      : 'rounded-lg hover:bg-[#1217C8]'
+                  }`}
+                >
+                  <span className="relative z-10">Mi panel</span>
+                  <div className="absolute inset-0 bg-[#1217C8] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                </Link>
+              ) : (
+                <>
+                  <button
+                    onClick={openLogin}
+                    className={`px-4 py-2 transition-colors ${
+                      theme === 'dark'
+                        ? 'text-blue-400 hover:text-blue-200'
+                        : 'text-blue-700 hover:text-blue-800'
+                    }`}
+                  >
+                    Iniciar Sesión
+                  </button>
+                  <button
+                    onClick={openRegister}
+                    className={`group relative px-6 py-2 bg-[#1A1FE8] text-white overflow-hidden transition-all ${
+                      theme === 'dark'
+                        ? 'rounded-lg shadow-[0_0_20px_rgba(26,31,232,0.4)] hover:shadow-[0_0_30px_rgba(26,31,232,0.6)]'
+                        : 'rounded-lg hover:bg-[#1217C8]'
+                    }`}
+                  >
+                    <span className="relative z-10">Registrarse</span>
+                    <div className="absolute inset-0 bg-[#1217C8] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
@@ -162,28 +182,40 @@ export function Header() {
                   {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                   <span>{theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}</span>
                 </button>
-                <button
-                  onClick={() => {
-                    openLogin();
-                    setIsMenuOpen(false);
-                  }}
-                  className={`px-4 py-2 border rounded-lg transition-all ${
-                    theme === 'dark'
-                      ? 'text-blue-400 border-blue-600/30 hover:bg-white/5 hover:border-blue-600/50'
-                      : 'text-blue-700 border-blue-400 hover:bg-blue-50 hover:border-blue-500'
-                  }`}
-                >
-                  Iniciar Sesión
-                </button>
-                <button
-                  onClick={() => {
-                    openRegister();
-                    setIsMenuOpen(false);
-                  }}
-                  className="px-4 py-2 bg-[#1A1FE8] text-white rounded-lg hover:shadow-[0_0_20px_rgba(26,31,232,0.4)] transition-all"
-                >
-                  Registrarse
-                </button>
+                {dashboardPath ? (
+                  <Link
+                    to={dashboardPath}
+                    onClick={() => setIsMenuOpen(false)}
+                    className="px-4 py-2 bg-[#1A1FE8] text-white rounded-lg hover:shadow-[0_0_20px_rgba(26,31,232,0.4)] transition-all text-center"
+                  >
+                    Mi panel
+                  </Link>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => {
+                        openLogin();
+                        setIsMenuOpen(false);
+                      }}
+                      className={`px-4 py-2 border rounded-lg transition-all ${
+                        theme === 'dark'
+                          ? 'text-blue-400 border-blue-600/30 hover:bg-white/5 hover:border-blue-600/50'
+                          : 'text-blue-700 border-blue-400 hover:bg-blue-50 hover:border-blue-500'
+                      }`}
+                    >
+                      Iniciar Sesión
+                    </button>
+                    <button
+                      onClick={() => {
+                        openRegister();
+                        setIsMenuOpen(false);
+                      }}
+                      className="px-4 py-2 bg-[#1A1FE8] text-white rounded-lg hover:shadow-[0_0_20px_rgba(26,31,232,0.4)] transition-all"
+                    >
+                      Registrarse
+                    </button>
+                  </>
+                )}
               </div>
             </nav>
           </div>

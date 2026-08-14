@@ -1,6 +1,7 @@
 import { Bell, X } from 'lucide-react';
 import { useState } from 'react';
 import { getSessionUser } from '../../lib/authRouting';
+import { getAuthToken } from '../../lib/authTokenStorage';
 import {
   dismissNotifPrompt,
   isAndroidDevice,
@@ -30,7 +31,7 @@ export function PwaNotificationPrompt() {
   const android = isAndroidDevice();
   const standalone = isStandalonePwa();
   const supported = notificationsSupported();
-  const loggedIn = Boolean(getSessionUser({ refresh: false }));
+  const loggedIn = Boolean(getSessionUser({ refresh: false }) || getAuthToken());
 
   if (!ios && !android && !standalone) return null;
 

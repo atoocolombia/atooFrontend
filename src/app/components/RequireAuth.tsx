@@ -42,16 +42,21 @@ export function RequireAuth({ children, allowedTypes }: RequireAuthProps) {
       if (!cancelled) setUser(getSessionUser({ refresh: false }));
     }, SESSION_CHECK_MS);
 
-    const onFocus = () => {
+    const syncFromServer = () => {
       void refreshSessionFromServer().then((remote) => {
         if (!cancelled) setUser(remote ?? getSessionUser({ refresh: false }));
       });
     };
-    window.addEventListener('focus', onFocus);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') syncFromServer();
+    };
+    window.addEventListener('focus', syncFromServer);
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
       cancelled = true;
       window.clearInterval(id);
-      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('focus', syncFromServer);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, [location.pathname]);
 

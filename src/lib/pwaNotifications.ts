@@ -1,4 +1,5 @@
 import { getSessionUser } from './authRouting';
+import { getAuthToken } from './authTokenStorage';
 import { fetchPushConfig, savePushSubscription, sendPushTest } from './pushApi';
 
 const DISMISS_KEY = 'atooPwaNotifPromptDismissed';
@@ -91,7 +92,7 @@ export type PushSubscribeResult =
 export async function subscribeDeviceToPush(): Promise<PushSubscribeResult> {
   if (!notificationsSupported()) return 'unsupported';
   if (isIosDevice() && !isStandalonePwa()) return 'need-standalone';
-  if (!getSessionUser({ refresh: false })) return 'need-login';
+  if (!getSessionUser({ refresh: false }) && !getAuthToken()) return 'need-login';
 
   let permission = Notification.permission;
   if (permission === 'default') {
@@ -133,6 +134,6 @@ export async function refreshPushSubscriptionIfGranted(): Promise<void> {
   if (!notificationsSupported()) return;
   if (Notification.permission !== 'granted') return;
   if (isIosDevice() && !isStandalonePwa()) return;
-  if (!getSessionUser({ refresh: false })) return;
+  if (!getSessionUser({ refresh: false }) && !getAuthToken()) return;
   await subscribeDeviceToPush();
 }
