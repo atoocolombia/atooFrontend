@@ -33,6 +33,9 @@ export function notificationsSupported(): boolean {
 }
 
 export function isPushActivated(): boolean {
+  if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+    return true;
+  }
   try {
     return localStorage.getItem(ACTIVATED_KEY) === '1';
   } catch {
@@ -52,7 +55,7 @@ export function markPushActivated(): void {
 export function isNotifPromptDismissed(): boolean {
   if (isPushActivated()) return true;
   try {
-    return sessionStorage.getItem(DISMISS_KEY) === '1';
+    return localStorage.getItem(DISMISS_KEY) === '1';
   } catch {
     return false;
   }
@@ -60,7 +63,7 @@ export function isNotifPromptDismissed(): boolean {
 
 export function dismissNotifPrompt(): void {
   try {
-    sessionStorage.setItem(DISMISS_KEY, '1');
+    localStorage.setItem(DISMISS_KEY, '1');
   } catch {
     // ignore
   }
