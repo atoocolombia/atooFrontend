@@ -49,6 +49,7 @@ export default defineConfig({
         globIgnores: ['**/vehicles/**', '**/*.mp4', '**/*.pdf'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//],
+        importScripts: ['/sw-notifications.js'],
         runtimeCaching: [
           {
             urlPattern: ({ request }) => request.destination === 'image' || request.destination === 'font',
