@@ -6,15 +6,15 @@ export function getWhatsAppSupportNumber(): string {
   return fromEnv || DEFAULT_NUMBER;
 }
 
-/** Mensaje que envía el cliente al abrir el chat (dispara el menú de bienvenida en WhatsApp Business). */
+/** Dispara el bot automático (requiere API de WhatsApp en Railway). */
 export function getWhatsAppSupportStarterMessage(context: 'dashboard' | 'registration' | 'default' = 'default'): string {
   switch (context) {
     case 'dashboard':
-      return 'Hola, necesito soporte atoo.';
+      return 'Hola atoo';
     case 'registration':
-      return 'Hola, acabo de registrarme en atoo y tengo una duda.';
+      return 'Hola, acabo de registrarme en atoo';
     default:
-      return 'Hola, necesito soporte atoo.';
+      return 'Hola atoo';
   }
 }
 
