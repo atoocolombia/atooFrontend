@@ -26,9 +26,8 @@ function isSameOriginApiHost(hostname: string): boolean {
 }
 
 /**
- * En atoo.io y localhost las llamadas van al mismo origen (/api),
- * para que la cookie JWT sea de primera parte (Safari/iOS no envía cookies de terceros).
- * En previews de Vercel se usa VITE_API_URL (Railway) y el Bearer del login.
+ * En atoo.io (clientes) y localhost las llamadas van al mismo origen (/api).
+ * En staging y previews de Vercel se usa VITE_API_URL (API de pruebas, no la de clientes).
  */
 export function getApiBase(): string {
   if (typeof window !== 'undefined' && isSameOriginApiHost(window.location.hostname)) {
