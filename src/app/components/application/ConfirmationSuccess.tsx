@@ -1,5 +1,6 @@
 import { CheckCircle, FileText, Car, CreditCard, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router';
+import { buildWhatsAppSupportUrl } from '../../../lib/whatsappSupport';
 
 export function ConfirmationSuccess() {
   const navigate = useNavigate();
@@ -149,7 +150,7 @@ export function ConfirmationSuccess() {
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <a
-            href="https://wa.me/573001234567?text=Hola,%20acabo%20de%20completar%20mi%20registro"
+            href={buildWhatsAppSupportUrl('registration')}
             target="_blank"
             rel="noopener noreferrer"
             className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold inline-flex items-center justify-center gap-2"
