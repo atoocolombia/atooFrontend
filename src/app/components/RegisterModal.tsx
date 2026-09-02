@@ -7,6 +7,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { GoogleSignInButton } from './GoogleSignInButton';
 import { persistUserSession } from '../../lib/authRouting';
 import { ApiError, authWithGoogle, registerUser } from '../../lib/api';
+import { PASSWORD_POLICY_HINT, validatePassword } from '../../lib/passwordPolicy';
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '';
 
@@ -42,9 +43,9 @@ export function RegisterModal({ isOpen, onClose, onSwitchToLogin }: RegisterModa
       return;
     }
 
-    // Validar fortaleza de contraseña
-    if (formData.password.length < 8) {
-      setErrors({ passwordMatch: '', passwordStrength: 'La contraseña debe tener al menos 8 caracteres', api: '' });
+    const passwordError = validatePassword(formData.password);
+    if (passwordError) {
+      setErrors({ passwordMatch: '', passwordStrength: passwordError, api: '' });
       return;
     }
 
@@ -244,7 +245,7 @@ export function RegisterModal({ isOpen, onClose, onSwitchToLogin }: RegisterModa
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={(e) => handleChange('password', e.target.value)}
-                  placeholder="Mínimo 8 caracteres"
+                  placeholder={PASSWORD_POLICY_HINT}
                   className={`w-full pl-10 pr-12 py-3 border rounded-lg outline-none transition-all ${
                     theme === 'dark'
                       ? 'bg-white/5 border-blue-600/20 text-white placeholder-gray-500 focus:border-[#1A1FE8] focus:ring-2 focus:ring-[#1A1FE8]/20'
@@ -266,6 +267,11 @@ export function RegisterModal({ isOpen, onClose, onSwitchToLogin }: RegisterModa
               </div>
               {errors.passwordStrength && (
                 <p className="text-red-500 text-sm mt-1">{errors.passwordStrength}</p>
+              )}
+              {!errors.passwordStrength && (
+                <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
+                  {PASSWORD_POLICY_HINT}
+                </p>
               )}
             </div>
 

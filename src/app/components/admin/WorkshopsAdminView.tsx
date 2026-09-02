@@ -8,6 +8,7 @@ import {
   adminUpdateWorkshop,
   type AdminWorkshop,
 } from '../../../lib/workshopsAdminApi';
+import { PASSWORD_POLICY_HINT, validatePassword } from '../../../lib/passwordPolicy';
 
 export function WorkshopsAdminView() {
   const { theme } = useTheme();
@@ -45,13 +46,20 @@ export function WorkshopsAdminView() {
     setSaving(true);
     setError(null);
     setSuccess(null);
+    const passwordValue = password.trim() || 'Atoo#Tll5hY6c';
+    const passwordValidationError = validatePassword(passwordValue);
+    if (passwordValidationError) {
+      setError(passwordValidationError);
+      setSaving(false);
+      return;
+    }
     try {
       const created = await adminCreateWorkshop({
         name: name.trim(),
         address: address.trim(),
         city: city.trim(),
         email: email.trim(),
-        password: password.trim() || 'Atoo#Tll5hY6c',
+        password: passwordValue,
         phone: phone.trim() || undefined,
       });
       setSuccess(
@@ -148,8 +156,10 @@ export function WorkshopsAdminView() {
               className={inputClass}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              placeholder={PASSWORD_POLICY_HINT}
               required
             />
+            <p className="text-xs text-gray-500 mt-1">{PASSWORD_POLICY_HINT}</p>
           </div>
           <div>
             <label className="block text-sm font-medium mb-2">Teléfono (opcional)</label>
