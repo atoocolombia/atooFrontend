@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Loader2, Lock, Save, UserRound } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { changeAuthPassword, updateAuthProfile } from '../../../lib/authApi';
+import { PASSWORD_POLICY_HINT, validatePassword } from '../../../lib/passwordPolicy';
 import type { UserProfile } from '../../../lib/userProfileApi';
 
 interface ProfileSettingsViewProps {
@@ -73,8 +74,9 @@ export function ProfileSettingsView({
     setSavingPassword(true);
     setPasswordError(null);
     setPasswordMsg(null);
-    if (newPassword.length < 8) {
-      setPasswordError('La nueva contraseña debe tener al menos 8 caracteres');
+    const passwordValidationError = validatePassword(newPassword);
+    if (passwordValidationError) {
+      setPasswordError(passwordValidationError);
       setSavingPassword(false);
       return;
     }
@@ -209,8 +211,12 @@ export function ProfileSettingsView({
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
+              placeholder={PASSWORD_POLICY_HINT}
               className={`w-full rounded-xl border px-4 py-3 ${inputClass}`}
             />
+            <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
+              {PASSWORD_POLICY_HINT}
+            </p>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Confirmar nueva contraseña</label>
