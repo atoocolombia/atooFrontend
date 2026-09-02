@@ -275,7 +275,7 @@ export function DeliveryQueueView() {
             type="button"
             disabled={saving}
             onClick={() =>
-              void run(() => completeAdvisorDelivery(selected.id), 'Entrega completada. Se envió WhatsApp al cliente.')
+              void run(() => completeAdvisorDelivery(selected.id), 'Entrega completada. Se envió correo al cliente.')
             }
             className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 text-white font-semibold disabled:opacity-50"
           >
