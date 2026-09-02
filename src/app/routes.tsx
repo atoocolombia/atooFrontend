@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router";
 import { AppLayout } from "./AppLayout";
 import { RequireAuth } from "./components/RequireAuth";
+import { ClientPortalGuard } from "./components/ClientPortalGuard";
 import { Root } from "./Root";
 import { ApplicationPage } from "./pages/ApplicationPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -9,6 +10,8 @@ import { AdminDashboard } from "./pages/AdminDashboard";
 import { AnalystDashboard } from "./pages/AnalystDashboard";
 import { WorkshopDashboard } from "./pages/WorkshopDashboard";
 import { DeliveryConfirmPage } from "./pages/DeliveryConfirmPage";
+import { WaitingDeliveryPage } from "./pages/WaitingDeliveryPage";
+import { AccountSetupPage } from "./pages/AccountSetupPage";
 
 function ErrorBoundary() {
   return (
@@ -35,7 +38,19 @@ export const router = createBrowserRouter([
         path: "solicitud",
         element: (
           <RequireAuth>
-            <ApplicationPage />
+            <ClientPortalGuard>
+              <ApplicationPage />
+            </ClientPortalGuard>
+          </RequireAuth>
+        ),
+      },
+      {
+        path: "espera-entrega",
+        element: (
+          <RequireAuth allowedTypes={['USER']}>
+            <ClientPortalGuard>
+              <WaitingDeliveryPage />
+            </ClientPortalGuard>
           </RequireAuth>
         ),
       },
@@ -43,7 +58,9 @@ export const router = createBrowserRouter([
         path: "dashboard",
         element: (
           <RequireAuth allowedTypes={['USER']}>
-            <DashboardPage />
+            <ClientPortalGuard>
+              <DashboardPage />
+            </ClientPortalGuard>
           </RequireAuth>
         ),
       },
@@ -74,6 +91,10 @@ export const router = createBrowserRouter([
       {
         path: "entrega/confirmar/:token",
         Component: DeliveryConfirmPage,
+      },
+      {
+        path: "activar-cuenta/:token",
+        Component: AccountSetupPage,
       },
       {
         path: "taller",

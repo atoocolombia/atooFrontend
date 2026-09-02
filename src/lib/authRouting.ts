@@ -7,6 +7,7 @@ import {
 import { fetchAuthMe, logoutAuthSession } from './authApi';
 import { clearAuthToken, getAuthToken } from './authTokenStorage';
 import { listUserDocuments } from './documentsApi';
+import { fetchClientAccess } from './clientAccessApi';
 
 const USER_SESSION_KEY = 'atooUserSession';
 const AUTH_REDIRECT_KEY = 'atooAuthRedirect';
@@ -186,7 +187,7 @@ export function resolvePostAuthPath(user: RegisteredUser): string {
   return getDashboardPath(user.userType);
 }
 
-/** Tras login, decide la ruta considerando progreso local y documentos en el servidor. */
+/** Tras login, decide la ruta considerando progreso local, documentos y estado de entrega. */
 export async function resolvePostAuthPathAsync(user: RegisteredUser): Promise<string> {
   const redirect = consumeAuthRedirect();
   if (redirect) return redirect;
@@ -195,12 +196,20 @@ export async function resolvePostAuthPathAsync(user: RegisteredUser): Promise<st
     return getDashboardPath(user.userType);
   }
 
-  if (isApplicationCompleted(user.id)) {
-    return getDashboardPath(user.userType);
+  try {
+    const access = await fetchClientAccess(user.id);
+    if (access.phase === 'dashboard') return '/dashboard';
+    if (access.phase === 'waiting_delivery') return '/espera-entrega';
+  } catch {
+    // Si falla el API, continuar con heurísticas locales
   }
 
   if (hasLocalApplicationInProgress(user.id)) {
     return '/solicitud';
+  }
+
+  if (isApplicationCompleted(user.id)) {
+    return '/espera-entrega';
   }
 
   try {
@@ -209,8 +218,8 @@ export async function resolvePostAuthPathAsync(user: RegisteredUser): Promise<st
       return '/solicitud';
     }
   } catch {
-    // Si falla el API, ir al dashboard por defecto
+    // Si falla el API, ir a solicitud por defecto
   }
 
-  return getDashboardPath(user.userType);
+  return '/solicitud';
 }
