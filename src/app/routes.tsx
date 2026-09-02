@@ -8,6 +8,7 @@ import { AdvisorDashboard } from "./pages/AdvisorDashboard";
 import { AdminDashboard } from "./pages/AdminDashboard";
 import { AnalystDashboard } from "./pages/AnalystDashboard";
 import { WorkshopDashboard } from "./pages/WorkshopDashboard";
+import { DeliveryConfirmPage } from "./pages/DeliveryConfirmPage";
 
 function ErrorBoundary() {
   return (
@@ -69,6 +70,10 @@ export const router = createBrowserRouter([
             <AnalystDashboard />
           </RequireAuth>
         ),
+      },
+      {
+        path: "entrega/confirmar/:token",
+        Component: DeliveryConfirmPage,
       },
       {
         path: "taller",

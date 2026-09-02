@@ -7,17 +7,20 @@ import {
   BarChart3,
   Car,
   LogOut,
+  Truck,
 } from 'lucide-react';
 import { AppointmentsView } from '../components/advisor/AppointmentsView';
 import { DocumentGeneratorView } from '../components/advisor/DocumentGeneratorView';
 import { RejectedUsersView } from '../components/advisor/RejectedUsersView';
 import { MetricsView } from '../components/advisor/MetricsView';
 import { VehiclesView } from '../components/advisor/VehiclesView';
+import { DeliveryQueueView } from '../components/advisor/DeliveryQueueView';
 import { useTheme } from '../contexts/ThemeContext';
 import { clearUserSession } from '../../lib/authRouting';
 import { MobileAppBar } from '../components/MobileAppBar';
 
 const menuItems = [
+  { id: 'deliveries', label: 'Entregas de vehículos', icon: Truck },
   { id: 'metrics', label: 'Métricas', icon: BarChart3 },
   { id: 'appointments', label: 'Calendario de Entregas', icon: Calendar },
   { id: 'documents', label: 'Generador de Documentos', icon: FileText },
@@ -26,7 +29,7 @@ const menuItems = [
 ];
 
 export function AdvisorDashboard() {
-  const [activeView, setActiveView] = useState('metrics');
+  const [activeView, setActiveView] = useState('deliveries');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -128,6 +131,7 @@ export function AdvisorDashboard() {
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
         <div className="p-6 lg:p-8">
+          {activeView === 'deliveries' && <DeliveryQueueView />}
           {activeView === 'metrics' && <MetricsView />}
           {activeView === 'appointments' && <AppointmentsView />}
           {activeView === 'documents' && <DocumentGeneratorView />}
