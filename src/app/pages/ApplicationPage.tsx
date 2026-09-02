@@ -18,6 +18,7 @@ import {
   type ApplicationProgress,
 } from '../../lib/applicationProgress';
 import { getSessionUser } from '../../lib/authRouting';
+import { submitUserApplication } from '../../lib/deliveriesApi';
 import { listUserDocuments, type UserDocumentMeta } from '../../lib/documentsApi';
 
 export function ApplicationPage() {
@@ -103,7 +104,12 @@ export function ApplicationPage() {
       setProgress((p) => ({ ...p, currentStep: p.currentStep + 1 }));
     } else {
       setProgress((p) => ({ ...p, showFinalMessage: true }));
-      if (user) markApplicationCompleted(user.id);
+      if (user) {
+        markApplicationCompleted(user.id);
+        void submitUserApplication(user.id).catch(() => {
+          /* localStorage ya marca completado; reintento en siguiente visita si falla red */
+        });
+      }
     }
   };
 

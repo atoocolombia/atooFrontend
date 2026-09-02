@@ -5,16 +5,19 @@ import {
   CheckCircle,
   XCircle,
   LogOut,
+  PlusCircle,
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { clearUserSession } from '../../lib/authRouting';
 import { MobileAppBar } from '../components/MobileAppBar';
-import { PendingApplicationsView } from '../components/analyst/PendingApplicationsView';
+import { PendingApplicationsLiveView } from '../components/analyst/PendingApplicationsLiveView';
+import { ManualDeliveryView } from '../components/analyst/ManualDeliveryView';
 import { ApprovedApplicationsView } from '../components/analyst/ApprovedApplicationsView';
 import { RejectedApplicationsView } from '../components/analyst/RejectedApplicationsView';
 
 const menuItems = [
   { id: 'pending', label: 'Solicitudes Pendientes', icon: ClipboardCheck },
+  { id: 'manual-delivery', label: 'Alta manual entrega', icon: PlusCircle },
   { id: 'approved', label: 'Solicitudes Aprobadas', icon: CheckCircle },
   { id: 'rejected', label: 'Solicitudes Denegadas', icon: XCircle },
 ];
@@ -122,7 +125,8 @@ export function AnalystDashboard() {
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
         <div className="p-6 lg:p-8">
-          {activeView === 'pending' && <PendingApplicationsView />}
+          {activeView === 'pending' && <PendingApplicationsLiveView />}
+          {activeView === 'manual-delivery' && <ManualDeliveryView />}
           {activeView === 'approved' && <ApprovedApplicationsView />}
           {activeView === 'rejected' && <RejectedApplicationsView />}
         </div>
