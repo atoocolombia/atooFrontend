@@ -2,11 +2,11 @@ import { Loader2, MessageCircle, Send, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { buildWhatsAppSupportUrl } from '../../../lib/whatsappSupport';
+import { fetchVehicleInspectionPlan } from '../../../lib/inspectionsApi';
 import {
   askSupportChat,
-  fetchSupportChatContext,
   fetchSupportTopics,
-  type SupportChatContext,
+  SUPPORT_TOPICS_FALLBACK,
   type SupportTopic,
 } from '../../../lib/supportChatApi';
 import { SupportChatMarkdown } from '../../../lib/supportChatMarkdown';
@@ -16,11 +16,15 @@ interface ChatMessage {
   text: string;
 }
 
-export function DashboardSupportChat() {
+type DashboardSupportChatProps = {
+  userId?: string;
+};
+
+export function DashboardSupportChat({ userId }: DashboardSupportChatProps) {
   const { theme } = useTheme();
   const [open, setOpen] = useState(false);
-  const [topics, setTopics] = useState<SupportTopic[]>([]);
-  const [vehicleContext, setVehicleContext] = useState<SupportChatContext | null>(null);
+  const [topics, setTopics] = useState<SupportTopic[]>(SUPPORT_TOPICS_FALLBACK);
+  const [vehicleLabel, setVehicleLabel] = useState<string | null>(null);
   const [topic, setTopic] = useState<number | null>(null);
   const [question, setQuestion] = useState('');
   const [loading, setLoading] = useState(false);
@@ -30,13 +34,20 @@ export function DashboardSupportChat() {
 
   useEffect(() => {
     if (!open) return;
-    void Promise.all([fetchSupportTopics(), fetchSupportChatContext()])
-      .then(([loadedTopics, ctx]) => {
-        setTopics(loadedTopics);
-        setVehicleContext(ctx);
-      })
-      .catch(() => setError('No se pudo cargar el asistente'));
-  }, [open]);
+    setError(null);
+    void fetchSupportTopics()
+      .then(setTopics)
+      .catch(() => {
+        /* Menú local ya visible */
+      });
+    if (!userId) {
+      setVehicleLabel(null);
+      return;
+    }
+    void fetchVehicleInspectionPlan(userId)
+      .then((plan) => setVehicleLabel(plan?.vehicleName ?? null))
+      .catch(() => setVehicleLabel(null));
+  }, [open, userId]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -50,10 +61,10 @@ export function DashboardSupportChat() {
 
   const vehicleHint = (id: number): string | null => {
     if (id !== 1 && id !== 5) return null;
-    if (vehicleContext?.vehicleLabel) {
-      return `Usaré la información de tu ${vehicleContext.vehicleLabel} según tus datos en atoo.`;
+    if (vehicleLabel) {
+      return `Usaré la información de tu ${vehicleLabel} según tus datos en atoo.`;
     }
-    return 'Aún no vemos tu modelo en el sistema; si preguntas del vehículo, puede que debamos ayudarte por WhatsApp.';
+    return 'Si tu vehículo ya está entregado, usamos esos datos al responder; si no, puede que debamos ayudarte por WhatsApp.';
   };
 
   const startTopic = (id: number) => {
@@ -78,10 +89,7 @@ export function DashboardSupportChat() {
     setLoading(true);
     try {
       const result = await askSupportChat({ topic, question: q });
-      setMessages((prev) => [
-        ...prev,
-        { role: 'bot', text: result.answer },
-      ]);
+      setMessages((prev) => [...prev, { role: 'bot', text: result.answer }]);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al consultar la IA';
       setError(msg);
@@ -113,10 +121,10 @@ export function DashboardSupportChat() {
             {messages.length === 0 && (
               <p className="text-gray-500">
                 Hola 👋 Elige un tema para empezar.
-                {vehicleContext?.vehicleLabel && (
+                {vehicleLabel && (
                   <>
                     {' '}
-                    Vehículo registrado: <strong>{vehicleContext.vehicleLabel}</strong>.
+                    Vehículo registrado: <strong>{vehicleLabel}</strong>.
                   </>
                 )}
               </p>
