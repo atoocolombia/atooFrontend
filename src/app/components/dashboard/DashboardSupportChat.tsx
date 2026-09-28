@@ -43,19 +43,40 @@ export function DashboardSupportChat({ userId, openOnMount }: DashboardSupportCh
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [chatStatus, setChatStatus] = useState<SupportChatSessionDto['status'] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showTopicPicker, setShowTopicPicker] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const choosingTopicRef = useRef(false);
+
+  const scrollToTopicPicker = useCallback(() => {
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    });
+  }, []);
 
   const applySession = useCallback((session: SupportChatSessionDto | null) => {
     if (!session) return;
     setSessionId(session.id);
     setChatStatus(session.status);
-    if (session.topic) setTopic(session.topic);
+    if (!choosingTopicRef.current) {
+      if (session.topic) {
+        setTopic(session.topic);
+        setShowTopicPicker(false);
+      } else {
+        setTopic(null);
+        setShowTopicPicker(true);
+      }
+    }
     setMessages(mapServerMessages(session.messages));
   }, []);
 
   const refreshSession = useCallback(async () => {
     const session = await fetchSupportChatSession();
-    if (session) applySession(session);
+    if (session) {
+      applySession(session);
+    } else if (!choosingTopicRef.current) {
+      setTopic(null);
+      setShowTopicPicker(true);
+    }
     return session;
   }, [applySession]);
 
@@ -100,10 +121,13 @@ export function DashboardSupportChat({ userId, openOnMount }: DashboardSupportCh
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, loading]);
 
-  const resetFlow = () => {
+  const openTopicPicker = () => {
+    choosingTopicRef.current = true;
     setTopic(null);
+    setShowTopicPicker(true);
     setQuestion('');
     setError(null);
+    scrollToTopicPicker();
   };
 
   const vehicleHint = (id: number): string | null => {
@@ -115,6 +139,8 @@ export function DashboardSupportChat({ userId, openOnMount }: DashboardSupportCh
   };
 
   const startTopic = (id: number) => {
+    choosingTopicRef.current = false;
+    setShowTopicPicker(false);
     setTopic(id);
     setError(null);
     const t = topics.find((x) => x.id === id);
@@ -254,14 +280,15 @@ export function DashboardSupportChat({ userId, openOnMount }: DashboardSupportCh
               </div>
             )}
 
-            {topic === null && topics.length > 0 && (
+            {(showTopicPicker || topic === null) && topics.length > 0 && (
               <div className="grid gap-2 pt-2">
+                <p className="text-xs text-gray-500">Elige el tema de tu consulta:</p>
                 {topics.map((t) => (
                   <button
                     key={t.id}
                     type="button"
                     onClick={() => startTopic(t.id)}
-                    className="text-left rounded-xl border border-inherit px-3 py-2 hover:bg-[#1A1FE8]/10"
+                    className="text-left rounded-xl border border-inherit px-3 py-2 hover:bg-[#1A1FE8]/10 active:bg-[#1A1FE8]/20"
                   >
                     {t.emoji} {t.label}
                   </button>
@@ -297,7 +324,11 @@ export function DashboardSupportChat({ userId, openOnMount }: DashboardSupportCh
               </div>
             )}
             <div className="flex flex-wrap justify-between gap-2 text-xs">
-              <button type="button" className="underline opacity-70" onClick={resetFlow}>
+              <button
+                type="button"
+                className="underline opacity-70 min-h-10 px-1"
+                onClick={openTopicPicker}
+              >
                 Cambiar tema
               </button>
               <div className="flex gap-3">
