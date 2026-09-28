@@ -3,6 +3,10 @@ import { apiFetch, apiUrl, fetchWithCreds, parseErrorResponse } from './http';
 
 export type TrainingVideoKind = 'MANDATORY' | 'OPTIONAL';
 
+export const TRAINING_YOUTUBE_EXAMPLE_MANDATORY = 'https://www.youtube.com/watch?v=DNR3Vj56xaA';
+export const TRAINING_YOUTUBE_EXAMPLE_OPTIONAL = 'https://www.youtube.com/watch?v=c2ANsuMXT4o';
+export const TRAINING_YOUTUBE_EXAMPLE_OPTIONAL_PRICE = 50_000;
+
 export interface TrainingVideoDto {
   id: string;
   title: string;
@@ -11,8 +15,11 @@ export interface TrainingVideoDto {
   priceCop: number | null;
   sortOrder: number;
   published: boolean;
-  mimeType: string;
-  sizeBytes: number;
+  source?: 'UPLOAD' | 'YOUTUBE';
+  youtubeUrl?: string | null;
+  youtubeEmbedUrl?: string | null;
+  mimeType: string | null;
+  sizeBytes: number | null;
   originalName: string | null;
   createdAt: string;
   updatedAt: string;
@@ -55,7 +62,8 @@ export async function adminFetchTrainingPurchases(): Promise<TrainingPurchaseAdm
 }
 
 export async function adminCreateTrainingVideo(input: {
-  file: File;
+  file?: File;
+  youtubeUrl?: string;
   title: string;
   description?: string;
   kind: TrainingVideoKind;
@@ -64,7 +72,8 @@ export async function adminCreateTrainingVideo(input: {
   published?: boolean;
 }): Promise<TrainingVideoDto> {
   const form = new FormData();
-  form.append('file', input.file);
+  if (input.file) form.append('file', input.file);
+  if (input.youtubeUrl?.trim()) form.append('youtubeUrl', input.youtubeUrl.trim());
   form.append('title', input.title);
   if (input.description) form.append('description', input.description);
   form.append('kind', input.kind);

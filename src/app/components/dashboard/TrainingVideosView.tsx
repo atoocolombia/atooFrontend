@@ -20,6 +20,21 @@ function VideoPlayer({ video }: { video: TrainingVideoDto }) {
     };
   }, [src]);
 
+  if (video.youtubeEmbedUrl) {
+    return (
+      <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black">
+        <iframe
+          title={video.title}
+          src={video.youtubeEmbedUrl}
+          className="absolute inset-0 w-full h-full border-0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          referrerPolicy="strict-origin-when-cross-origin"
+        />
+      </div>
+    );
+  }
+
   const onError = () => {
     if (src.startsWith('blob:') || loadingBlob) return;
     setLoadingBlob(true);
