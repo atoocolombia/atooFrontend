@@ -69,7 +69,7 @@ export function DashboardPage() {
       theme === 'dark' ? 'bg-[#06071A]' : 'bg-gray-50'
     }`}>
       {/* Support Button */}
-      <DashboardSupportChat />
+      <DashboardSupportChat userId={profile?.id} />
 
       {/* Sidebar */}
       <aside
