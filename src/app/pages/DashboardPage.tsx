@@ -93,7 +93,7 @@ export function DashboardPage() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-40 w-64 transform transition-all duration-300 ${
+        className={`fixed lg:static inset-y-0 left-0 z-40 w-64 h-[100dvh] max-h-[100dvh] overflow-hidden lg:h-auto lg:max-h-none transform transition-all duration-300 ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         } ${
           theme === 'dark'
@@ -102,7 +102,7 @@ export function DashboardPage() {
         }`}
       >
         <div
-          className="flex flex-col h-full"
+          className="flex flex-col h-full min-h-0"
           style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
         >
           {/* Logo */}
@@ -142,7 +142,7 @@ export function DashboardPage() {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-1">
+          <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-1 touch-pan-y">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeView === item.id;
@@ -171,9 +171,12 @@ export function DashboardPage() {
           </nav>
 
           {/* Logout */}
-          <div className={`p-4 border-t ${
+          <div
+            className={`shrink-0 p-4 border-t ${
             theme === 'dark' ? 'border-blue-600/20' : 'border-gray-200'
-          }`}>
+          }`}
+            style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
+          >
             <button
               onClick={handleLogout}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
