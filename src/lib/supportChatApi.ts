@@ -20,11 +20,20 @@ export interface SupportChatContext {
   source: 'plan' | 'delivery' | null;
 }
 
-export async function fetchSupportChatContext(): Promise<SupportChatContext> {
+/** Opcional: si el backend aún no expone /context, devuelve null sin romper el chat. */
+export async function fetchSupportChatContext(): Promise<SupportChatContext | null> {
   const res = await apiFetch('/api/v1/support/chat/context');
-  if (!res.ok) throw new Error('No se pudo cargar tu vehículo');
+  if (!res.ok) return null;
   return res.json() as Promise<SupportChatContext>;
 }
+
+export const SUPPORT_TOPICS_FALLBACK: SupportTopic[] = [
+  { id: 1, label: 'Vehículo', emoji: '🚗', needsVehicle: false },
+  { id: 2, label: 'Contrato', emoji: '📄', needsVehicle: false },
+  { id: 3, label: 'Pagos y cuotas', emoji: '💳', needsVehicle: false },
+  { id: 4, label: 'Seguro', emoji: '🛡️', needsVehicle: false },
+  { id: 5, label: 'Emergencia', emoji: '🆘', needsVehicle: false },
+];
 
 export async function askSupportChat(payload: {
   topic: number;

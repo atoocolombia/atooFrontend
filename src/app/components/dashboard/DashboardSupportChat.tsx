@@ -6,6 +6,7 @@ import {
   askSupportChat,
   fetchSupportChatContext,
   fetchSupportTopics,
+  SUPPORT_TOPICS_FALLBACK,
   type SupportChatContext,
   type SupportTopic,
 } from '../../../lib/supportChatApi';
@@ -30,12 +31,16 @@ export function DashboardSupportChat() {
 
   useEffect(() => {
     if (!open) return;
-    void Promise.all([fetchSupportTopics(), fetchSupportChatContext()])
-      .then(([loadedTopics, ctx]) => {
-        setTopics(loadedTopics);
-        setVehicleContext(ctx);
-      })
-      .catch(() => setError('No se pudo cargar el asistente'));
+    setError(null);
+    void fetchSupportTopics()
+      .then(setTopics)
+      .catch(() => {
+        setTopics(SUPPORT_TOPICS_FALLBACK);
+        setError('No se pudo sincronizar el menú; puedes intentar igual.');
+      });
+    void fetchSupportChatContext()
+      .then(setVehicleContext)
+      .catch(() => setVehicleContext(null));
   }, [open]);
 
   useEffect(() => {
