@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import {
   LayoutDashboard,
   Car,
@@ -12,6 +12,7 @@ import {
   Wrench,
   ClipboardCheck,
   GraduationCap,
+  MessageCircle,
 } from 'lucide-react';
 import { AdminMetricsView } from '../components/admin/AdminMetricsView';
 import { DeliveredVehiclesView } from '../components/admin/DeliveredVehiclesView';
@@ -23,6 +24,7 @@ import { LandingAdminView } from '../components/admin/LandingAdminView';
 import { WorkshopsAdminView } from '../components/admin/WorkshopsAdminView';
 import { ProceduresAdminView } from '../components/admin/ProceduresAdminView';
 import { TrainingVideosAdminView } from '../components/admin/TrainingVideosAdminView';
+import { SupportChatsAdminView } from '../components/admin/SupportChatsAdminView';
 import { AdminNotificationBell } from '../components/admin/AdminNotificationBell';
 import { MobileAppBar } from '../components/MobileAppBar';
 import { useTheme } from '../contexts/ThemeContext';
@@ -35,6 +37,7 @@ const menuItems = [
   { id: 'workshops', label: 'Talleres', icon: Wrench },
   { id: 'procedures', label: 'Procedimientos', icon: ClipboardCheck },
   { id: 'training', label: 'Capacitaciones', icon: GraduationCap },
+  { id: 'support-chats', label: 'Chats soporte', icon: MessageCircle },
   { id: 'delivered', label: 'Vehículos Entregados', icon: Car },
   { id: 'risk', label: 'Pagos en Riesgo', icon: AlertTriangle },
   { id: 'retained', label: 'Vehículos Retenidos', icon: Lock },
@@ -43,7 +46,12 @@ const menuItems = [
 ];
 
 export function AdminDashboard() {
-  const [activeView, setActiveView] = useState('metrics');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const chatFromEmail = searchParams.get('supportChat');
+  const [activeView, setActiveView] = useState(() =>
+    chatFromEmail ? 'support-chats' : 'metrics',
+  );
+  const [supportChatFocusId, setSupportChatFocusId] = useState<string | null>(chatFromEmail);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [pendingProcedureCount, setPendingProcedureCount] = useState(0);
   const navigate = useNavigate();
@@ -60,6 +68,14 @@ export function AdminDashboard() {
       // La vista correspondiente mostrará el error detallado si el admin la abre.
     }
   }, []);
+
+  useEffect(() => {
+    const id = searchParams.get('supportChat');
+    if (id) {
+      setActiveView('support-chats');
+      setSupportChatFocusId(id);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     void refreshPendingProcedures();
@@ -127,6 +143,14 @@ export function AdminDashboard() {
                   onClick={() => {
                     setActiveView(item.id);
                     setIsSidebarOpen(false);
+                    if (item.id !== 'support-chats') {
+                      setSupportChatFocusId(null);
+                      if (searchParams.has('supportChat')) {
+                        const next = new URLSearchParams(searchParams);
+                        next.delete('supportChat');
+                        setSearchParams(next, { replace: true });
+                      }
+                    }
                   }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                     isActive
@@ -209,6 +233,9 @@ export function AdminDashboard() {
             <ProceduresAdminView onPendingCountChange={setPendingProcedureCount} />
           )}
           {activeView === 'training' && <TrainingVideosAdminView />}
+          {activeView === 'support-chats' && (
+            <SupportChatsAdminView initialSessionId={supportChatFocusId} />
+          )}
           {activeView === 'delivered' && <DeliveredVehiclesView />}
           {activeView === 'risk' && <PaymentRiskView />}
           {activeView === 'retained' && <RetainedVehiclesView />}
