@@ -14,7 +14,6 @@ import { SupportChatMarkdown } from '../../../lib/supportChatMarkdown';
 interface ChatMessage {
   role: 'bot' | 'user';
   text: string;
-  sources?: string[];
 }
 
 export function DashboardSupportChat() {
@@ -81,7 +80,7 @@ export function DashboardSupportChat() {
       const result = await askSupportChat({ topic, question: q });
       setMessages((prev) => [
         ...prev,
-        { role: 'bot', text: result.answer, sources: result.sources },
+        { role: 'bot', text: result.answer },
       ]);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al consultar la IA';
@@ -134,9 +133,6 @@ export function DashboardSupportChat() {
                 }`}
               >
                 {m.role === 'bot' ? <SupportChatMarkdown text={m.text} /> : m.text}
-                {m.sources && m.sources.length > 0 && (
-                  <p className="text-xs mt-2 opacity-70">Fuentes: {m.sources.join(', ')}</p>
-                )}
               </div>
             ))}
             {loading && (
