@@ -9,6 +9,7 @@ import {
   LogOut,
   Loader2,
   Wrench,
+  GraduationCap,
 } from 'lucide-react';
 import { ProgressView } from '../components/dashboard/ProgressView';
 import { VehicleView } from '../components/dashboard/VehicleView';
@@ -16,6 +17,7 @@ import { PaymentsView } from '../components/dashboard/PaymentsView';
 import { DocumentsView } from '../components/dashboard/DocumentsView';
 import { InspectionsView } from '../components/dashboard/InspectionsView';
 import { DashboardSupportChat } from '../components/dashboard/DashboardSupportChat';
+import { TrainingVideosView } from '../components/dashboard/TrainingVideosView';
 import { NotificationBell } from '../components/dashboard/NotificationBell';
 import { ProfileSettingsView } from '../components/dashboard/ProfileSettingsView';
 import { MobileAppBar } from '../components/MobileAppBar';
@@ -30,6 +32,7 @@ const menuItems = [
   { id: 'payments', label: 'Pagos', icon: CreditCard },
   { id: 'inspections', label: 'Revisiones', icon: Wrench },
   { id: 'documents', label: 'Documentos', icon: FileText },
+  { id: 'training', label: 'Capacitaciones', icon: GraduationCap },
   { id: 'settings', label: 'Configuración', icon: Settings },
 ];
 
@@ -244,6 +247,7 @@ export function DashboardPage() {
           {activeView === 'payments' && <PaymentsView />}
           {activeView === 'inspections' && <InspectionsView />}
           {activeView === 'documents' && <DocumentsView clientName={displayName} />}
+          {activeView === 'training' && <TrainingVideosView />}
           {activeView === 'settings' && (
             <ProfileSettingsView
               profile={profile}

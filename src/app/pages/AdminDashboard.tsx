@@ -11,6 +11,7 @@ import {
   LayoutTemplate,
   Wrench,
   ClipboardCheck,
+  GraduationCap,
 } from 'lucide-react';
 import { AdminMetricsView } from '../components/admin/AdminMetricsView';
 import { DeliveredVehiclesView } from '../components/admin/DeliveredVehiclesView';
@@ -21,6 +22,7 @@ import { ActiveUsersView } from '../components/admin/ActiveUsersView';
 import { LandingAdminView } from '../components/admin/LandingAdminView';
 import { WorkshopsAdminView } from '../components/admin/WorkshopsAdminView';
 import { ProceduresAdminView } from '../components/admin/ProceduresAdminView';
+import { TrainingVideosAdminView } from '../components/admin/TrainingVideosAdminView';
 import { AdminNotificationBell } from '../components/admin/AdminNotificationBell';
 import { MobileAppBar } from '../components/MobileAppBar';
 import { useTheme } from '../contexts/ThemeContext';
@@ -32,6 +34,7 @@ const menuItems = [
   { id: 'landing', label: 'Landing Page', icon: LayoutTemplate },
   { id: 'workshops', label: 'Talleres', icon: Wrench },
   { id: 'procedures', label: 'Procedimientos', icon: ClipboardCheck },
+  { id: 'training', label: 'Capacitaciones', icon: GraduationCap },
   { id: 'delivered', label: 'Vehículos Entregados', icon: Car },
   { id: 'risk', label: 'Pagos en Riesgo', icon: AlertTriangle },
   { id: 'retained', label: 'Vehículos Retenidos', icon: Lock },
@@ -205,6 +208,7 @@ export function AdminDashboard() {
           {activeView === 'procedures' && (
             <ProceduresAdminView onPendingCountChange={setPendingProcedureCount} />
           )}
+          {activeView === 'training' && <TrainingVideosAdminView />}
           {activeView === 'delivered' && <DeliveredVehiclesView />}
           {activeView === 'risk' && <PaymentRiskView />}
           {activeView === 'retained' && <RetainedVehiclesView />}
