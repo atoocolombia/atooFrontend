@@ -47,6 +47,43 @@ export function formatCop(amount: number): string {
   }).format(amount);
 }
 
+const YOUTUBE_ID = /^[a-zA-Z0-9_-]{11}$/;
+
+/** ID de video YouTube a partir de watch, embed, shorts o youtu.be. */
+export function extractYoutubeVideoId(input: string): string | null {
+  const raw = input.trim();
+  if (!raw) return null;
+  try {
+    const url = new URL(raw);
+    const host = url.hostname.replace(/^www\./, '');
+    if (host === 'youtu.be') {
+      const id = url.pathname.slice(1).split('/')[0];
+      return YOUTUBE_ID.test(id) ? id : null;
+    }
+    if (host === 'youtube.com' || host === 'm.youtube.com') {
+      if (url.pathname === '/watch') {
+        const id = url.searchParams.get('v') ?? '';
+        return YOUTUBE_ID.test(id) ? id : null;
+      }
+      if (url.pathname.startsWith('/embed/') || url.pathname.startsWith('/shorts/')) {
+        const id = url.pathname.split('/')[2] ?? '';
+        return YOUTUBE_ID.test(id) ? id : null;
+      }
+    }
+  } catch {
+    return YOUTUBE_ID.test(raw) ? raw : null;
+  }
+  return null;
+}
+
+export function trainingVideoThumbnailUrl(video: TrainingVideoDto): string | null {
+  const fromUrl = video.youtubeUrl ? extractYoutubeVideoId(video.youtubeUrl) : null;
+  const fromEmbed = video.youtubeEmbedUrl ? extractYoutubeVideoId(video.youtubeEmbedUrl) : null;
+  const id = fromUrl ?? fromEmbed;
+  if (!id) return null;
+  return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+}
+
 export async function adminFetchTrainingVideos(): Promise<TrainingVideoDto[]> {
   const res = await apiFetch('/api/v1/admin/training-videos');
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
