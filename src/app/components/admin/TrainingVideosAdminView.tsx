@@ -9,6 +9,9 @@ import {
   adminFetchTrainingVideos,
   adminUpdateTrainingVideo,
   formatCop,
+  TRAINING_YOUTUBE_EXAMPLE_MANDATORY,
+  TRAINING_YOUTUBE_EXAMPLE_OPTIONAL,
+  TRAINING_YOUTUBE_EXAMPLE_OPTIONAL_PRICE,
   type TrainingPurchaseAdminDto,
   type TrainingVideoDto,
   type TrainingVideoKind,
@@ -30,6 +33,8 @@ export function TrainingVideosAdminView() {
   const [sortOrder, setSortOrder] = useState('0');
   const [published, setPublished] = useState(true);
   const [file, setFile] = useState<File | null>(null);
+  const [sourceMode, setSourceMode] = useState<'upload' | 'youtube'>('youtube');
+  const [youtubeUrl, setYoutubeUrl] = useState(TRAINING_YOUTUBE_EXAMPLE_MANDATORY);
 
   const card =
     theme === 'dark'
@@ -54,17 +59,37 @@ export function TrainingVideosAdminView() {
     void reload();
   }, [reload]);
 
+  const fillMandatoryExample = () => {
+    setSourceMode('youtube');
+    setKind('MANDATORY');
+    setYoutubeUrl(TRAINING_YOUTUBE_EXAMPLE_MANDATORY);
+    if (!title.trim()) setTitle('Capacitación obligatoria (ejemplo)');
+  };
+
+  const fillOptionalExample = () => {
+    setSourceMode('youtube');
+    setKind('OPTIONAL');
+    setYoutubeUrl(TRAINING_YOUTUBE_EXAMPLE_OPTIONAL);
+    setPriceCop(String(TRAINING_YOUTUBE_EXAMPLE_OPTIONAL_PRICE));
+    if (!title.trim()) setTitle('Capacitación opcional (ejemplo)');
+  };
+
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) {
+    if (sourceMode === 'upload' && !file) {
       setError('Selecciona un video MP4 o WebM');
+      return;
+    }
+    if (sourceMode === 'youtube' && !youtubeUrl.trim()) {
+      setError('Indica el enlace de YouTube');
       return;
     }
     setUploading(true);
     setError(null);
     try {
       await adminCreateTrainingVideo({
-        file,
+        file: sourceMode === 'upload' ? file ?? undefined : undefined,
+        youtubeUrl: sourceMode === 'youtube' ? youtubeUrl.trim() : undefined,
         title: title.trim(),
         description: description.trim() || undefined,
         kind,
@@ -76,6 +101,7 @@ export function TrainingVideosAdminView() {
       setDescription('');
       setPriceCop('');
       setFile(null);
+      setYoutubeUrl(TRAINING_YOUTUBE_EXAMPLE_MANDATORY);
       await reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo subir el video');
@@ -172,7 +198,34 @@ export function TrainingVideosAdminView() {
                 className="mt-1 w-full rounded-lg border px-3 py-2 dark:bg-white/5"
               />
             </label>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={fillMandatoryExample}
+                className="text-xs px-3 py-1.5 rounded-lg border border-[#1A1FE8]/40 text-[#1A1FE8]"
+              >
+                Ejemplo obligatorio (YouTube)
+              </button>
+              <button
+                type="button"
+                onClick={fillOptionalExample}
+                className="text-xs px-3 py-1.5 rounded-lg border border-amber-600/40 text-amber-800 dark:text-amber-200"
+              >
+                Ejemplo opcional $50.000 (YouTube)
+              </button>
+            </div>
             <div className="flex flex-wrap gap-4 items-end">
+              <label className="text-sm">
+                Origen
+                <select
+                  value={sourceMode}
+                  onChange={(e) => setSourceMode(e.target.value as 'upload' | 'youtube')}
+                  className="mt-1 block rounded-lg border px-3 py-2 dark:bg-white/5"
+                >
+                  <option value="youtube">Enlace YouTube</option>
+                  <option value="upload">Subir archivo</option>
+                </select>
+              </label>
               <label className="text-sm">
                 Tipo
                 <select
@@ -202,15 +255,27 @@ export function TrainingVideosAdminView() {
                 Publicada
               </label>
             </div>
-            <label className="block text-sm">
-              Video (MP4 / WebM, máx. ~200 MB)
-              <input
-                type="file"
-                accept="video/mp4,video/webm"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                className="mt-1 block w-full text-sm"
-              />
-            </label>
+            {sourceMode === 'youtube' ? (
+              <label className="block text-sm">
+                Enlace YouTube
+                <input
+                  value={youtubeUrl}
+                  onChange={(e) => setYoutubeUrl(e.target.value)}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  className="mt-1 w-full rounded-lg border px-3 py-2 dark:bg-white/5"
+                />
+              </label>
+            ) : (
+              <label className="block text-sm">
+                Video (MP4 / WebM, máx. ~200 MB)
+                <input
+                  type="file"
+                  accept="video/mp4,video/webm"
+                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                  className="mt-1 block w-full text-sm"
+                />
+              </label>
+            )}
             <button
               type="submit"
               disabled={uploading}
@@ -232,6 +297,7 @@ export function TrainingVideosAdminView() {
                   <div>
                     <p className="font-semibold">{v.title}</p>
                     <p className="text-sm opacity-70">
+                      {v.source === 'YOUTUBE' ? 'YouTube · ' : 'Archivo · '}
                       {v.kind === 'MANDATORY' ? 'Obligatoria' : `Opcional · ${formatCop(v.priceCop ?? 0)}`}
                       {' · '}
                       {v.published ? 'Publicada' : 'Borrador'}
