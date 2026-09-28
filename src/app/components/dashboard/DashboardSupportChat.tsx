@@ -104,6 +104,14 @@ export function DashboardSupportChat({ userId, openOnMount }: DashboardSupportCh
     setTopic(null);
     setQuestion('');
     setError(null);
+    setMessages((prev) =>
+      prev.length > 0
+        ? [{ role: 'bot', text: 'Elige un tema de ayuda para continuar.' }]
+        : prev,
+    );
+    window.requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    });
   };
 
   const vehicleHint = (id: number): string | null => {
@@ -297,8 +305,12 @@ export function DashboardSupportChat({ userId, openOnMount }: DashboardSupportCh
               </div>
             )}
             <div className="flex flex-wrap justify-between gap-2 text-xs">
-              <button type="button" className="underline opacity-70" onClick={resetFlow}>
-                Cambiar tema
+              <button
+                type="button"
+                className="min-h-10 px-2 underline opacity-80 font-medium"
+                onClick={resetFlow}
+              >
+                Cambiar tema de ayuda
               </button>
               <div className="flex gap-3">
                 <button

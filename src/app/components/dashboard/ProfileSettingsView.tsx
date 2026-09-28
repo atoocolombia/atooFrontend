@@ -4,6 +4,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { changeAuthPassword, updateAuthProfile } from '../../../lib/authApi';
 import { PASSWORD_POLICY_HINT, validatePassword } from '../../../lib/passwordPolicy';
 import type { UserProfile } from '../../../lib/userProfileApi';
+import { ThemeToggleButton } from '../ThemeToggleButton';
 
 interface ProfileSettingsViewProps {
   profile: UserProfile | null;
@@ -100,6 +101,16 @@ export function ProfileSettingsView({
 
   return (
     <div className="space-y-6 max-w-3xl">
+      <div className={`rounded-2xl shadow-lg p-8 border transition-colors ${cardClass}`}>
+        <h2 className={`text-lg font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+          Apariencia
+        </h2>
+        <p className={`text-sm mb-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+          Elige modo claro u oscuro en toda la app.
+        </p>
+        <ThemeToggleButton />
+      </div>
+
       <div className={`rounded-2xl shadow-lg p-8 border transition-colors ${cardClass}`}>
         <div className="flex items-center gap-3 mb-6">
           <UserRound className="w-6 h-6 text-[#1A1FE8]" />

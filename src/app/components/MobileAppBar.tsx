@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Menu, X } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { ThemeToggleButton } from './ThemeToggleButton';
 
 interface MobileAppBarProps {
   isSidebarOpen: boolean;
@@ -49,7 +50,10 @@ export function MobileAppBar({
           atoo
         </p>
 
-        <div className="relative z-10 ml-auto flex items-center">{right}</div>
+        <div className="relative z-10 ml-auto flex items-center gap-0.5">
+          <ThemeToggleButton compact />
+          {right}
+        </div>
       </div>
       {children}
     </div>

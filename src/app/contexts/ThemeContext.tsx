@@ -30,6 +30,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       }
       if (typeof document !== 'undefined') {
         document.documentElement.classList.toggle('dark', theme === 'dark');
+        const themeColor = theme === 'dark' ? '#06071A' : '#ffffff';
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeColor);
       }
     } catch (e) {
       // Ignorar errores de acceso a localStorage o document
