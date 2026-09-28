@@ -67,7 +67,7 @@ export function PendingApplicationsLiveView() {
           Solicitudes pendientes
         </h1>
         <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
-          Al aprobar, se crea la card de entrega para el asesor
+          Al aprobar, se crea la card de entrega en el panel de analista
         </p>
       </div>
 

@@ -27,7 +27,7 @@ export function Footer() {
               <span className="text-[10px] -mt-1 tracking-wider uppercase text-blue-400/60">Yours Tomorrow</span>
             </div>
             <p className="text-sm text-gray-400">
-              La mejor opción para conductores que quieren ser dueños de su vehículo.
+              Genera ingresos con tu vehículo y hazlo tuyo con Rent to Own en 60 meses.
             </p>
             <div className="flex gap-4">
               <a href="#" className="group w-10 h-10 backdrop-blur-sm border rounded-full flex items-center justify-center transition-all bg-white/5 border-blue-600/20 hover:bg-[#1A1FE8] hover:border-transparent hover:shadow-[0_0_20px_rgba(26,31,232,0.4)]">
