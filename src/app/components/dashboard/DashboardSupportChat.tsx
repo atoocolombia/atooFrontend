@@ -53,7 +53,7 @@ export function DashboardSupportChat() {
       ...prev,
       { role: 'bot', text: `Elegiste: ${t?.emoji ?? ''} ${t?.label ?? id}.` },
     ]);
-    if (id === 1) {
+    if (id === 1 || id === 5) {
       setMessages((prev) => [
         ...prev,
         { role: 'bot', text: '¿Tu vehículo es Nammi o Aeolus (Sky EV01)?' },
@@ -70,9 +70,10 @@ export function DashboardSupportChat() {
     ]);
   };
 
+  const needsVehicle = topic === 1 || topic === 5;
   const canAsk =
     topic !== null &&
-    (topic !== 1 || vehicle !== null) &&
+    (!needsVehicle || vehicle !== null) &&
     question.trim().length >= 3 &&
     !loading;
 
@@ -86,7 +87,7 @@ export function DashboardSupportChat() {
     try {
       const result = await askSupportChat({
         topic,
-        vehicle: topic === 1 ? vehicle ?? undefined : undefined,
+        vehicle: needsVehicle ? vehicle ?? undefined : undefined,
         question: q,
       });
       setMessages((prev) => [
@@ -162,7 +163,7 @@ export function DashboardSupportChat() {
               </div>
             )}
 
-            {topic === 1 && !vehicle && (
+            {needsVehicle && !vehicle && (
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
@@ -192,11 +193,11 @@ export function DashboardSupportChat() {
                     if (e.key === 'Enter') void handleSend();
                   }}
                   placeholder={
-                    topic === 1 && !vehicle
+                    needsVehicle && !vehicle
                       ? 'Primero elige vehículo arriba'
                       : 'Escribe tu pregunta…'
                   }
-                  disabled={topic === 1 && !vehicle}
+                  disabled={needsVehicle && !vehicle}
                   className={`flex-1 rounded-xl border px-3 py-2 text-sm ${
                     theme === 'dark' ? 'bg-white/5 border-blue-600/30' : 'border-gray-200'
                   }`}
