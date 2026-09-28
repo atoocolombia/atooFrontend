@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
 import {
   LayoutDashboard,
   Car,
@@ -40,8 +40,25 @@ export function DashboardPage() {
   const [activeView, setActiveView] = useState('progress');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [openSupportFromPush] = useState(
+    () =>
+      searchParams.get('openSupportChat') === '1' ||
+      searchParams.get('openSupportChat') === 'true',
+  );
   const { theme } = useTheme();
   const { profile, loading: profileLoading, reload: reloadProfile } = useUserProfile();
+
+  useEffect(() => {
+    if (!openSupportFromPush) return;
+    setSearchParams(
+      (prev) => {
+        prev.delete('openSupportChat');
+        return prev;
+      },
+      { replace: true },
+    );
+  }, [openSupportFromPush, setSearchParams]);
 
   const displayName = profile?.displayName ?? 'Usuario';
   const userEmail = profile?.email ?? '';
@@ -72,7 +89,7 @@ export function DashboardPage() {
       theme === 'dark' ? 'bg-[#06071A]' : 'bg-gray-50'
     }`}>
       {/* Support Button */}
-      <DashboardSupportChat userId={profile?.id} />
+      <DashboardSupportChat userId={profile?.id} openOnMount={openSupportFromPush} />
 
       {/* Sidebar */}
       <aside
