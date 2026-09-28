@@ -9,6 +9,7 @@ import {
   type SupportChatContext,
   type SupportTopic,
 } from '../../../lib/supportChatApi';
+import { SupportChatMarkdown } from '../../../lib/supportChatMarkdown';
 
 interface ChatMessage {
   role: 'bot' | 'user';
@@ -132,7 +133,7 @@ export function DashboardSupportChat() {
                       : 'bg-gray-100'
                 }`}
               >
-                {m.text}
+                {m.role === 'bot' ? <SupportChatMarkdown text={m.text} /> : m.text}
                 {m.sources && m.sources.length > 0 && (
                   <p className="text-xs mt-2 opacity-70">Fuentes: {m.sources.join(', ')}</p>
                 )}
