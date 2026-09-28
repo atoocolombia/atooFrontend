@@ -25,6 +25,9 @@ import { PushActivateChip } from '../components/PushActivateChip';
 import { useTheme } from '../contexts/ThemeContext';
 import { clearUserSession } from '../../lib/authRouting';
 import { useUserProfile } from '../../lib/useUserProfile';
+import { useBodyScrollLock } from '../../lib/useBodyScrollLock';
+
+const mobileSidebarScrollStyle = { WebkitOverflowScrolling: 'touch' as const };
 
 const menuItems = [
   { id: 'progress', label: 'Mi Progreso', icon: LayoutDashboard },
@@ -48,6 +51,8 @@ export function DashboardPage() {
   );
   const { theme } = useTheme();
   const { profile, loading: profileLoading, reload: reloadProfile } = useUserProfile();
+
+  useBodyScrollLock(isSidebarOpen);
 
   useEffect(() => {
     if (!openSupportFromPush) return;
@@ -93,7 +98,7 @@ export function DashboardPage() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-40 w-64 h-[100dvh] max-h-[100dvh] overflow-hidden lg:h-auto lg:max-h-none transform transition-all duration-300 ${
+        className={`fixed lg:static inset-y-0 left-0 z-[100] lg:z-40 w-[min(100vw,16rem)] lg:w-64 h-[100dvh] max-h-[100dvh] overflow-hidden lg:h-auto lg:max-h-none transform transition-all duration-300 ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         } ${
           theme === 'dark'
@@ -105,44 +110,72 @@ export function DashboardPage() {
           className="flex flex-col h-full min-h-0"
           style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
         >
-          {/* Logo */}
-          <div className={`p-6 border-b ${
-            theme === 'dark' ? 'border-blue-600/20' : 'border-gray-200'
-          }`}>
-            <div className="flex flex-col mb-2">
-              <span className={`text-3xl font-bold tracking-wide ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: 'system-ui, -apple-system, sans-serif', fontWeight: '600', letterSpacing: '-0.02em' }}>atoo</span>
-              <span className={`text-[10px] -mt-1 tracking-wider uppercase ${theme === 'dark' ? 'text-blue-400/60' : 'text-blue-700/60'}`}>Yours Tomorrow</span>
+          <div
+            className={`shrink-0 p-4 lg:p-6 border-b ${
+              theme === 'dark' ? 'border-blue-600/20' : 'border-gray-200'
+            }`}
+          >
+            <div className="flex flex-col mb-1">
+              <span
+                className={`text-2xl lg:text-3xl font-bold tracking-wide ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+                style={{
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                  fontWeight: '600',
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                atoo
+              </span>
+              <span
+                className={`text-[10px] -mt-1 tracking-wider uppercase ${theme === 'dark' ? 'text-blue-400/60' : 'text-blue-700/60'}`}
+              >
+                Yours Tomorrow
+              </span>
             </div>
-            <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Panel de Control</p>
+            <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+              Panel de Control
+            </p>
           </div>
 
-          {/* User Info */}
-          <div className={`p-6 border-b ${
-            theme === 'dark' ? 'border-blue-600/20' : 'border-gray-200'
-          }`}>
-            <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-sm border-2 ${
-                theme === 'dark'
-                  ? 'bg-[#1A1FE8]/20 border-[#1A1FE8] shadow-[0_0_15px_rgba(26,31,232,0.3)]'
-                  : 'bg-blue-100 border-blue-600'
-              }`}>
-                <span className={`font-bold text-lg ${theme === 'dark' ? 'text-[#1A1FE8]' : 'text-blue-700'}`}>
-                  {profileLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : userInitials}
-                </span>
-              </div>
-              <div className="min-w-0">
-                <h3 className={`font-semibold truncate ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                  {profileLoading ? 'Cargando…' : displayName}
-                </h3>
-                <p className={`text-sm truncate ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {userEmail}
-                </p>
+          <div
+            className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y"
+            style={mobileSidebarScrollStyle}
+          >
+            <div
+              className={`p-4 lg:p-6 border-b ${
+                theme === 'dark' ? 'border-blue-600/20' : 'border-gray-200'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-sm border-2 ${
+                    theme === 'dark'
+                      ? 'bg-[#1A1FE8]/20 border-[#1A1FE8] shadow-[0_0_15px_rgba(26,31,232,0.3)]'
+                      : 'bg-blue-100 border-blue-600'
+                  }`}
+                >
+                  <span
+                    className={`font-bold text-lg ${theme === 'dark' ? 'text-[#1A1FE8]' : 'text-blue-700'}`}
+                  >
+                    {profileLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : userInitials}
+                  </span>
+                </div>
+                <div className="min-w-0">
+                  <h3
+                    className={`font-semibold truncate ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+                  >
+                    {profileLoading ? 'Cargando…' : displayName}
+                  </h3>
+                  <p
+                    className={`text-sm truncate ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
+                  >
+                    {userEmail}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-1 touch-pan-y">
+            <nav className="p-4 space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeView === item.id;
@@ -168,35 +201,36 @@ export function DashboardPage() {
                 </button>
               );
             })}
-          </nav>
+            </nav>
 
-          {/* Logout */}
-          <div
-            className={`shrink-0 p-4 border-t ${
-            theme === 'dark' ? 'border-blue-600/20' : 'border-gray-200'
-          }`}
-            style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
-          >
-            <button
-              onClick={handleLogout}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                theme === 'dark'
-                  ? 'text-red-400 hover:bg-red-500/10'
-                  : 'text-red-600 hover:bg-red-50'
+            <div
+              className={`p-4 border-t ${
+                theme === 'dark' ? 'border-blue-600/20' : 'border-gray-200'
               }`}
+              style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom, 0px))' }}
             >
-              <LogOut className="w-5 h-5" />
-              <span className="font-medium">Cerrar Sesión</span>
-            </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                  theme === 'dark'
+                    ? 'text-red-400 hover:bg-red-500/10'
+                    : 'text-red-600 hover:bg-red-50'
+                }`}
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="font-medium">Cerrar Sesión</span>
+              </button>
+            </div>
           </div>
         </div>
       </aside>
 
-      {/* Overlay for mobile */}
       {isSidebarOpen && (
         <div
           onClick={() => setIsSidebarOpen(false)}
-          className="lg:hidden fixed inset-0 bg-black/50 z-30"
+          className="lg:hidden fixed inset-0 bg-black/50 z-[90]"
+          role="presentation"
         />
       )}
 

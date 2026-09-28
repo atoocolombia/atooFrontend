@@ -28,6 +28,9 @@ import { RejectedUsersView } from '../components/advisor/RejectedUsersView';
 import { MetricsView } from '../components/advisor/MetricsView';
 import { VehiclesView } from '../components/advisor/VehiclesView';
 import { DeliveryQueueView } from '../components/advisor/DeliveryQueueView';
+import { useBodyScrollLock } from '../../lib/useBodyScrollLock';
+
+const mobileSidebarScrollStyle = { WebkitOverflowScrolling: 'touch' as const };
 
 const menuItems = [
   { id: 'pending', label: 'Solicitudes pendientes', icon: ClipboardCheck },
@@ -51,6 +54,8 @@ export function AnalystDashboard() {
   const sessionUser = getSessionUser({ refresh: false });
   const email = sessionUser?.email ?? 'analista@atoo.com';
 
+  useBodyScrollLock(isSidebarOpen);
+
   const handleLogout = () => {
     void clearUserSession().then(() => navigate('/'));
   };
@@ -62,7 +67,7 @@ export function AnalystDashboard() {
       }`}
     >
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-40 w-64 h-[100dvh] max-h-[100dvh] overflow-hidden lg:h-auto lg:max-h-none transition-all duration-300 ${
+        className={`fixed lg:static inset-y-0 left-0 z-[100] lg:z-40 w-[min(100vw,16rem)] lg:w-64 h-[100dvh] max-h-[100dvh] overflow-hidden lg:h-auto lg:max-h-none transition-all duration-300 ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         } ${
           theme === 'dark'
@@ -74,10 +79,10 @@ export function AnalystDashboard() {
           className="flex flex-col h-full min-h-0"
           style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
         >
-          <div className="p-6 border-b border-blue-600/20">
-            <div className="flex flex-col mb-2">
+          <div className="shrink-0 p-4 lg:p-6 border-b border-blue-600/20">
+            <div className="flex flex-col mb-1">
               <span
-                className="text-3xl font-bold tracking-wide text-white"
+                className="text-2xl lg:text-3xl font-bold tracking-wide text-white"
                 style={{
                   fontFamily: 'system-ui, -apple-system, sans-serif',
                   fontWeight: '600',
@@ -93,19 +98,23 @@ export function AnalystDashboard() {
             <p className="text-sm text-gray-400 mt-1">Panel de analista</p>
           </div>
 
-          <div className="p-6 border-b border-blue-600/20">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-[#1A1FE8]/20 rounded-full flex items-center justify-center backdrop-blur-sm border-2 border-[#1A1FE8] shadow-[0_0_15px_rgba(26,31,232,0.3)]">
-                <span className="text-[#1A1FE8] font-bold text-lg">AN</span>
-              </div>
-              <div className="min-w-0">
-                <h3 className="font-semibold">Analista</h3>
-                <p className="text-sm text-gray-400 truncate">{email}</p>
+          <div
+            className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y"
+            style={mobileSidebarScrollStyle}
+          >
+            <div className="p-4 lg:p-6 border-b border-blue-600/20">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-[#1A1FE8]/20 rounded-full flex items-center justify-center backdrop-blur-sm border-2 border-[#1A1FE8] shadow-[0_0_15px_rgba(26,31,232,0.3)]">
+                  <span className="text-[#1A1FE8] font-bold text-lg">AN</span>
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-semibold">Analista</h3>
+                  <p className="text-sm text-gray-400 truncate">{email}</p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-1 touch-pan-y">
+            <nav className="p-4 space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeView === item.id;
@@ -128,20 +137,21 @@ export function AnalystDashboard() {
                 </button>
               );
             })}
-          </nav>
+            </nav>
 
-          <div
-            className="shrink-0 p-4 border-t border-blue-600/20"
-            style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
-          >
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-white/5 rounded-lg transition-colors"
+            <div
+              className="p-4 border-t border-blue-600/20"
+              style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom, 0px))' }}
             >
-              <LogOut className="w-5 h-5" />
-              <span className="font-medium">Cerrar sesión</span>
-            </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-white/5 rounded-lg transition-colors"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="font-medium">Cerrar sesión</span>
+              </button>
+            </div>
           </div>
         </div>
       </aside>
@@ -149,7 +159,7 @@ export function AnalystDashboard() {
       {isSidebarOpen && (
         <div
           onClick={() => setIsSidebarOpen(false)}
-          className="lg:hidden fixed inset-0 bg-black/50 z-30"
+          className="lg:hidden fixed inset-0 bg-black/50 z-[90]"
           role="presentation"
         />
       )}
