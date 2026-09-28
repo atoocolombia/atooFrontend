@@ -69,7 +69,8 @@ export function RequireAuth({ children, allowedTypes }: RequireAuthProps) {
   }
 
   if (!user) {
-    return <RedirectHome from={location.pathname} />;
+    const returnTo = `${location.pathname}${location.search}`;
+    return <RedirectHome from={returnTo} />;
   }
 
   if (allowedTypes && !allowedTypes.includes(user.userType)) {
