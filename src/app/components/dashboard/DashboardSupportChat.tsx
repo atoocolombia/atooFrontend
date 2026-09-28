@@ -23,13 +23,15 @@ interface ChatMessage {
 
 type DashboardSupportChatProps = {
   userId?: string;
+  /** Abre el panel al cargar (p. ej. desde notificación push). */
+  openOnMount?: boolean;
 };
 
 function mapServerMessages(messages: SupportChatMessageDto[]): ChatMessage[] {
   return messages.map((m) => ({ role: m.role, text: m.text }));
 }
 
-export function DashboardSupportChat({ userId }: DashboardSupportChatProps) {
+export function DashboardSupportChat({ userId, openOnMount }: DashboardSupportChatProps) {
   const { theme } = useTheme();
   const [open, setOpen] = useState(false);
   const [topics, setTopics] = useState<SupportTopic[]>(SUPPORT_TOPICS_FALLBACK);
@@ -58,8 +60,17 @@ export function DashboardSupportChat({ userId }: DashboardSupportChatProps) {
   }, [applySession]);
 
   useEffect(() => {
+    if (openOnMount) setOpen(true);
+  }, [openOnMount]);
+
+  useEffect(() => {
+    if (!userId) return;
+    void refreshSession().catch(() => undefined);
+  }, [userId, refreshSession]);
+
+  useEffect(() => {
     if (!open) return;
-    setError(null);
+    setError(null;
     void fetchSupportTopics()
       .then(setTopics)
       .catch(() => {
@@ -78,12 +89,12 @@ export function DashboardSupportChat({ userId }: DashboardSupportChatProps) {
   }, [open, userId, refreshSession]);
 
   useEffect(() => {
-    if (!open || !isHumanSupportChatStatus(chatStatus ?? undefined)) return;
+    if (!isHumanSupportChatStatus(chatStatus ?? undefined)) return;
     const id = window.setInterval(() => {
       void refreshSession().catch(() => undefined);
     }, 5000);
     return () => window.clearInterval(id);
-  }, [open, chatStatus, refreshSession]);
+  }, [chatStatus, refreshSession]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
