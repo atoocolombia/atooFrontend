@@ -1,24 +1,33 @@
-import { Loader2, MessageCircle, Send, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { Loader2, MessageCircle, Send, UserRound, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { buildWhatsAppSupportUrl } from '../../../lib/whatsappSupport';
 import { fetchVehicleInspectionPlan } from '../../../lib/inspectionsApi';
 import {
   askSupportChat,
+  fetchSupportChatSession,
+  isHumanSupportChatStatus,
+  requestSupportHumanChat,
   fetchSupportTopics,
   SUPPORT_TOPICS_FALLBACK,
+  type SupportChatMessageDto,
+  type SupportChatSessionDto,
   type SupportTopic,
 } from '../../../lib/supportChatApi';
 import { SupportChatMarkdown } from '../../../lib/supportChatMarkdown';
 
 interface ChatMessage {
-  role: 'bot' | 'user';
+  role: 'bot' | 'user' | 'agent';
   text: string;
 }
 
 type DashboardSupportChatProps = {
   userId?: string;
 };
+
+function mapServerMessages(messages: SupportChatMessageDto[]): ChatMessage[] {
+  return messages.map((m) => ({ role: m.role, text: m.text }));
+}
 
 export function DashboardSupportChat({ userId }: DashboardSupportChatProps) {
   const { theme } = useTheme();
@@ -29,8 +38,24 @@ export function DashboardSupportChat({ userId }: DashboardSupportChatProps) {
   const [question, setQuestion] = useState('');
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [chatStatus, setChatStatus] = useState<SupportChatSessionDto['status'] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const applySession = useCallback((session: SupportChatSessionDto | null) => {
+    if (!session) return;
+    setSessionId(session.id);
+    setChatStatus(session.status);
+    if (session.topic) setTopic(session.topic);
+    setMessages(mapServerMessages(session.messages));
+  }, []);
+
+  const refreshSession = useCallback(async () => {
+    const session = await fetchSupportChatSession();
+    if (session) applySession(session);
+    return session;
+  }, [applySession]);
 
   useEffect(() => {
     if (!open) return;
@@ -40,6 +65,9 @@ export function DashboardSupportChat({ userId }: DashboardSupportChatProps) {
       .catch(() => {
         /* Menú local ya visible */
       });
+    void refreshSession().catch(() => {
+      /* Sin sesión previa */
+    });
     if (!userId) {
       setVehicleLabel(null);
       return;
@@ -47,7 +75,15 @@ export function DashboardSupportChat({ userId }: DashboardSupportChatProps) {
     void fetchVehicleInspectionPlan(userId)
       .then((plan) => setVehicleLabel(plan?.vehicleName ?? null))
       .catch(() => setVehicleLabel(null));
-  }, [open, userId]);
+  }, [open, userId, refreshSession]);
+
+  useEffect(() => {
+    if (!open || !isHumanSupportChatStatus(chatStatus ?? undefined)) return;
+    const id = window.setInterval(() => {
+      void refreshSession().catch(() => undefined);
+    }, 5000);
+    return () => window.clearInterval(id);
+  }, [open, chatStatus, refreshSession]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -78,6 +114,7 @@ export function DashboardSupportChat({ userId }: DashboardSupportChatProps) {
     setMessages((prev) => [...prev, { role: 'bot', text: lines.join('\n\n') }]);
   };
 
+  const humanMode = isHumanSupportChatStatus(chatStatus ?? undefined);
   const canAsk = topic !== null && question.trim().length >= 3 && !loading;
 
   const handleSend = async () => {
@@ -88,12 +125,36 @@ export function DashboardSupportChat({ userId }: DashboardSupportChatProps) {
     setMessages((prev) => [...prev, { role: 'user', text: q }]);
     setLoading(true);
     try {
-      const result = await askSupportChat({ topic, question: q });
-      setMessages((prev) => [...prev, { role: 'bot', text: result.answer }]);
+      const result = await askSupportChat({ topic, question: q, sessionId: sessionId ?? undefined });
+      if (result.session) {
+        applySession(result.session);
+      } else {
+        if (result.sessionId) setSessionId(result.sessionId);
+        if (result.status) setChatStatus(result.status);
+        setMessages((prev) => [...prev, { role: 'bot', text: result.answer }]);
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al consultar la IA';
       setError(msg);
       setMessages((prev) => [...prev, { role: 'bot', text: msg }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRequestHuman = async () => {
+    if (loading) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const result = await requestSupportHumanChat({
+        sessionId: sessionId ?? undefined,
+        topic: topic ?? undefined,
+      });
+      applySession(result.session);
+      setMessages(mapServerMessages(result.session.messages));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo solicitar atención humana');
     } finally {
       setLoading(false);
     }
@@ -117,6 +178,12 @@ export function DashboardSupportChat({ userId }: DashboardSupportChatProps) {
             </button>
           </header>
 
+          {humanMode && (
+            <div className="px-3 py-2 text-xs bg-amber-500/15 text-amber-800 dark:text-amber-200 border-b border-amber-500/30">
+              Un agente de atoo atenderá esta conversación pronto. Puedes seguir escribiendo aquí.
+            </div>
+          )}
+
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 text-sm">
             {messages.length === 0 && (
               <p className="text-gray-500">
@@ -135,17 +202,25 @@ export function DashboardSupportChat({ userId }: DashboardSupportChatProps) {
                 className={`max-w-[90%] rounded-xl px-3 py-2 whitespace-pre-wrap ${
                   m.role === 'user'
                     ? 'ml-auto bg-[#1A1FE8] text-white'
-                    : theme === 'dark'
-                      ? 'bg-white/10'
-                      : 'bg-gray-100'
+                    : m.role === 'agent'
+                      ? 'bg-emerald-600 text-white'
+                      : theme === 'dark'
+                        ? 'bg-white/10'
+                        : 'bg-gray-100'
                 }`}
               >
+                {m.role === 'agent' && (
+                  <span className="text-[10px] block opacity-80 mb-1 uppercase tracking-wide">
+                    Equipo atoo
+                  </span>
+                )}
                 {m.role === 'bot' ? <SupportChatMarkdown text={m.text} /> : m.text}
               </div>
             ))}
             {loading && (
               <div className="flex items-center gap-2 text-gray-500">
-                <Loader2 className="w-4 h-4 animate-spin" /> Consultando documentos…
+                <Loader2 className="w-4 h-4 animate-spin" />{' '}
+                {humanMode ? 'Enviando…' : 'Consultando documentos…'}
               </div>
             )}
 
@@ -174,7 +249,9 @@ export function DashboardSupportChat({ userId }: DashboardSupportChatProps) {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') void handleSend();
                   }}
-                  placeholder="Escribe tu pregunta…"
+                  placeholder={
+                    humanMode ? 'Mensaje para el equipo atoo…' : 'Escribe tu pregunta…'
+                  }
                   className={`flex-1 rounded-xl border px-3 py-2 text-sm ${
                     theme === 'dark' ? 'bg-white/5 border-blue-600/30' : 'border-gray-200'
                   }`}
@@ -189,18 +266,28 @@ export function DashboardSupportChat({ userId }: DashboardSupportChatProps) {
                 </button>
               </div>
             )}
-            <div className="flex justify-between text-xs">
+            <div className="flex flex-wrap justify-between gap-2 text-xs">
               <button type="button" className="underline opacity-70" onClick={resetFlow}>
                 Cambiar tema
               </button>
-              <a
-                href={buildWhatsAppSupportUrl('dashboard')}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-green-600 font-medium"
-              >
-                Hablar por WhatsApp
-              </a>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => void handleRequestHuman()}
+                  className="inline-flex items-center gap-1 text-[#1A1FE8] font-medium disabled:opacity-50"
+                >
+                  <UserRound className="w-3.5 h-3.5" /> Hablar con una persona
+                </button>
+                <a
+                  href={buildWhatsAppSupportUrl('dashboard')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-green-600 font-medium"
+                >
+                  WhatsApp
+                </a>
+              </div>
             </div>
             {error && <p className="text-xs text-red-500">{error}</p>}
           </footer>
