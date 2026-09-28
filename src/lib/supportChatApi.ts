@@ -1,4 +1,4 @@
-import { apiFetch } from './http';
+import { apiFetch, parseErrorResponse } from './http';
 
 export interface SupportTopic {
   id: number;
@@ -92,14 +92,18 @@ export async function requestSupportHumanChat(payload: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  const body = (await res.json().catch(() => ({}))) as {
-    error?: string;
+  if (!res.ok) {
+    throw new Error(await parseErrorResponse(res));
+  }
+  const body = (await res.json()) as {
     answer?: string;
     session?: SupportChatSessionDto;
     handoff?: boolean;
   };
-  if (!res.ok) throw new Error(body.error ?? 'No se pudo solicitar atención humana');
-  return { answer: body.answer!, session: body.session!, handoff: Boolean(body.handoff) };
+  if (!body.session) {
+    throw new Error('El servidor no devolvió la conversación. Recarga e inténtalo de nuevo.');
+  }
+  return { answer: body.answer ?? '', session: body.session, handoff: Boolean(body.handoff) };
 }
 
 export function isHumanSupportChatStatus(status: SupportChatSessionDto['status'] | undefined): boolean {
