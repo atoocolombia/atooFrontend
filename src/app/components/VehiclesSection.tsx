@@ -48,7 +48,7 @@ export function VehiclesSection() {
             <span style={{ color: '#1A1FE8', textShadow: theme === 'dark' ? '0 0 40px rgba(26,31,232,0.5)' : 'none' }}>Disponibles</span>
           </h2>
           <p className={`text-xl ${theme === 'dark' ? 'text-gray-400' : landingLightType.bodyOnWhite}`}>
-            Dongfeng eléctricos, ideales para plataformas de transporte
+            Eléctricos Dongfeng para trabajar, ahorrar energía y maximizar tus ingresos
           </p>
         </div>
 

@@ -559,7 +559,7 @@ export function LandingContentAdminPanel({ tab, theme, cardClass, inputClass, on
               { label: 'Título destacado', value: contact.titleHighlight, onChange: (v) => updateContact({ titleHighlight: v }) },
               { label: 'Título (después del destacado)', value: contact.titleAfter, onChange: (v) => updateContact({ titleAfter: v }) },
               {
-                label: 'Descripción (usa {count} para el número de conductores)',
+                label: 'Descripción (usa {count} para el contador, ej. «100 socios atoo»)',
                 value: contact.description,
                 onChange: (v) => updateContact({ description: v }),
                 multiline: true,

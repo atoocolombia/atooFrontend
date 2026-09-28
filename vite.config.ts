@@ -30,7 +30,7 @@ export default defineConfig({
       manifest: {
         name: 'atoo',
         short_name: 'atoo',
-        description: 'Rent to Own para conductores. Revisiones, citas y tu vehículo en un solo lugar.',
+        description: 'Genera ingresos con tu vehículo. Rent to Own, revisiones y tu auto en un solo lugar.',
         theme_color: '#1A1FE8',
         background_color: '#06071A',
         display: 'standalone',

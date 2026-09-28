@@ -36,7 +36,7 @@ export const catalogVehicles: CatalogVehicle[] = [
       'Bajo costo de operación y mantenimiento eléctrico',
       'Tecnología de asistencia al conductor (ADAS)',
       'Pantalla central inteligente con conectividad',
-      'Ideal para plataformas de transporte y movilidad urbana',
+      'Ideal para generar ingresos en la ciudad con bajo costo de operación',
     ],
     features: [
       '100% eléctrico',
@@ -53,7 +53,7 @@ export const catalogVehicles: CatalogVehicle[] = [
       { label: 'Carga rápida', value: 'DC compatible' },
       { label: 'Pasajeros', value: '5' },
       { label: 'Tracción', value: 'Delantera' },
-      { label: 'Uso recomendado', value: 'Ciudad y apps de movilidad' },
+      { label: 'Uso recomendado', value: 'Ciudad, delivery y servicios con tu propio auto' },
     ],
     badge: 'Más Popular',
     popular: true,
