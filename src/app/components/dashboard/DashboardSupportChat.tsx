@@ -146,15 +146,34 @@ export function DashboardSupportChat({ userId }: DashboardSupportChatProps) {
     if (loading) return;
     setError(null);
     setLoading(true);
+    const activeTopic = topic ?? 3;
+    if (topic === null) {
+      setTopic(activeTopic);
+    }
     try {
-      const result = await requestSupportHumanChat({
-        sessionId: sessionId ?? undefined,
-        topic: topic ?? undefined,
-      });
+      let result;
+      try {
+        result = await requestSupportHumanChat({
+          sessionId: sessionId ?? undefined,
+          topic: activeTopic,
+        });
+      } catch {
+        result = await askSupportChat({
+          topic: activeTopic,
+          question: 'Quiero hablar con un humano.',
+          sessionId: sessionId ?? undefined,
+          requestHuman: true,
+        });
+        if (!result.session) {
+          throw new Error('No se pudo conectar con soporte. Recarga la página e inténtalo de nuevo.');
+        }
+      }
       applySession(result.session);
       setMessages(mapServerMessages(result.session.messages));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo solicitar atención humana');
+      const msg = err instanceof Error ? err.message : 'No se pudo solicitar atención humana';
+      setError(msg);
+      setMessages((prev) => [...prev, { role: 'bot', text: msg }]);
     } finally {
       setLoading(false);
     }
