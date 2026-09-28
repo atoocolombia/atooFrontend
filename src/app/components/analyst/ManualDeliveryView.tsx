@@ -34,7 +34,7 @@ export function ManualDeliveryView() {
         phone: phone || undefined,
         deliveryLocation: deliveryLocation || undefined,
       });
-      setSuccess(`Entrega creada para ${created.clientName}. El asesor ya puede ver la card.`);
+      setSuccess(`Entrega creada para ${created.clientName}. Ya aparece en Entregas de vehículos.`);
       setClientName('');
       setIdDocumentNumber('');
       setAddress('');

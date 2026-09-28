@@ -5,8 +5,8 @@ import { ClientPortalGuard } from "./components/ClientPortalGuard";
 import { Root } from "./Root";
 import { ApplicationPage } from "./pages/ApplicationPage";
 import { DashboardPage } from "./pages/DashboardPage";
-import { AdvisorDashboard } from "./pages/AdvisorDashboard";
 import { AdminDashboard } from "./pages/AdminDashboard";
+import { Navigate } from "react-router";
 import { AnalystDashboard } from "./pages/AnalystDashboard";
 import { WorkshopDashboard } from "./pages/WorkshopDashboard";
 import { DeliveryConfirmPage } from "./pages/DeliveryConfirmPage";
@@ -67,8 +67,8 @@ export const router = createBrowserRouter([
       {
         path: "asesor",
         element: (
-          <RequireAuth allowedTypes={['ADVISOR']}>
-            <AdvisorDashboard />
+          <RequireAuth allowedTypes={['ADVISOR', 'ANALYST']}>
+            <Navigate to="/analista" replace />
           </RequireAuth>
         ),
       },
@@ -83,7 +83,7 @@ export const router = createBrowserRouter([
       {
         path: "analista",
         element: (
-          <RequireAuth allowedTypes={['ANALYST']}>
+          <RequireAuth allowedTypes={['ANALYST', 'ADVISOR']}>
             <AnalystDashboard />
           </RequireAuth>
         ),
