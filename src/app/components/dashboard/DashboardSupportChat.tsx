@@ -4,7 +4,9 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { buildWhatsAppSupportUrl } from '../../../lib/whatsappSupport';
 import {
   askSupportChat,
+  fetchSupportChatContext,
   fetchSupportTopics,
+  type SupportChatContext,
   type SupportTopic,
 } from '../../../lib/supportChatApi';
 
@@ -18,8 +20,8 @@ export function DashboardSupportChat() {
   const { theme } = useTheme();
   const [open, setOpen] = useState(false);
   const [topics, setTopics] = useState<SupportTopic[]>([]);
+  const [vehicleContext, setVehicleContext] = useState<SupportChatContext | null>(null);
   const [topic, setTopic] = useState<number | null>(null);
-  const [vehicle, setVehicle] = useState<'nammi' | 'aeolus' | null>(null);
   const [question, setQuestion] = useState('');
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -28,8 +30,11 @@ export function DashboardSupportChat() {
 
   useEffect(() => {
     if (!open) return;
-    void fetchSupportTopics()
-      .then(setTopics)
+    void Promise.all([fetchSupportTopics(), fetchSupportChatContext()])
+      .then(([loadedTopics, ctx]) => {
+        setTopics(loadedTopics);
+        setVehicleContext(ctx);
+      })
       .catch(() => setError('No se pudo cargar el asistente'));
   }, [open]);
 
@@ -39,43 +44,30 @@ export function DashboardSupportChat() {
 
   const resetFlow = () => {
     setTopic(null);
-    setVehicle(null);
     setQuestion('');
     setError(null);
   };
 
+  const vehicleHint = (id: number): string | null => {
+    if (id !== 1 && id !== 5) return null;
+    if (vehicleContext?.vehicleLabel) {
+      return `Usaré la información de tu ${vehicleContext.vehicleLabel} según tus datos en atoo.`;
+    }
+    return 'Aún no vemos tu modelo en el sistema; si preguntas del vehículo, puede que debamos ayudarte por WhatsApp.';
+  };
+
   const startTopic = (id: number) => {
     setTopic(id);
-    setVehicle(null);
     setError(null);
     const t = topics.find((x) => x.id === id);
-    setMessages((prev) => [
-      ...prev,
-      { role: 'bot', text: `Elegiste: ${t?.emoji ?? ''} ${t?.label ?? id}.` },
-    ]);
-    if (id === 1 || id === 5) {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'bot', text: '¿Tu vehículo es Nammi o Aeolus (Sky EV01)?' },
-      ]);
-    }
+    const lines = [`Elegiste: ${t?.emoji ?? ''} ${t?.label ?? id}.`];
+    const hint = vehicleHint(id);
+    if (hint) lines.push(hint);
+    lines.push('Escribe tu pregunta.');
+    setMessages((prev) => [...prev, { role: 'bot', text: lines.join('\n\n') }]);
   };
 
-  const pickVehicle = (v: 'nammi' | 'aeolus') => {
-    setVehicle(v);
-    setMessages((prev) => [
-      ...prev,
-      { role: 'user', text: v === 'nammi' ? 'Nammi' : 'Aeolus / Sky' },
-      { role: 'bot', text: 'Escribe tu pregunta sobre el vehículo.' },
-    ]);
-  };
-
-  const needsVehicle = topic === 1 || topic === 5;
-  const canAsk =
-    topic !== null &&
-    (!needsVehicle || vehicle !== null) &&
-    question.trim().length >= 3 &&
-    !loading;
+  const canAsk = topic !== null && question.trim().length >= 3 && !loading;
 
   const handleSend = async () => {
     if (!canAsk || topic === null) return;
@@ -85,11 +77,7 @@ export function DashboardSupportChat() {
     setMessages((prev) => [...prev, { role: 'user', text: q }]);
     setLoading(true);
     try {
-      const result = await askSupportChat({
-        topic,
-        vehicle: needsVehicle ? vehicle ?? undefined : undefined,
-        question: q,
-      });
+      const result = await askSupportChat({ topic, question: q });
       setMessages((prev) => [
         ...prev,
         { role: 'bot', text: result.answer, sources: result.sources },
@@ -123,7 +111,15 @@ export function DashboardSupportChat() {
 
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 text-sm">
             {messages.length === 0 && (
-              <p className="text-gray-500">Hola 👋 Elige un tema para empezar.</p>
+              <p className="text-gray-500">
+                Hola 👋 Elige un tema para empezar.
+                {vehicleContext?.vehicleLabel && (
+                  <>
+                    {' '}
+                    Vehículo registrado: <strong>{vehicleContext.vehicleLabel}</strong>.
+                  </>
+                )}
+              </p>
             )}
             {messages.map((m, i) => (
               <div
@@ -162,25 +158,6 @@ export function DashboardSupportChat() {
                 ))}
               </div>
             )}
-
-            {needsVehicle && !vehicle && (
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => pickVehicle('nammi')}
-                  className="flex-1 rounded-xl border border-inherit py-2 hover:bg-[#1A1FE8]/10"
-                >
-                  Nammi
-                </button>
-                <button
-                  type="button"
-                  onClick={() => pickVehicle('aeolus')}
-                  className="flex-1 rounded-xl border border-inherit py-2 hover:bg-[#1A1FE8]/10"
-                >
-                  Aeolus / Sky
-                </button>
-              </div>
-            )}
           </div>
 
           <footer className="p-3 border-t border-inherit space-y-2">
@@ -192,12 +169,7 @@ export function DashboardSupportChat() {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') void handleSend();
                   }}
-                  placeholder={
-                    needsVehicle && !vehicle
-                      ? 'Primero elige vehículo arriba'
-                      : 'Escribe tu pregunta…'
-                  }
-                  disabled={needsVehicle && !vehicle}
+                  placeholder="Escribe tu pregunta…"
                   className={`flex-1 rounded-xl border px-3 py-2 text-sm ${
                     theme === 'dark' ? 'bg-white/5 border-blue-600/30' : 'border-gray-200'
                   }`}
