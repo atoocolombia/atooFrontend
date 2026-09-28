@@ -14,9 +14,20 @@ export async function fetchSupportTopics(): Promise<SupportTopic[]> {
   return body.topics;
 }
 
+export interface SupportChatContext {
+  vehicle: 'nammi' | 'aeolus' | null;
+  vehicleLabel: string | null;
+  source: 'plan' | 'delivery' | null;
+}
+
+export async function fetchSupportChatContext(): Promise<SupportChatContext> {
+  const res = await apiFetch('/api/v1/support/chat/context');
+  if (!res.ok) throw new Error('No se pudo cargar tu vehículo');
+  return res.json() as Promise<SupportChatContext>;
+}
+
 export async function askSupportChat(payload: {
   topic: number;
-  vehicle?: 'nammi' | 'aeolus';
   question: string;
 }): Promise<{ answer: string; sources: string[] }> {
   const res = await apiFetch('/api/v1/support/chat/ask', {
