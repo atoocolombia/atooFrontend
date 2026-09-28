@@ -15,7 +15,7 @@ import { VehicleView } from '../components/dashboard/VehicleView';
 import { PaymentsView } from '../components/dashboard/PaymentsView';
 import { DocumentsView } from '../components/dashboard/DocumentsView';
 import { InspectionsView } from '../components/dashboard/InspectionsView';
-import { SupportButton } from '../components/dashboard/SupportButton';
+import { DashboardSupportChat } from '../components/dashboard/DashboardSupportChat';
 import { NotificationBell } from '../components/dashboard/NotificationBell';
 import { ProfileSettingsView } from '../components/dashboard/ProfileSettingsView';
 import { MobileAppBar } from '../components/MobileAppBar';
@@ -69,7 +69,7 @@ export function DashboardPage() {
       theme === 'dark' ? 'bg-[#06071A]' : 'bg-gray-50'
     }`}>
       {/* Support Button */}
-      <SupportButton />
+      <DashboardSupportChat />
 
       {/* Sidebar */}
       <aside
