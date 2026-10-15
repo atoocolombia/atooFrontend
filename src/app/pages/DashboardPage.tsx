@@ -25,6 +25,7 @@ import { PushActivateChip } from '../components/PushActivateChip';
 import { useTheme } from '../contexts/ThemeContext';
 import { clearUserSession } from '../../lib/authRouting';
 import { useUserProfile } from '../../lib/useUserProfile';
+import { useClientPaymentSummary } from '../../lib/clientPaymentsApi';
 import { useBodyScrollLock } from '../../lib/useBodyScrollLock';
 
 const mobileSidebarScrollStyle = { WebkitOverflowScrolling: 'touch' as const };
@@ -51,6 +52,7 @@ export function DashboardPage() {
   );
   const { theme } = useTheme();
   const { profile, loading: profileLoading, reload: reloadProfile } = useUserProfile();
+  const { summary: paymentSummary } = useClientPaymentSummary();
 
   useBodyScrollLock(isSidebarOpen);
 
@@ -69,12 +71,7 @@ export function DashboardPage() {
   const userEmail = profile?.email ?? '';
   const userInitials = profile?.initials ?? 'U';
 
-  // Estado de pago - En producción vendría del servidor
-  // Opciones:
-  // 'current' - Pago al día (sin sombreado)
-  // 'warning' - Pago retrasado T+0 a T+6h (sombreado naranja + banner naranja)
-  // 'critical' - Inmovilización inminente T+6h+ (sombreado rojo + banner rojo)
-  const paymentStatus = 'current'; // 👈 Cambiar a 'warning' o 'critical' para probar el sombreado
+  const paymentStatus = paymentSummary?.paymentStatus ?? 'current';
 
   const handleLogout = () => {
     void clearUserSession().then(() => navigate('/'));
