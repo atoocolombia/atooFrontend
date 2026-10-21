@@ -22,11 +22,18 @@ export const SUPPORT_TOPICS_FALLBACK: SupportTopic[] = [
   { id: 5, label: 'Emergencia', emoji: '🆘', needsVehicle: false },
 ];
 
+export type SupportChatAttachmentDto = {
+  url: string;
+  mimeType: string;
+  kind: 'image' | 'video';
+};
+
 export type SupportChatMessageDto = {
   id: string;
   role: 'user' | 'bot' | 'agent';
   text: string;
   createdAt: string;
+  attachment?: SupportChatAttachmentDto | null;
 };
 
 export type SupportChatSessionDto = {
@@ -35,6 +42,7 @@ export type SupportChatSessionDto = {
   topic: number | null;
   messages: SupportChatMessageDto[];
   updatedAt: string;
+  emergencyReported?: boolean;
 };
 
 export async function fetchSupportChatSession(): Promise<SupportChatSessionDto | null> {
@@ -42,6 +50,51 @@ export async function fetchSupportChatSession(): Promise<SupportChatSessionDto |
   if (!res.ok) throw new Error('No se pudo cargar la conversación');
   const body = (await res.json()) as { session: SupportChatSessionDto | null };
   return body.session;
+}
+
+export async function askSupportChatWithMedia(payload: {
+  topic: number;
+  question: string;
+  sessionId?: string;
+  requestHuman?: boolean;
+  file: File;
+}): Promise<{
+  answer: string;
+  sources: string[];
+  sessionId?: string;
+  status?: SupportChatSessionDto['status'];
+  handoff?: boolean;
+  session?: SupportChatSessionDto;
+}> {
+  const form = new FormData();
+  form.append('file', payload.file);
+  form.append('topic', String(payload.topic));
+  if (payload.question.trim()) form.append('question', payload.question.trim());
+  if (payload.sessionId) form.append('sessionId', payload.sessionId);
+  if (payload.requestHuman) form.append('requestHuman', '1');
+
+  const res = await apiFetch('/api/v1/support/chat/ask-media', {
+    method: 'POST',
+    body: form,
+  });
+  const body = (await res.json().catch(() => ({}))) as {
+    error?: string;
+    answer?: string;
+    sources?: string[];
+    sessionId?: string;
+    status?: SupportChatSessionDto['status'];
+    handoff?: boolean;
+    session?: SupportChatSessionDto;
+  };
+  if (!res.ok) throw new Error(body.error ?? 'No se pudo enviar el archivo');
+  return {
+    answer: body.answer!,
+    sources: body.sources ?? [],
+    sessionId: body.sessionId,
+    status: body.status,
+    handoff: body.handoff,
+    session: body.session,
+  };
 }
 
 export async function askSupportChat(payload: {
