@@ -1,7 +1,10 @@
-import jwt from 'jsonwebtoken';
 import pg from 'pg';
 
 const { Client } = pg;
+
+const RAILWAY_API =
+  process.env.ATOO_BACKEND_URL?.trim() ||
+  'https://atoobackend-production.up.railway.app';
 
 const DEMO_EMAIL = 'cliente@gmail.com';
 const DEMO_CUOTA = 700_000;
@@ -16,8 +19,25 @@ function readToken(req) {
   return match?.[1] ? decodeURIComponent(match[1]) : null;
 }
 
-function jwtSecret() {
-  return process.env.JWT_SECRET?.trim() || 'atoo-dev-jwt-secret-change-me';
+function noStore(res) {
+  res.setHeader('Cache-Control', 'private, no-store, max-age=0, must-revalidate');
+  res.setHeader('CDN-Cache-Control', 'no-store');
+  res.setHeader('Cloudflare-CDN-Cache-Control', 'no-store');
+}
+
+async function resolveUserIdFromBackend(req) {
+  const header = req.headers.authorization ?? '';
+  const cookie = req.headers.cookie ?? '';
+  const upstream = await fetch(`${RAILWAY_API}/api/v1/auth/me`, {
+    headers: {
+      ...(header ? { authorization: header } : {}),
+      ...(cookie ? { cookie } : {}),
+    },
+  });
+  if (!upstream.ok) return null;
+  const body = await upstream.json().catch(() => null);
+  const id = typeof body?.id === 'string' ? body.id.trim() : '';
+  return id || null;
 }
 
 function normalizeDoc(value) {
@@ -82,23 +102,20 @@ function buildSummary({ payments, email, weeklyPaymentCop, planInstallments, ins
 }
 
 export default async function handler(req, res) {
+  noStore(res);
+
   if (req.method !== 'GET') {
     res.status(405).json({ error: 'Método no permitido' });
     return;
   }
 
-  const token = readToken(req);
-  if (!token) {
+  if (!readToken(req) && !(req.headers.cookie ?? '').includes('atoo_token=')) {
     res.status(401).json({ error: 'Debes iniciar sesión para continuar' });
     return;
   }
 
-  let userId;
-  try {
-    const payload = jwt.verify(token, jwtSecret());
-    userId = typeof payload.sub === 'string' ? payload.sub : '';
-    if (!userId) throw new Error('invalid sub');
-  } catch {
+  const userId = await resolveUserIdFromBackend(req);
+  if (!userId) {
     res.status(401).json({ error: 'Sesión inválida o expirada. Vuelve a iniciar sesión.' });
     return;
   }
