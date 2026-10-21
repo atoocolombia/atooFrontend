@@ -41,11 +41,27 @@ async function readPaymentSummaryResponse(res: Response): Promise<ClientPaymentS
   }
   const body = (await res.json().catch(() => ({}))) as {
     summary?: ClientPaymentSummary;
+    paymentSummary?: ClientPaymentSummary;
     error?: string;
   };
   if (body.error?.trim()) throw new Error(body.error);
-  if (!body.summary) throw new Error('Respuesta inválida del servidor');
-  return body.summary;
+  const summary = body.summary ?? body.paymentSummary;
+  if (!summary) throw new Error('Respuesta inválida del servidor');
+  return summary;
+}
+
+async function fetchPaymentSummaryFromAuthMe(): Promise<ClientPaymentSummary | null> {
+  const res = await apiFetch('/api/v1/auth/me?includePayments=1');
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    throw new Error(await parseErrorResponse(res));
+  }
+  const body = (await res.json().catch(() => ({}))) as {
+    paymentSummary?: ClientPaymentSummary | null;
+    error?: string;
+  };
+  if (body.error?.trim()) throw new Error(body.error);
+  return body.paymentSummary ?? null;
 }
 
 async function resolvePaymentsUserId(): Promise<string | undefined> {
@@ -60,10 +76,17 @@ async function resolvePaymentsUserId(): Promise<string | undefined> {
 }
 
 export async function fetchClientPaymentSummary(userId?: string): Promise<ClientPaymentSummary> {
+  try {
+    const fromAuthMe = await fetchPaymentSummaryFromAuthMe();
+    if (fromAuthMe) return fromAuthMe;
+  } catch (err) {
+    if (err instanceof Error && (err.message.includes('sesión') || err.message.includes('Sesión'))) {
+      throw err;
+    }
+  }
+
   const sessionUserId = userId?.trim() || (await resolvePaymentsUserId());
-  const candidates: string[] = [
-    '/api/v1/auth/me/payment-summary',
-  ];
+  const candidates: string[] = ['/api/v1/auth/me/payment-summary'];
 
   if (sessionUserId) {
     candidates.push(`/api/v1/users/${encodeURIComponent(sessionUserId)}/payment-summary`);
