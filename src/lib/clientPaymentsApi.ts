@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { getSessionUser } from './authRouting';
 import { apiFetch } from './http';
 import { formatCop, formatPaymentDate } from './paymentsApi';
 
@@ -32,8 +33,7 @@ export type ClientPaymentSummary = {
   remainingInstallments: number;
 };
 
-export async function fetchClientPaymentSummary(): Promise<ClientPaymentSummary> {
-  const res = await apiFetch('/api/v1/client/payments/summary');
+async function readPaymentSummaryResponse(res: Response): Promise<ClientPaymentSummary> {
   const body = (await res.json().catch(() => ({}))) as {
     summary?: ClientPaymentSummary;
     error?: string;
@@ -41,6 +41,33 @@ export async function fetchClientPaymentSummary(): Promise<ClientPaymentSummary>
   if (!res.ok) throw new Error(body.error ?? 'No se pudo cargar tu información de pagos');
   if (!body.summary) throw new Error('Respuesta inválida del servidor');
   return body.summary;
+}
+
+export async function fetchClientPaymentSummary(userId?: string): Promise<ClientPaymentSummary> {
+  const sessionUserId = userId ?? getSessionUser({ refresh: false })?.id;
+  const candidates: string[] = [];
+
+  if (sessionUserId) {
+    candidates.push(`/api/v1/users/${encodeURIComponent(sessionUserId)}/payment-summary`);
+  }
+  candidates.push('/api/v1/client/payments/summary');
+
+  let lastError: Error | null = null;
+  for (const path of candidates) {
+    const res = await apiFetch(path);
+    if (res.status === 404) {
+      lastError = new Error('El servidor aún no tiene activo el módulo de pagos del cliente');
+      continue;
+    }
+    try {
+      return await readPaymentSummaryResponse(res);
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error('Error al cargar pagos');
+      if (res.status >= 500) continue;
+      throw lastError;
+    }
+  }
+  throw lastError ?? new Error('No se pudo cargar tu información de pagos');
 }
 
 export function formatNextPaymentDate(iso: string | null): string {

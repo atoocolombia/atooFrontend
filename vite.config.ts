@@ -54,7 +54,9 @@ export default defineConfig({
         runtimeCaching: [
           {
             urlPattern: ({ url, request }) =>
-              request.method === 'GET' && url.pathname.includes('/api/v1/client/payments'),
+              request.method === 'GET' &&
+              (url.pathname.includes('/api/v1/client/payments') ||
+                url.pathname.includes('/payment-summary')),
             handler: 'NetworkOnly',
           },
           {
