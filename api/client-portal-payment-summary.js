@@ -7,6 +7,7 @@ const RAILWAY_API =
   'https://atoobackend-production.up.railway.app';
 
 const DEMO_EMAIL = 'cliente@gmail.com';
+const DEMO_ID_DOCUMENT = '1012345678';
 const DEMO_CUOTA = 700_000;
 const DEMO_CUOTAS = 26;
 
@@ -173,7 +174,10 @@ export default async function handler(req, res) {
       [userId],
     );
     const email = (userRes.rows[0]?.email ?? '').trim();
-    const idDoc = normalizeDoc(userRes.rows[0]?.idDocumentNumber ?? '');
+    let idDoc = normalizeDoc(userRes.rows[0]?.idDocumentNumber ?? '');
+    if (idDoc.length < 5 && email.toLowerCase() === DEMO_EMAIL) {
+      idDoc = DEMO_ID_DOCUMENT;
+    }
 
     let payments = [];
     try {
