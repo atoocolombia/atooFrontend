@@ -16,9 +16,17 @@ export function ProgressView() {
 
   if (error || !summary) {
     return (
-      <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
-        {error ?? 'No se pudo cargar tu progreso de pagos.'}
-      </p>
+      <div
+        className={`rounded-2xl border p-8 max-w-xl ${theme === 'dark' ? 'border-amber-500/40 bg-amber-500/10' : 'border-amber-300 bg-amber-50'}`}
+      >
+        <p className={`font-semibold ${theme === 'dark' ? 'text-amber-100' : 'text-amber-900'}`}>
+          No pudimos cargar tus pagos registrados
+        </p>
+        <p className={`mt-2 text-sm ${theme === 'dark' ? 'text-amber-200/90' : 'text-amber-800'}`}>
+          {error ??
+            'El servidor no respondió. Si acabas de registrar un pago, espera unos minutos y recarga la página (Cmd+Shift+R).'}
+        </p>
+      </div>
     );
   }
 
