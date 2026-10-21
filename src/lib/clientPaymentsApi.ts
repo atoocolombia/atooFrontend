@@ -77,6 +77,17 @@ async function resolvePaymentsUserId(): Promise<string | undefined> {
 
 export async function fetchClientPaymentSummary(userId?: string): Promise<ClientPaymentSummary> {
   try {
+    const portalRes = await apiFetch('/api/client-portal-payment-summary');
+    if (portalRes.status !== 404) {
+      return await readPaymentSummaryResponse(portalRes);
+    }
+  } catch (err) {
+    if (err instanceof Error && (err.message.includes('sesión') || err.message.includes('Sesión'))) {
+      throw err;
+    }
+  }
+
+  try {
     const fromAuthMe = await fetchPaymentSummaryFromAuthMe();
     if (fromAuthMe) return fromAuthMe;
   } catch (err) {
