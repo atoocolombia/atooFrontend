@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
+import { fetchAuthMe } from './authApi';
 import { getSessionUser } from './authRouting';
-import { apiFetch } from './http';
+import { apiFetch, parseErrorResponse } from './http';
 import { formatCop, formatPaymentDate } from './paymentsApi';
 
 export type ClientPortalPaymentItem = {
@@ -34,18 +35,35 @@ export type ClientPaymentSummary = {
 };
 
 async function readPaymentSummaryResponse(res: Response): Promise<ClientPaymentSummary> {
+  if (!res.ok) {
+    const message = await parseErrorResponse(res);
+    throw new Error(message);
+  }
   const body = (await res.json().catch(() => ({}))) as {
     summary?: ClientPaymentSummary;
     error?: string;
   };
-  if (!res.ok) throw new Error(body.error ?? 'No se pudo cargar tu información de pagos');
+  if (body.error?.trim()) throw new Error(body.error);
   if (!body.summary) throw new Error('Respuesta inválida del servidor');
   return body.summary;
 }
 
+async function resolvePaymentsUserId(): Promise<string | undefined> {
+  const cached = getSessionUser({ refresh: false })?.id?.trim();
+  if (cached) return cached;
+  try {
+    const me = await fetchAuthMe();
+    return me.id;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function fetchClientPaymentSummary(userId?: string): Promise<ClientPaymentSummary> {
-  const sessionUserId = userId ?? getSessionUser({ refresh: false })?.id;
-  const candidates: string[] = [];
+  const sessionUserId = userId?.trim() || (await resolvePaymentsUserId());
+  const candidates: string[] = [
+    '/api/v1/auth/me/payment-summary',
+  ];
 
   if (sessionUserId) {
     candidates.push(`/api/v1/users/${encodeURIComponent(sessionUserId)}/payment-summary`);
@@ -56,18 +74,26 @@ export async function fetchClientPaymentSummary(userId?: string): Promise<Client
   for (const path of candidates) {
     const res = await apiFetch(path);
     if (res.status === 404) {
-      lastError = new Error('El servidor aún no tiene activo el módulo de pagos del cliente');
+      lastError = new Error('Ruta de pagos no disponible en el servidor');
       continue;
     }
     try {
       return await readPaymentSummaryResponse(res);
     } catch (err) {
       lastError = err instanceof Error ? err : new Error('Error al cargar pagos');
-      if (res.status >= 500) continue;
+      if (res.status === 401 || res.status === 403) {
+        throw lastError;
+      }
+      if (res.status >= 500 || res.status === 503) {
+        continue;
+      }
       throw lastError;
     }
   }
-  throw lastError ?? new Error('No se pudo cargar tu información de pagos');
+  throw (
+    lastError ??
+    new Error('No se pudo cargar tu información de pagos. Intenta cerrar sesión y volver a entrar.')
+  );
 }
 
 export function formatNextPaymentDate(iso: string | null): string {

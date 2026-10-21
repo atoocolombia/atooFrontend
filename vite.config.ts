@@ -56,7 +56,8 @@ export default defineConfig({
             urlPattern: ({ url, request }) =>
               request.method === 'GET' &&
               (url.pathname.includes('/api/v1/client/payments') ||
-                url.pathname.includes('/payment-summary')),
+                url.pathname.includes('/payment-summary') ||
+                url.pathname.includes('/api/v1/auth/me/payment-summary')),
             handler: 'NetworkOnly',
           },
           {
