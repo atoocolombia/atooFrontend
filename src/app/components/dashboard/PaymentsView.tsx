@@ -86,6 +86,128 @@ export function PaymentsView() {
     );
   }
 
+  if (summary?.installmentPlan) {
+    const cuota = summary.weeklyPaymentCop;
+    const paid = summary.installmentsPaid;
+    const total = summary.planInstallments;
+    const pct = summary.progressPercent;
+    const history = summary.history;
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Pagos</h1>
+          <p className={`mt-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+            Tu plan y el avance según los pagos que atoo ya registró
+          </p>
+          {error && (
+            <p className="text-sm text-red-500 mt-2">
+              {error}{' '}
+              <button type="button" className="underline" onClick={() => void reload()}>
+                Reintentar
+              </button>
+            </p>
+          )}
+        </div>
+
+        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl shadow-2xl p-8 text-white">
+          <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+            <div>
+              <h2 className="text-2xl font-bold">Plan de cuotas</h2>
+              <p className="text-blue-100 mt-1">
+                {formatCurrency(cuota)} · {total} cuotas · Total {formatCurrency(cuota * total)}
+              </p>
+            </div>
+            <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full border border-white/30">
+              <span className="text-sm font-semibold">
+                {paid} / {total} pagadas
+              </span>
+            </div>
+          </div>
+
+          <div className="h-4 rounded-full bg-white/20 overflow-hidden mb-4">
+            <div
+              className="h-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-700"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <p className="text-3xl font-bold mb-1">{pct}% del plan</p>
+          <p className="text-blue-100 text-sm">
+            {paid === 0
+              ? 'Cuando registremos tu primer pago, verás aquí el detalle.'
+              : `Llevas ${formatCurrency(summary.totalPaidCop)} abonados en ${paid} cuota${paid === 1 ? '' : 's'}.`}
+          </p>
+          {summary.nextPaymentDueAt && paid < total && (
+            <p className="text-blue-100 text-sm mt-3 flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Referencia próxima cuota: {nextPaymentDate}
+              {daysLeft !== null && daysLeft >= 0 && ` (${daysLeft} días)`}
+            </p>
+          )}
+        </div>
+
+        <div
+          className={`rounded-2xl shadow-lg p-8 border transition-colors ${theme === 'dark' ? 'bg-[#0D0F2E]/50 border-blue-600/20 backdrop-blur-xl' : 'bg-white border-gray-100'}`}
+        >
+          <h3 className={`text-xl font-bold mb-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+            Pagos registrados
+          </h3>
+          <div className="space-y-3">
+            {history.length === 0 ? (
+              <p className={`text-center py-6 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                Aún no hay pagos registrados a tu nombre.
+              </p>
+            ) : (
+              history.map((payment, index) => {
+                const cuotaNumber = paid - index;
+                return (
+                <div
+                  key={payment.id}
+                  className={`flex items-center justify-between p-4 rounded-xl transition-colors ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center font-bold text-green-800">
+                      {cuotaNumber}
+                    </div>
+                    <div>
+                      <p className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                        Cuota {cuotaNumber} · {formatCurrency(payment.amountCop)}
+                      </p>
+                      <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                        {payment.paymentMethodLabel}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                      {formatPaymentDate(payment.paidAt)}
+                    </p>
+                    <span className="inline-block px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full">
+                      Registrado
+                    </span>
+                  </div>
+                </div>
+              );
+              })
+            )}
+          </div>
+        </div>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-6 h-6 text-blue-600 flex-shrink-0" />
+            <div className="text-sm text-blue-800">
+              <p>
+                Este panel refleja únicamente los pagos confirmados por el equipo de atoo (transferencia,
+                consignación, etc.). Si acabas de pagar y no aparece, contáctanos por soporte.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
