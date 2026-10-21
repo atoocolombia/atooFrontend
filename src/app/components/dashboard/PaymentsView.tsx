@@ -7,29 +7,34 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
+  Loader2,
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
+import {
+  daysUntilDue,
+  formatCop,
+  formatNextPaymentDate,
+  formatPaymentDate,
+  useClientPaymentSummary,
+} from '../../../lib/clientPaymentsApi';
 
 export function PaymentsView() {
   const { theme } = useTheme();
+  const { summary, loading, error, reload } = useClientPaymentSummary();
 
   const [selectedMethod, setSelectedMethod] = useState<string>('');
   const [showWompiWidget, setShowWompiWidget] = useState(false);
   const [paymentType, setPaymentType] = useState<'weekly' | 'deposit'>('weekly');
 
-  const weeklyPayment = 207000; // Pago semanal (aproximadamente 900000/4.33)
-  const depositAmount = 2000000; // Depósito inicial
-  const nextPaymentDate = '2026-06-08'; // Próximo domingo
-  const depositPaid = true; // Si ya pagó el depósito
-  const depositDate = '2026-01-15'; // Fecha en que se pagó el depósito
-
-  // Historial de pagos simulado
-  const paymentHistory = [
-    { date: '2026-06-01', amount: 207000, status: 'completed', method: 'Tarjeta de Crédito' },
-    { date: '2026-05-25', amount: 207000, status: 'completed', method: 'PSE' },
-    { date: '2026-05-18', amount: 207000, status: 'completed', method: 'Nequi' },
-    { date: '2026-05-11', amount: 207000, status: 'completed', method: 'Tarjeta de Débito' },
-  ];
+  const weeklyPayment = summary?.weeklyPaymentCop ?? 207_000;
+  const depositAmount = summary?.depositAmountCop ?? 2_000_000;
+  const nextPaymentDate = formatNextPaymentDate(summary?.nextPaymentDueAt ?? null);
+  const depositPaid = summary?.depositPaid ?? false;
+  const depositDate = summary?.depositPaidAt
+    ? formatNextPaymentDate(summary.depositPaidAt)
+    : '—';
+  const paymentHistory = summary?.history ?? [];
+  const daysLeft = daysUntilDue(summary?.nextPaymentDueAt ?? null);
 
   const paymentMethods = [
     {
@@ -71,23 +76,43 @@ export function PaymentsView() {
     return paymentType === 'weekly' ? weeklyPayment : depositAmount;
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
+  const formatCurrency = (amount: number) => formatCop(amount);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-16">
+        <Loader2 className="w-10 h-10 animate-spin text-[#1A1FE8]" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Pagos</h1>
         <p className={`mt-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-          Gestiona tus pagos semanales y revisa tu historial
+          Historial confirmado por atoo y opciones de pago en línea
         </p>
+        {error && (
+          <p className="text-sm text-red-500 mt-2">
+            {error}{' '}
+            <button type="button" className="underline" onClick={() => void reload()}>
+              Reintentar
+            </button>
+          </p>
+        )}
       </div>
+
+      {summary && summary.paymentsCount === 0 && (
+        <div
+          className={`rounded-2xl border p-6 ${theme === 'dark' ? 'bg-white/5 border-blue-600/20' : 'bg-blue-50 border-blue-200'}`}
+        >
+          <p className={theme === 'dark' ? 'text-gray-200' : 'text-blue-900'}>
+            Cuando el equipo registre tu primer pago (transferencia, consignación, etc.), verás aquí el
+            historial y tu progreso. Si ya pagaste y no aparece, escribe a soporte.
+          </p>
+        </div>
+      )}
 
       {/* Payment Type Tabs */}
       <div className={`flex gap-3 rounded-2xl p-2 shadow-lg transition-colors ${theme === 'dark' ? 'bg-[#0D0F2E]/50 border border-blue-600/20 backdrop-blur-xl' : 'bg-white'}`}>
@@ -158,7 +183,9 @@ export function PaymentsView() {
               <Clock className="w-4 h-4" />
               <span className="text-blue-100">Tiempo restante</span>
             </div>
-            <p className="text-2xl font-bold">7 días</p>
+            <p className="text-2xl font-bold">
+              {daysLeft === null ? '—' : daysLeft >= 0 ? `${daysLeft} días` : `${Math.abs(daysLeft)} días de atraso`}
+            </p>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
             <div className="flex items-center gap-2 text-sm mb-1">
@@ -605,30 +632,41 @@ export function PaymentsView() {
         <h3 className={`text-xl font-bold mb-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Historial de Pagos</h3>
 
         <div className="space-y-3">
-          {paymentHistory.map((payment, index) => (
-            <div
-              key={index}
-              className={`flex items-center justify-between p-4 rounded-xl transition-colors ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
+          {paymentHistory.length === 0 ? (
+            <p className={`text-center py-6 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+              Sin pagos registrados aún.
+            </p>
+          ) : (
+            paymentHistory.map((payment) => (
+              <div
+                key={payment.id}
+                className={`flex items-center justify-between p-4 rounded-xl transition-colors ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                      {formatCurrency(payment.amountCop)}
+                    </p>
+                    <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {payment.paymentMethodLabel}
+                      {payment.kind === 'deposit' ? ' · Depósito' : payment.kind === 'weekly' ? ' · Cuota' : ''}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                    {formatCurrency(payment.amount)}
+                <div className="text-right">
+                  <p className={`text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                    {formatPaymentDate(payment.paidAt)}
                   </p>
-                  <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{payment.method}</p>
+                  <span className="inline-block px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full">
+                    Registrado
+                  </span>
                 </div>
               </div>
-              <div className="text-right">
-                <p className={`text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{payment.date}</p>
-                <span className="inline-block px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full">
-                  Completado
-                </span>
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 
