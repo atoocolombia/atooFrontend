@@ -12,6 +12,7 @@ import {
   Shield,
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { formatCop, useClientPaymentSummary } from '../../../lib/clientPaymentsApi';
 
 interface Document {
   id: string;
@@ -26,8 +27,15 @@ interface Document {
 
 export function DocumentsView({ clientName = 'Cliente' }: { clientName?: string }) {
   const { theme } = useTheme();
+  const { summary: paymentSummary } = useClientPaymentSummary();
 
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+
+  const planCuota = paymentSummary?.weeklyPaymentCop ?? null;
+  const planCuotas = paymentSummary?.planInstallments ?? paymentSummary?.planWeeks ?? null;
+  const planTotal =
+    planCuota != null && planCuotas != null ? planCuota * planCuotas : null;
+  const paidToDate = paymentSummary?.totalPaidCop ?? 0;
 
   const documents: Document[] = [
     {
@@ -466,10 +474,24 @@ export function DocumentsView({ clientName = 'Cliente' }: { clientName?: string 
                       <section>
                         <h4 className={`font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>2. Términos Financieros</h4>
                         <ul className="space-y-1 text-sm">
-                          <li>• Cuota semanal: $207,000 COP</li>
-                          <li>• Plazo: 60 meses (260 semanas)</li>
-                          <li>• Valor total: $25,000,000 COP</li>
-                          <li>• Monto pagado a la fecha: $15,000,000 COP</li>
+                          <li>
+                            • Cuota:{' '}
+                            {planCuota != null ? formatCop(planCuota) : 'Según tu contrato firmado'}
+                          </li>
+                          <li>
+                            • Plazo:{' '}
+                            {planCuotas != null
+                              ? `${planCuotas} cuotas`
+                              : 'Según tu contrato firmado'}
+                          </li>
+                          <li>
+                            • Valor total del plan:{' '}
+                            {planTotal != null ? formatCop(planTotal) : 'Según contrato'}
+                          </li>
+                          <li>
+                            • Monto pagado a la fecha (registrado por atoo):{' '}
+                            {formatCop(paidToDate)}
+                          </li>
                         </ul>
                       </section>
 

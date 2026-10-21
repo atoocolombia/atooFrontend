@@ -45,6 +45,7 @@ export default defineConfig({
         ],
       },
       workbox: {
+        cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,ico,svg,woff2,png}'],
         globIgnores: ['**/vehicles/**', '**/*.mp4', '**/*.pdf'],
         navigateFallback: '/index.html',
@@ -52,10 +53,15 @@ export default defineConfig({
         importScripts: ['/sw-notifications.js'],
         runtimeCaching: [
           {
+            urlPattern: ({ url, request }) =>
+              request.method === 'GET' && url.pathname.includes('/api/v1/client/payments'),
+            handler: 'NetworkOnly',
+          },
+          {
             urlPattern: ({ request }) => request.destination === 'image' || request.destination === 'font',
             handler: 'CacheFirst',
             options: {
-              cacheName: 'atoo-assets',
+              cacheName: 'atoo-assets-v2',
               expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },
@@ -78,7 +84,7 @@ export default defineConfig({
             },
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'atoo-api-offline',
+              cacheName: 'atoo-api-offline-v2',
               networkTimeoutSeconds: 4,
               expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 7 },
               cacheableResponse: { statuses: [0, 200] },
