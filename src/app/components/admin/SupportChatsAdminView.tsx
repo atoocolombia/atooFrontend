@@ -10,6 +10,7 @@ import {
   type SupportChatSessionListItem,
 } from '../../../lib/adminSupportChatsApi';
 import { SupportChatMarkdown } from '../../../lib/supportChatMarkdown';
+import { SupportChatAttachment } from '../../../lib/SupportChatAttachment';
 
 type SupportChatsAdminViewProps = {
   initialSessionId?: string | null;
@@ -222,6 +223,7 @@ export function SupportChatsAdminView({ initialSessionId }: SupportChatsAdminVie
                       </span>
                     )}
                     {m.role === 'bot' ? <SupportChatMarkdown text={m.text} /> : m.text}
+                    {m.attachment && <SupportChatAttachment attachment={m.attachment} />}
                   </div>
                 ))}
               </div>
