@@ -91,7 +91,7 @@ export function DashboardSupportChat({ userId, openOnMount }: DashboardSupportCh
 
   useEffect(() => {
     if (!open) return;
-    setError(null;
+    setError(null);
     void fetchSupportTopics()
       .then(setTopics)
       .catch(() => {

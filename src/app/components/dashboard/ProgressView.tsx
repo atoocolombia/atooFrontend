@@ -22,15 +22,15 @@ export function ProgressView() {
     );
   }
 
-  const totalCostCop = summary.weeklyPaymentCop * summary.planWeeks;
+  const installmentPlan = summary.installmentPlan ?? false;
+  const totalCuotas = summary.planInstallments ?? summary.planWeeks;
+  const totalCostCop = summary.weeklyPaymentCop * totalCuotas;
   const paidAmount = summary.totalPaidCop;
-  const weeklyPayment = summary.weeklyPaymentCop;
-  const weeksPaid = summary.weeksRecognized;
-  const totalWeeks = summary.planWeeks;
+  const cuotaAmount = summary.weeklyPaymentCop;
+  const cuotasPaid = summary.installmentsPaid ?? summary.weeksRecognized;
+  const remainingCuotas = summary.remainingInstallments ?? summary.remainingWeeks;
   const percentage = summary.progressPercent;
   const remainingAmount = Math.max(0, totalCostCop - paidAmount);
-  const remainingWeeks = summary.remainingWeeks;
-  const remainingMonths = Math.max(0, Math.round(remainingWeeks / 4.33));
 
   return (
     <div className="space-y-6">
@@ -55,7 +55,9 @@ export function ProgressView() {
             <h2 className="text-2xl font-bold mb-1">Progreso de Propiedad</h2>
             <p className={theme === 'dark' ? 'text-blue-200' : 'text-blue-100'}>
               {summary.paymentsCount > 0
-                ? 'Basado en los pagos registrados por atoo'
+                ? installmentPlan
+                  ? `${cuotasPaid} de ${totalCuotas} cuotas registradas por atoo`
+                  : 'Basado en los pagos registrados por atoo'
                 : 'Aún no hay pagos registrados a tu nombre'}
             </p>
           </div>
@@ -131,9 +133,11 @@ export function ProgressView() {
               <DollarSign className={`w-6 h-6 ${theme === 'dark' ? 'text-blue-500' : 'text-blue-600'}`} />
             </div>
             <div>
-              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Cuota referencia</p>
+              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                {installmentPlan ? 'Valor cuota' : 'Cuota referencia'}
+              </p>
               <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                {formatCop(weeklyPayment)}
+                {formatCop(cuotaAmount)}
               </p>
             </div>
           </div>
@@ -161,18 +165,29 @@ export function ProgressView() {
               <Calendar className={`w-6 h-6 ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`} />
             </div>
             <div>
-              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Semanas equivalentes</p>
+              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                {installmentPlan ? 'Cuotas pagadas' : 'Semanas equivalentes'}
+              </p>
               <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                {weeksPaid} / {totalWeeks}
+                {cuotasPaid} / {totalCuotas}
               </p>
             </div>
           </div>
           <div className={`pt-4 border-t ${theme === 'dark' ? 'border-blue-600/20' : 'border-gray-100'}`}>
             <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-              Tiempo restante:{' '}
-              <span className="font-semibold">
-                {remainingWeeks} semanas ({remainingMonths} meses)
-              </span>
+              {installmentPlan ? (
+                <>
+                  Cuotas pendientes: <span className="font-semibold">{remainingCuotas}</span>
+                </>
+              ) : (
+                <>
+                  Tiempo restante:{' '}
+                  <span className="font-semibold">
+                    {summary.remainingWeeks} semanas (
+                    {Math.max(0, Math.round(summary.remainingWeeks / 4.33))} meses)
+                  </span>
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -201,7 +216,7 @@ export function ProgressView() {
           </div>
           <div className={`pt-4 border-t ${theme === 'dark' ? 'border-blue-600/20' : 'border-gray-100'}`}>
             <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-              Plan estimado: {formatCop(totalCostCop)}
+              {installmentPlan ? 'Total del plan' : 'Plan estimado'}: {formatCop(totalCostCop)}
             </p>
           </div>
         </div>

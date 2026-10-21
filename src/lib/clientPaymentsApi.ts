@@ -26,6 +26,10 @@ export type ClientPaymentSummary = {
   depositPaidAt: string | null;
   depositAmountCop: number | null;
   history: ClientPortalPaymentItem[];
+  installmentPlan: boolean;
+  installmentsPaid: number;
+  planInstallments: number;
+  remainingInstallments: number;
 };
 
 export async function fetchClientPaymentSummary(): Promise<ClientPaymentSummary> {
