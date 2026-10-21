@@ -77,7 +77,7 @@ async function resolvePaymentsUserId(): Promise<string | undefined> {
 
 export async function fetchClientPaymentSummary(userId?: string): Promise<ClientPaymentSummary> {
   try {
-    const portalRes = await apiFetch('/api/client-portal-payment-summary');
+    const portalRes = await apiFetch('/api/client-portal-payment-summary', { cache: 'no-store' });
     if (portalRes.status !== 404) {
       return await readPaymentSummaryResponse(portalRes);
     }
