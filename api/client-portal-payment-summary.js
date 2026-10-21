@@ -120,6 +120,34 @@ export default async function handler(req, res) {
     return;
   }
 
+  const authForward = {
+    ...(req.headers.authorization ? { authorization: req.headers.authorization } : {}),
+    ...(req.headers.cookie ? { cookie: req.headers.cookie } : {}),
+  };
+
+  const backendSummaryPaths = [
+    `/api/v1/users/${encodeURIComponent(userId)}/payment-summary`,
+    '/api/v1/auth/me/payment-summary',
+    '/api/v1/client/payments/summary',
+    '/api/v1/auth/me?includePayments=1',
+  ];
+
+  for (const path of backendSummaryPaths) {
+    try {
+      const upstream = await fetch(`${RAILWAY_API}${path}`, { headers: authForward });
+      if (upstream.status === 404) continue;
+      if (!upstream.ok) continue;
+      const body = await upstream.json().catch(() => null);
+      const summary = body?.summary ?? body?.paymentSummary;
+      if (summary) {
+        res.status(200).json({ summary });
+        return;
+      }
+    } catch {
+      // siguiente fallback
+    }
+  }
+
   const dbUrl = process.env.DATABASE_URL?.trim();
   if (!dbUrl) {
     res.status(503).json({

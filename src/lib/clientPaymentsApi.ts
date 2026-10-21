@@ -82,8 +82,13 @@ export async function fetchClientPaymentSummary(userId?: string): Promise<Client
       return await readPaymentSummaryResponse(portalRes);
     }
   } catch (err) {
-    if (err instanceof Error && (err.message.includes('sesión') || err.message.includes('Sesión'))) {
-      throw err;
+    if (err instanceof Error) {
+      if (err.message.includes('sesión') || err.message.includes('Sesión')) {
+        throw err;
+      }
+      if (err.message.includes('DATABASE_URL') || err.message.includes('Plataforma:')) {
+        throw err;
+      }
     }
   }
 
