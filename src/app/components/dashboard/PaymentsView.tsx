@@ -17,10 +17,13 @@ import {
   formatPaymentDate,
   useClientPaymentSummary,
 } from '../../../lib/clientPaymentsApi';
+import { useClientBillingStatement } from '../../../lib/clientBillingApi';
+import { MonthlyBillingStatement } from './MonthlyBillingStatement';
 
 export function PaymentsView() {
   const { theme } = useTheme();
   const { summary, loading, error, reload } = useClientPaymentSummary();
+  const billing = useClientBillingStatement(!loading);
 
   const [selectedMethod, setSelectedMethod] = useState<string>('');
   const [showWompiWidget, setShowWompiWidget] = useState(false);
@@ -109,6 +112,14 @@ export function PaymentsView() {
             </p>
           )}
         </div>
+
+        <MonthlyBillingStatement
+          statement={billing.statement}
+          loading={billing.loading}
+          error={billing.error}
+          onReload={() => void billing.reload()}
+          onStatementChange={billing.setStatement}
+        />
 
         <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl shadow-2xl p-8 text-white">
           <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
@@ -224,6 +235,14 @@ export function PaymentsView() {
           </p>
         )}
       </div>
+
+      <MonthlyBillingStatement
+        statement={billing.statement}
+        loading={billing.loading}
+        error={billing.error}
+        onReload={() => void billing.reload()}
+        onStatementChange={billing.setStatement}
+      />
 
       {summary && summary.paymentsCount === 0 && (
         <div

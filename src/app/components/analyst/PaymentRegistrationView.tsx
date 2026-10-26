@@ -14,6 +14,7 @@ import {
   type ClientPaymentLookup,
   type ClientPaymentRecord,
 } from '../../../lib/paymentsApi';
+import { createAnalystBillingExtra } from '../../../lib/analystBillingApi';
 
 export function PaymentRegistrationView() {
   const { theme } = useTheme();
@@ -42,6 +43,11 @@ export function PaymentRegistrationView() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [clientFoundInDb, setClientFoundInDb] = useState<boolean | null>(null);
+  const [clientUserId, setClientUserId] = useState<string | null>(null);
+  const [extraLabel, setExtraLabel] = useState('');
+  const [extraAmount, setExtraAmount] = useState('');
+  const [extraCategory, setExtraCategory] = useState('insurance');
+  const [extraSaving, setExtraSaving] = useState(false);
 
   const inputClass =
     theme === 'dark'
@@ -61,6 +67,7 @@ export function PaymentRegistrationView() {
     setClientPhone(row.phone ?? '');
     setClientAddress(row.address ?? '');
     setClientFoundInDb(true);
+    setClientUserId(row.userId);
     setClientSearch(`${row.clientName} · ${row.idDocumentNumber}`);
     setShowResults(false);
   }, []);
@@ -119,6 +126,7 @@ export function PaymentRegistrationView() {
         if (row.email) setClientEmail(row.email);
         if (row.phone) setClientPhone(row.phone);
         if (row.address) setClientAddress(row.address);
+        setClientUserId(row.userId);
       }
     } catch {
       setClientFoundInDb(null);
@@ -140,6 +148,37 @@ export function PaymentRegistrationView() {
     setPayerName('');
     setNotes('');
     setClientFoundInDb(null);
+    setClientUserId(null);
+    setExtraLabel('');
+    setExtraAmount('');
+  };
+
+  const handleAddBillingExtra = async () => {
+    if (!clientUserId) {
+      setError('Este cliente no tiene usuario en la plataforma; no se puede agregar cargo recurrente.');
+      return;
+    }
+    const amount = Number(extraAmount.replace(/\D/g, ''));
+    if (!extraLabel.trim() || !amount) {
+      setError('Indica nombre y monto del cargo extra');
+      return;
+    }
+    setExtraSaving(true);
+    setError(null);
+    try {
+      await createAnalystBillingExtra(clientUserId, {
+        label: extraLabel.trim(),
+        amountCop: amount,
+        category: extraCategory,
+      });
+      setSuccess('Cargo agregado a la cuenta de cobro del cliente.');
+      setExtraLabel('');
+      setExtraAmount('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo guardar el cargo');
+    } finally {
+      setExtraSaving(false);
+    }
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -314,6 +353,44 @@ export function PaymentRegistrationView() {
             <UserRound className="w-4 h-4" /> Datos cargados desde la base de atoo (puedes editarlos).
           </p>
         )}
+        {clientUserId && (
+          <div className={`rounded-xl border p-4 space-y-3 ${theme === 'dark' ? 'border-blue-600/30 bg-white/5' : 'border-blue-100 bg-blue-50/50'}`}>
+            <p className="text-sm font-semibold">Cargo en cuenta de cobro (mensual)</p>
+            <div className="grid sm:grid-cols-3 gap-3">
+              <input
+                className={`rounded-xl border px-3 py-2 sm:col-span-2 ${inputClass}`}
+                placeholder="Ej. Seguro adicional"
+                value={extraLabel}
+                onChange={(e) => setExtraLabel(e.target.value)}
+              />
+              <select
+                className={`rounded-xl border px-3 py-2 ${inputClass}`}
+                value={extraCategory}
+                onChange={(e) => setExtraCategory(e.target.value)}
+              >
+                <option value="insurance">Seguro</option>
+                <option value="service">Servicio</option>
+                <option value="other">Otro</option>
+              </select>
+              <input
+                className={`rounded-xl border px-3 py-2 ${inputClass}`}
+                placeholder="Monto COP"
+                inputMode="numeric"
+                value={extraAmount}
+                onChange={(e) => setExtraAmount(e.target.value.replace(/\D/g, ''))}
+              />
+              <button
+                type="button"
+                disabled={extraSaving}
+                onClick={() => void handleAddBillingExtra()}
+                className="sm:col-span-2 rounded-xl bg-[#1A1FE8] text-white py-2 font-medium disabled:opacity-50"
+              >
+                {extraSaving ? 'Guardando…' : 'Agregar a cuenta de cobro'}
+              </button>
+            </div>
+          </div>
+        )}
+
         {clientFoundInDb === false && idDocumentNumber.length >= 5 && (
           <p className="text-sm text-amber-600">
             No encontramos este documento en la base; completa nombre y correo para la factura.
