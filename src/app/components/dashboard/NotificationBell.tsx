@@ -2,30 +2,26 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Bell,
   X,
-  AlertTriangle,
-  AlertCircle,
-  Info,
   CheckCircle,
-  Shield,
-  Gauge,
   CalendarClock,
+  Satellite,
 } from 'lucide-react';
 import {
   fetchInspectionNotifications,
+  markAllInspectionNotificationsRead,
   markInspectionNotificationRead,
   type UserNotificationItem,
 } from '../../../lib/inspectionsApi';
 
 interface Notification {
   id: string;
-  type: 'payment' | 'insurance' | 'vehicle_use' | 'inspection';
+  type: 'inspection' | 'gps' | 'other';
   severity: 'info' | 'warning' | 'critical' | 'success';
   title: string;
   message: string;
   time: string;
   icon: typeof Bell;
   read: boolean;
-  remote?: boolean;
 }
 
 interface NotificationBellProps {
@@ -51,37 +47,36 @@ function mapRemoteNotification(n: UserNotificationItem): Notification {
     n.type.includes('accepted') ||
     n.type.includes('approved_immediate') ||
     n.type.includes('completed');
+  const isGps = n.type.includes('gps');
   return {
     id: n.id,
-    type: 'inspection',
+    type: isGps ? 'gps' : 'inspection',
     severity: isUrgent ? 'warning' : isSuccess ? 'success' : 'info',
     title: n.title,
     message: n.message,
     time: formatRelativeTime(n.createdAt),
-    icon: CalendarClock,
+    icon: isGps ? Satellite : CalendarClock,
     read: n.read,
-    remote: true,
   };
 }
 
 export function NotificationBell({
   userId,
-  paymentStatus = 'current',
   onOpenInspections,
 }: NotificationBellProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [remoteNotifications, setRemoteNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const loadRemote = useCallback(async () => {
     if (!userId) {
-      setRemoteNotifications([]);
+      setNotifications([]);
       return;
     }
     try {
       const rows = await fetchInspectionNotifications(userId);
-      setRemoteNotifications(rows.map(mapRemoteNotification));
+      setNotifications(rows.map(mapRemoteNotification));
     } catch {
-      setRemoteNotifications([]);
+      setNotifications([]);
     }
   }, [userId]);
 
@@ -90,94 +85,33 @@ export function NotificationBell({
   }, [loadRemote]);
 
   useEffect(() => {
-    if (isOpen) loadRemote();
-  }, [isOpen, loadRemote]);
-
-  useEffect(() => {
     const onFocus = () => loadRemote();
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, [loadRemote]);
 
-  const generateMockNotifications = (): Notification[] => {
-    const baseNotifications: Notification[] = [
-      {
-        id: 'mock-insurance',
-        type: 'insurance',
-        severity: 'warning',
-        title: 'Todoriesgo Próximo a Vencer',
-        message:
-          'Tu seguro Todoriesgo vence en 25 días (20 de Nov). Contáctanos para renovarlo y mantener tu cobertura.',
-        time: 'Hace 5 horas',
-        icon: Shield,
-        read: false,
-      },
-      {
-        id: 'mock-vehicle',
-        type: 'vehicle_use',
-        severity: 'warning',
-        title: 'Exceso de Velocidad Detectado',
-        message:
-          'Detectamos que alcanzaste 130 km/h en zona de 80 km/h hoy a las 14:30. Por tu seguridad, conduce dentro de los límites.',
-        time: 'Hace 3 horas',
-        icon: Gauge,
-        read: false,
-      },
-    ];
-
-    if (paymentStatus === 'critical') {
-      baseNotifications.unshift({
-        id: 'mock-payment-critical',
-        type: 'payment',
-        severity: 'critical',
-        title: 'VEHÍCULO SERÁ INMOVILIZADO',
-        message:
-          'Tu pago está muy retrasado. El vehículo será apagado remotamente si no pagas en las próximas horas. Contacta urgentemente a soporte.',
-        time: 'Hace 15 minutos',
-        icon: AlertCircle,
-        read: false,
-      });
-    } else if (paymentStatus === 'warning') {
-      baseNotifications.unshift({
-        id: 'mock-payment-warning',
-        type: 'payment',
-        severity: 'warning',
-        title: 'Pago Vencido',
-        message:
-          'Tu cuota venció y aún no hemos recibido tu pago. Por favor, realiza el pago lo antes posible para evitar cargos adicionales.',
-        time: 'Hace 1 hora',
-        icon: AlertTriangle,
-        read: false,
-      });
-    } else {
-      baseNotifications.unshift({
-        id: 'mock-payment-info',
-        type: 'payment',
-        severity: 'info',
-        title: 'Recordatorio de Pago',
-        message:
-          'Tu cuota semanal vence el próximo domingo. Realiza tu pago a tiempo para evitar inconvenientes.',
-        time: 'Hace 2 horas',
-        icon: Info,
-        read: false,
-      });
-    }
-
-    return baseNotifications;
-  };
-
-  const [localRead, setLocalRead] = useState<Record<string, boolean>>({});
-  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
-
-  const mockNotifications = generateMockNotifications().filter((n) => !deletedIds.has(n.id));
-  const mergedRemote = remoteNotifications
-    .filter((n) => !deletedIds.has(n.id))
-    .map((n) => ({ ...n, read: n.read || localRead[n.id] === true }));
-
-  const notifications = [...mergedRemote, ...mockNotifications.map((n) => ({
-    ...n,
-    read: n.read || localRead[n.id] === true,
-  }))];
+  useEffect(() => {
+    if (!isOpen || !userId) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const rows = await fetchInspectionNotifications(userId);
+        if (cancelled) return;
+        setNotifications(rows.map(mapRemoteNotification));
+        if (rows.some((r) => !r.read)) {
+          await markAllInspectionNotificationsRead(userId);
+          if (cancelled) return;
+          const refreshed = await fetchInspectionNotifications(userId);
+          setNotifications(refreshed.map(mapRemoteNotification));
+        }
+      } catch {
+        if (!cancelled) await loadRemote();
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, userId, loadRemote]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -216,41 +150,17 @@ export function NotificationBell({
     }
   };
 
-  const markAsRead = async (notification: Notification) => {
-    setLocalRead((prev) => ({ ...prev, [notification.id]: true }));
-    if (notification.remote && userId) {
+  const handleNotificationClick = async (notification: Notification) => {
+    if (!notification.read && userId) {
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n)),
+      );
       try {
         await markInspectionNotificationRead(userId, notification.id);
-        await loadRemote();
       } catch {
         // ignore
       }
     }
-  };
-
-  const markAllAsRead = async () => {
-    const unread = notifications.filter((n) => !n.read);
-    setLocalRead((prev) => {
-      const next = { ...prev };
-      for (const n of unread) next[n.id] = true;
-      return next;
-    });
-    if (userId) {
-      await Promise.all(
-        unread
-          .filter((n) => n.remote)
-          .map((n) => markInspectionNotificationRead(userId, n.id).catch(() => undefined)),
-      );
-      await loadRemote();
-    }
-  };
-
-  const deleteNotification = (id: string) => {
-    setDeletedIds((prev) => new Set(prev).add(id));
-  };
-
-  const handleNotificationClick = (notification: Notification) => {
-    markAsRead(notification);
     if (notification.type === 'inspection' && onOpenInspections) {
       onOpenInspections();
       setIsOpen(false);
@@ -260,8 +170,10 @@ export function NotificationBell({
   return (
     <div className="relative">
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        aria-label="Notificaciones"
       >
         <Bell className="w-6 h-6 text-gray-600" />
         {unreadCount > 0 && (
@@ -280,23 +192,19 @@ export function NotificationBell({
 
           <div className="fixed top-20 right-4 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-gray-200 z-[101] max-h-[calc(100vh-6rem)] overflow-hidden flex flex-col">
             <div className="p-4 border-b border-gray-200 bg-gray-50">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold text-gray-900">Notificaciones</h3>
                 <button
+                  type="button"
                   onClick={() => setIsOpen(false)}
                   className="p-1 hover:bg-gray-200 rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
-              {unreadCount > 0 && (
-                <button
-                  onClick={markAllAsRead}
-                  className="text-sm text-blue-600 hover:text-blue-700 font-semibold"
-                >
-                  Marcar todas como leídas
-                </button>
-              )}
+              <p className="text-xs text-gray-500 mt-1">
+                Al abrir este panel, las novedades se marcan como leídas.
+              </p>
             </div>
 
             <div className="overflow-y-auto flex-1">
@@ -318,7 +226,7 @@ export function NotificationBell({
                         className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
                           !notification.read ? 'bg-blue-50/30' : ''
                         }`}
-                        onClick={() => handleNotificationClick(notification)}
+                        onClick={() => void handleNotificationClick(notification)}
                       >
                         <div className="flex items-start gap-3">
                           <div
@@ -339,18 +247,7 @@ export function NotificationBell({
                             <p className="text-sm text-gray-600 leading-relaxed mb-2">
                               {notification.message}
                             </p>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-400">{notification.time}</span>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  deleteNotification(notification.id);
-                                }}
-                                className="text-xs text-gray-400 hover:text-red-600 font-medium"
-                              >
-                                Eliminar
-                              </button>
-                            </div>
+                            <span className="text-xs text-gray-400">{notification.time}</span>
                           </div>
                         </div>
                       </div>

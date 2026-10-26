@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Bell, CheckCircle2, Loader2, Wrench, X } from 'lucide-react';
 import {
   adminFetchNotifications,
+  adminMarkAllNotificationsRead,
   adminMarkNotificationRead,
   type AdminNotificationItem,
 } from '../../../lib/adminInspectionsApi';
@@ -50,7 +51,25 @@ export function AdminNotificationBell({ onOpenProcedures }: AdminNotificationBel
   }, [load]);
 
   useEffect(() => {
-    if (open) void load();
+    if (!open) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const rows = await adminFetchNotifications();
+        if (cancelled) return;
+        setNotifications(rows);
+        if (rows.some((r) => !r.read)) {
+          await adminMarkAllNotificationsRead();
+          if (cancelled) return;
+          setNotifications(await adminFetchNotifications());
+        }
+      } catch {
+        if (!cancelled) void load();
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [open, load]);
 
   const unreadCount = notifications.filter((item) => !item.read).length;

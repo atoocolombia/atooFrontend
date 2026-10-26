@@ -305,6 +305,13 @@ export async function markInspectionNotificationRead(
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
 }
 
+export async function markAllInspectionNotificationsRead(userId: string): Promise<void> {
+  const res = await fetchWithCreds(inspectionsBase(userId, '/notifications/read-all'), {
+    method: 'PATCH',
+  });
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
+}
+
 export async function respondToReschedule(
   userId: string,
   appointmentId: string,
