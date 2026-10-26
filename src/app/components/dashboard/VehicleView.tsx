@@ -13,7 +13,11 @@ import {
 import { useEffect, useState } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getSessionUser } from '../../../lib/authRouting';
-import { fetchLatestClientGpsReport, formatGpsPeriod, type GpsReportSummary } from '../../../lib/clientGpsApi';
+import {
+  fetchLatestClientGpsReport,
+  formatGpsPeriod,
+  type ClientGpsReportView,
+} from '../../../lib/clientGpsApi';
 import { fetchVehicleInspectionPlan, type VehicleInspectionPlan } from '../../../lib/inspectionsApi';
 
 export function VehicleView() {
@@ -34,7 +38,7 @@ export function VehicleView() {
 
   const [showMap, setShowMap] = useState(true);
   const [plan, setPlan] = useState<VehicleInspectionPlan | null>(null);
-  const [gpsReport, setGpsReport] = useState<GpsReportSummary | null>(null);
+  const [gpsReport, setGpsReport] = useState<ClientGpsReportView | null>(null);
   const [gpsLoading, setGpsLoading] = useState(true);
 
   useEffect(() => {
@@ -133,10 +137,12 @@ export function VehicleView() {
           </div>
           <div>
             <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              Rastreo GPS
+              {gpsReport?.summaryTitle ?? 'Telemetría del vehículo'}
             </h3>
             <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
-              Informe cargado por atoo desde tu proveedor de GPS
+              {gpsReport?.hasGpsLocation
+                ? 'Última ubicación reportada por el proveedor'
+                : 'Resumen del informe de telemetría (este vehículo no tiene rastreo GPS en vivo)'}
             </p>
           </div>
         </div>
@@ -163,57 +169,40 @@ export function VehicleView() {
                 </span>
               )}
             </p>
-            <div className="flex gap-2 items-start">
-              <MapPin className="w-5 h-5 text-[#1A1FE8] shrink-0 mt-0.5" />
-              <div>
-                <p className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                  {gpsReport.lastLocation ?? 'Ubicación no disponible en el archivo'}
-                </p>
-                {gpsReport.plate && (
-                  <p className="text-xs text-gray-500">Placa en informe: {gpsReport.plate}</p>
-                )}
-                {gpsReport.lastLatitude != null && gpsReport.lastLongitude != null && (
-                  <a
-                    href={`https://www.google.com/maps?q=${gpsReport.lastLatitude},${gpsReport.lastLongitude}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm text-[#1A1FE8] font-medium hover:underline inline-flex items-center gap-1 mt-1"
-                  >
-                    <Navigation className="w-3.5 h-3.5" />
-                    Ver en mapa
-                  </a>
-                )}
+            {gpsReport.hasGpsLocation && gpsReport.lastLocation && (
+              <div className="flex gap-2 items-start">
+                <MapPin className="w-5 h-5 text-[#1A1FE8] shrink-0 mt-0.5" />
+                <div>
+                  <p className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                    {gpsReport.lastLocation}
+                  </p>
+                  {gpsReport.lastLatitude != null && gpsReport.lastLongitude != null && (
+                    <a
+                      href={`https://www.google.com/maps?q=${gpsReport.lastLatitude},${gpsReport.lastLongitude}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm text-[#1A1FE8] font-medium hover:underline inline-flex items-center gap-1 mt-1"
+                    >
+                      <Navigation className="w-3.5 h-3.5" />
+                      Ver en mapa
+                    </a>
+                  )}
+                </div>
               </div>
-            </div>
-            <div className="grid sm:grid-cols-3 gap-3">
-              {gpsReport.totalDistanceKm != null && (
-                <div className={`rounded-xl p-3 ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}>
-                  <p className="text-xs text-gray-500">Distancia periodo</p>
-                  <p className="text-lg font-bold tabular-nums">{gpsReport.totalDistanceKm} km</p>
-                </div>
-              )}
-              {gpsReport.maxSpeedKmh != null && (
-                <div className={`rounded-xl p-3 ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}>
-                  <p className="text-xs text-gray-500">Vel. máxima</p>
-                  <p className="text-lg font-bold tabular-nums">{Math.round(gpsReport.maxSpeedKmh)} km/h</p>
-                </div>
-              )}
-              {gpsReport.avgSpeedKmh != null && (
-                <div className={`rounded-xl p-3 ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}>
-                  <p className="text-xs text-gray-500">Vel. promedio</p>
-                  <p className="text-lg font-bold tabular-nums">{Math.round(gpsReport.avgSpeedKmh)} km/h</p>
-                </div>
-              )}
-            </div>
-            {gpsReport.highlights.length > 0 && (
-              <ul className="text-sm space-y-1">
-                {gpsReport.highlights.slice(0, 6).map((h) => (
-                  <li key={`${h.label}-${h.value}`} className="flex justify-between gap-4">
-                    <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>{h.label}</span>
-                    <span className="font-medium tabular-nums">{h.value}</span>
-                  </li>
-                ))}
-              </ul>
+            )}
+            <ul className="text-sm space-y-2">
+              {(gpsReport.clientHighlights?.length
+                ? gpsReport.clientHighlights
+                : gpsReport.highlights.slice(0, 6)
+              ).map((h) => (
+                <li key={`${h.label}-${h.value}`} className="flex justify-between gap-4 py-1 border-b border-inherit/40">
+                  <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>{h.label}</span>
+                  <span className="font-medium tabular-nums text-right">{h.value}</span>
+                </li>
+              ))}
+            </ul>
+            {gpsReport.plate && (
+              <p className="text-xs text-gray-500">Placa en informe: {gpsReport.plate}</p>
             )}
           </div>
         )}

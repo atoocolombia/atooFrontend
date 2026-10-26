@@ -1,12 +1,18 @@
 import { apiFetch, parseErrorResponse } from './http';
 import type { GpsReportSummary } from './analystGpsApi';
 
+export type ClientGpsReportView = GpsReportSummary & {
+  hasGpsLocation: boolean;
+  summaryTitle: string;
+  clientHighlights: Array<{ label: string; value: string }>;
+};
+
 export type { GpsReportSummary };
 
-export async function fetchLatestClientGpsReport(): Promise<GpsReportSummary | null> {
+export async function fetchLatestClientGpsReport(): Promise<ClientGpsReportView | null> {
   const res = await apiFetch('/api/v1/client/gps-report/latest');
   if (!res.ok) throw new Error(await parseErrorResponse(res));
-  const body = (await res.json()) as { report?: GpsReportSummary | null };
+  const body = (await res.json()) as { report?: ClientGpsReportView | null };
   return body.report ?? null;
 }
 
