@@ -6,6 +6,7 @@ export type ClientGpsUsageSummary = {
   maxSpeedKmh: number | null;
   avgSpeedKmh: number | null;
   vehicleOdometerKm: number | null;
+  odometerTotalKm: number | null;
   movementDuration: string | null;
   parkedDuration: string | null;
   engineHours: string | null;
