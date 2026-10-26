@@ -50,6 +50,19 @@ async function readPaymentSummaryResponse(res: Response): Promise<ClientPaymentS
   return summary;
 }
 
+async function readPaymentSummaryFromClientAccess(res: Response): Promise<ClientPaymentSummary | null> {
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    throw new Error(await parseErrorResponse(res));
+  }
+  const body = (await res.json().catch(() => ({}))) as {
+    paymentSummary?: ClientPaymentSummary | null;
+    error?: string;
+  };
+  if (body.error?.trim()) throw new Error(body.error);
+  return body.paymentSummary ?? null;
+}
+
 async function fetchPaymentSummaryFromAuthMe(): Promise<ClientPaymentSummary | null> {
   const res = await apiFetch('/api/v1/auth/me?includePayments=1');
   if (res.status === 404) return null;
@@ -105,6 +118,9 @@ export async function fetchClientPaymentSummary(userId?: string): Promise<Client
   const candidates: string[] = ['/api/v1/auth/me/payment-summary'];
 
   if (sessionUserId) {
+    candidates.push(
+      `/api/v1/users/${encodeURIComponent(sessionUserId)}/client-access?includePayments=1`,
+    );
     candidates.push(`/api/v1/users/${encodeURIComponent(sessionUserId)}/payment-summary`);
   }
   candidates.push('/api/v1/client/payments/summary');
@@ -112,6 +128,16 @@ export async function fetchClientPaymentSummary(userId?: string): Promise<Client
   let lastError: Error | null = null;
   for (const path of candidates) {
     const res = await apiFetch(path);
+    if (path.includes('client-access') && res.ok) {
+      try {
+        const fromAccess = await readPaymentSummaryFromClientAccess(res);
+        if (fromAccess) return fromAccess;
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error('Error al cargar pagos');
+        continue;
+      }
+      continue;
+    }
     if (res.status === 404) {
       lastError = new Error('Ruta de pagos no disponible en el servidor');
       continue;
