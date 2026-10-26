@@ -40,6 +40,7 @@ export function ProceduresAdminView({ onPendingCountChange }: ProceduresAdminVie
   const [editCost, setEditCost] = useState<Record<string, string>>({});
   const [editUrgent, setEditUrgent] = useState<Record<string, boolean>>({});
   const [editNotes, setEditNotes] = useState<Record<string, string>>({});
+  const [editDeferMonths, setEditDeferMonths] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -59,6 +60,11 @@ export function ProceduresAdminView({ onPendingCountChange }: ProceduresAdminVie
       }
       setEditCost(costs);
       setEditUrgent(urgents);
+      const defers: Record<string, string> = {};
+      for (const item of data) {
+        defers[item.id] = '1';
+      }
+      setEditDeferMonths((prev) => ({ ...defers, ...prev }));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudieron cargar las solicitudes');
     } finally {
@@ -84,11 +90,15 @@ export function ProceduresAdminView({ onPendingCountChange }: ProceduresAdminVie
     try {
       const costRaw = (editCost[item.id] ?? '').trim();
       const cost = costRaw === '' ? null : Number(costRaw.replace(/[^\d]/g, ''));
+      const deferRaw = (editDeferMonths[item.id] ?? '1').trim();
+      const paymentDeferMonths =
+        cost && cost > 0 ? Math.max(1, Math.min(36, Number(deferRaw) || 1)) : undefined;
       await adminReviewProcedureSuggestion(item.id, {
         action,
         adminNotes: (editNotes[item.id] ?? '').trim() || undefined,
         estimatedCostCop: action === 'approve' ? cost : undefined,
         isUrgent: action === 'approve' ? Boolean(editUrgent[item.id]) : undefined,
+        paymentDeferMonths,
       });
       setSuccess(
         action === 'approve'
@@ -252,6 +262,31 @@ export function ProceduresAdminView({ onPendingCountChange }: ProceduresAdminVie
                         }`}
                       />
                     </div>
+                    {(editCost[item.id] ?? '').trim() !== '' && (
+                      <div>
+                        <label className="block text-xs font-medium mb-1">
+                          Cuotas en cuenta de cobro (meses)
+                        </label>
+                        <select
+                          value={editDeferMonths[item.id] ?? '1'}
+                          onChange={(e) =>
+                            setEditDeferMonths((prev) => ({ ...prev, [item.id]: e.target.value }))
+                          }
+                          className={`w-full rounded-xl border px-3 py-2 text-sm ${
+                            theme === 'dark'
+                              ? 'bg-white/5 border-blue-600/30 text-white'
+                              : 'bg-white border-gray-200'
+                          }`}
+                        >
+                          <option value="1">1 — cargo único del mes</option>
+                          {[2, 3, 4, 5, 6, 9, 12].map((m) => (
+                            <option key={m} value={String(m)}>
+                              {m} — pago diferido mensual
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                     <label className="flex items-center gap-2 text-sm">
                       <input
                         type="checkbox"

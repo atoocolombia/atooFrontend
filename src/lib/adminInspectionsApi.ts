@@ -53,6 +53,7 @@ export async function adminReviewProcedureSuggestion(
     adminNotes?: string;
     estimatedCostCop?: number | null;
     isUrgent?: boolean;
+    paymentDeferMonths?: number;
   },
 ): Promise<AdminProcedureSuggestion> {
   const res = await fetchWithCreds(

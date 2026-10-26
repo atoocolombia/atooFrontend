@@ -17,13 +17,43 @@ import {
   formatPaymentDate,
   useClientPaymentSummary,
 } from '../../../lib/clientPaymentsApi';
-import { useClientBillingStatement } from '../../../lib/clientBillingApi';
+import { useClientBilling, useCurrentBillingPeriod } from '../../../lib/clientBillingApi';
 import { MonthlyBillingStatement } from './MonthlyBillingStatement';
+import { ServiceOfferBanner } from './ServiceOfferBanner';
 
 export function PaymentsView() {
   const { theme } = useTheme();
   const { summary, loading, error, reload } = useClientPaymentSummary();
-  const billing = useClientBillingStatement(!loading);
+  const { year: billYear, month: billMonth, setYear: setBillYear, setMonth: setBillMonth } =
+    useCurrentBillingPeriod();
+  const billing = useClientBilling(billYear, billMonth, !loading);
+
+  const billingBlock = (
+    <MonthlyBillingStatement
+      statement={billing.statement}
+      periods={billing.periods}
+      loading={billing.loading}
+      error={billing.error}
+      year={billYear}
+      month={billMonth}
+      onPeriodChange={(y, m) => {
+        setBillYear(y);
+        setBillMonth(m);
+      }}
+      onReload={() => void billing.reload()}
+    />
+  );
+
+  const offerBanner =
+    billing.statement?.isCurrentPeriod && billing.statement.pendingOffer ? (
+      <ServiceOfferBanner
+        offer={billing.statement.pendingOffer}
+        onStatementChange={(next) => {
+          billing.setStatement(next);
+          void billing.reload();
+        }}
+      />
+    ) : null;
 
   const [selectedMethod, setSelectedMethod] = useState<string>('');
   const [showWompiWidget, setShowWompiWidget] = useState(false);
@@ -113,13 +143,7 @@ export function PaymentsView() {
           )}
         </div>
 
-        <MonthlyBillingStatement
-          statement={billing.statement}
-          loading={billing.loading}
-          error={billing.error}
-          onReload={() => void billing.reload()}
-          onStatementChange={billing.setStatement}
-        />
+        {offerBanner}
 
         <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl shadow-2xl p-8 text-white">
           <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
@@ -215,6 +239,8 @@ export function PaymentsView() {
             </div>
           </div>
         </div>
+
+        {billingBlock}
       </div>
     );
   }
@@ -236,13 +262,7 @@ export function PaymentsView() {
         )}
       </div>
 
-      <MonthlyBillingStatement
-        statement={billing.statement}
-        loading={billing.loading}
-        error={billing.error}
-        onReload={() => void billing.reload()}
-        onStatementChange={billing.setStatement}
-      />
+      {offerBanner}
 
       {summary && summary.paymentsCount === 0 && (
         <div
@@ -810,6 +830,8 @@ export function PaymentsView() {
           )}
         </div>
       </div>
+
+      {billingBlock}
 
       {/* Info Box */}
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
