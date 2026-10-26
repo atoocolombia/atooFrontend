@@ -10,6 +10,7 @@ import {
   isHumanSupportChatStatus,
   requestSupportHumanChat,
   fetchSupportTopics,
+  setSupportChatTopic,
   SUPPORT_TOPICS_FALLBACK,
   type SupportChatAttachmentDto,
   type SupportChatMessageDto,
@@ -72,6 +73,8 @@ export function DashboardSupportChat({ userId, openOnMount }: DashboardSupportCh
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const choosingTopicRef = useRef(false);
+  /** Evita que el polling sobrescriba tema, menú y mensajes mientras el usuario elige tema. */
+  const blockSessionTopicSyncRef = useRef(false);
 
   const scrollToTopicPicker = useCallback(() => {
     requestAnimationFrame(() => {
@@ -79,11 +82,13 @@ export function DashboardSupportChat({ userId, openOnMount }: DashboardSupportCh
     });
   }, []);
 
-  const applySession = useCallback((session: SupportChatSessionDto | null) => {
+  const applySession = useCallback((session: SupportChatSessionDto | null, options?: { full?: boolean }) => {
     if (!session) return;
+    const full = options?.full ?? !blockSessionTopicSyncRef.current;
     setSessionId(session.id);
     setChatStatus(session.status);
     setEmergencyReported(Boolean(session.emergencyReported));
+    if (!full) return;
     if (session.topic === EMERGENCY_TOPIC_ID) {
       setEmergencyPhase(
         session.emergencyReported || session.messages.length > 1 ? 'chat' : 'menu',
@@ -105,7 +110,7 @@ export function DashboardSupportChat({ userId, openOnMount }: DashboardSupportCh
     const session = await fetchSupportChatSession();
     if (session) {
       applySession(session);
-    } else if (!choosingTopicRef.current) {
+    } else if (!choosingTopicRef.current && !blockSessionTopicSyncRef.current) {
       setTopic(null);
       setShowTopicPicker(true);
     }
@@ -157,12 +162,12 @@ export function DashboardSupportChat({ userId, openOnMount }: DashboardSupportCh
   }, [messages, loading]);
 
   const openTopicPicker = () => {
+    blockSessionTopicSyncRef.current = true;
     choosingTopicRef.current = true;
     setTopic(null);
     setShowTopicPicker(true);
     setQuestion('');
     setError(null);
-    setEmergencyPhase('chat');
     scrollToTopicPicker();
   };
 
@@ -175,6 +180,7 @@ export function DashboardSupportChat({ userId, openOnMount }: DashboardSupportCh
   };
 
   const startTopic = (id: number) => {
+    blockSessionTopicSyncRef.current = true;
     choosingTopicRef.current = false;
     setShowTopicPicker(false);
     setTopic(id);
@@ -195,14 +201,21 @@ export function DashboardSupportChat({ userId, openOnMount }: DashboardSupportCh
           ].join('\n'),
         },
       ]);
-      return;
+    } else {
+      setEmergencyPhase('chat');
+      const lines = [`Elegiste: ${t?.emoji ?? ''} ${t?.label ?? id}.`];
+      const hint = vehicleHint(id);
+      if (hint) lines.push(hint);
+      lines.push('Escribe tu pregunta.');
+      setMessages((prev) => [...prev, { role: 'bot', text: lines.join('\n\n') }]);
     }
-    setEmergencyPhase('chat');
-    const lines = [`Elegiste: ${t?.emoji ?? ''} ${t?.label ?? id}.`];
-    const hint = vehicleHint(id);
-    if (hint) lines.push(hint);
-    lines.push('Escribe tu pregunta.');
-    setMessages((prev) => [...prev, { role: 'bot', text: lines.join('\n\n') }]);
+    void setSupportChatTopic({ topic: id, sessionId: sessionId ?? undefined })
+      .then((session) => {
+        setSessionId(session.id);
+      })
+      .catch(() => {
+        /* El tema se enviará con el primer mensaje */
+      });
   };
 
   const showEmergencySafetyGuide = () => {
@@ -251,7 +264,8 @@ export function DashboardSupportChat({ userId, openOnMount }: DashboardSupportCh
         description: reportDescription.trim(),
         clientSafe: reportSafe,
       });
-      applySession(session);
+      blockSessionTopicSyncRef.current = false;
+      applySession(session, { full: true });
       setEmergencyPhase('chat');
       setEmergencyReported(true);
     } catch (err) {
@@ -324,7 +338,8 @@ export function DashboardSupportChat({ userId, openOnMount }: DashboardSupportCh
           })
         : await askSupportChat({ topic, question: q, sessionId: sessionId ?? undefined });
       if (result.session) {
-        applySession(result.session);
+        blockSessionTopicSyncRef.current = false;
+        applySession(result.session, { full: true });
       } else {
         if (result.sessionId) setSessionId(result.sessionId);
         if (result.status) setChatStatus(result.status);
@@ -365,8 +380,8 @@ export function DashboardSupportChat({ userId, openOnMount }: DashboardSupportCh
           throw new Error('No se pudo conectar con soporte. Recarga la página e inténtalo de nuevo.');
         }
       }
-      applySession(result.session);
-      setMessages(mapServerMessages(result.session.messages));
+      blockSessionTopicSyncRef.current = false;
+      applySession(result.session, { full: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'No se pudo solicitar atención humana';
       setError(msg);
