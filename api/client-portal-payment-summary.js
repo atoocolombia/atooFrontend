@@ -127,6 +127,7 @@ export default async function handler(req, res) {
   };
 
   const backendSummaryPaths = [
+    `/api/v1/users/${encodeURIComponent(userId)}/client-access?includePayments=1`,
     `/api/v1/users/${encodeURIComponent(userId)}/payment-summary`,
     '/api/v1/auth/me/payment-summary',
     '/api/v1/client/payments/summary',
@@ -149,18 +150,30 @@ export default async function handler(req, res) {
     }
   }
 
-  const dbUrl = process.env.DATABASE_URL?.trim();
+  const dbUrl =
+    process.env.DATABASE_PUBLIC_URL?.trim() ||
+    process.env.DATABASE_URL?.trim() ||
+    process.env.POSTGRES_URL?.trim() ||
+    '';
   if (!dbUrl) {
     res.status(503).json({
       error:
-        'Plataforma: falta DATABASE_URL en Vercel (copia la URL pública de Postgres desde Railway).',
+        'Plataforma: falta DATABASE_URL en Vercel (copia DATABASE_PUBLIC_URL de Postgres en Railway).',
+    });
+    return;
+  }
+  if (dbUrl.includes('railway.internal')) {
+    res.status(503).json({
+      error:
+        'Plataforma: en Vercel usa DATABASE_PUBLIC_URL (URL pública de Postgres), no la URL internal de Railway.',
     });
     return;
   }
 
+  const useSsl = !dbUrl.includes('localhost');
   const client = new Client({
     connectionString: dbUrl,
-    ssl: dbUrl.includes('localhost') ? false : { rejectUnauthorized: false },
+    ssl: useSsl ? { rejectUnauthorized: false } : false,
   });
 
   try {
@@ -187,15 +200,31 @@ export default async function handler(req, res) {
           [userId, idDoc],
         );
       }
-      const payRes = await client.query(
-        `SELECT id, "amountCop", "paidAt", "paymentMethod"
-         FROM "ClientPayment"
-         WHERE "userId" = $1
-            OR ($2 <> '' AND "idDocumentNumber" = $2)
-         ORDER BY "paidAt" DESC`,
-        [userId, idDoc],
-      );
-      payments = payRes.rows;
+      try {
+        const payRes = await client.query(
+          `SELECT id, "amountCop", "paidAt", "paymentMethod"
+           FROM "ClientPayment"
+           WHERE "userId" = $1
+              OR ($2 <> '' AND "idDocumentNumber" = $2)
+           ORDER BY "paidAt" DESC`,
+          [userId, idDoc],
+        );
+        payments = payRes.rows;
+      } catch (colErr) {
+        if (colErr?.code === '42703') {
+          const payRes = await client.query(
+            `SELECT id, "amountCop", "paidAt", NULL::text AS "paymentMethod"
+             FROM "ClientPayment"
+             WHERE "userId" = $1
+                OR ($2 <> '' AND "idDocumentNumber" = $2)
+             ORDER BY "paidAt" DESC`,
+            [userId, idDoc],
+          );
+          payments = payRes.rows;
+        } else {
+          throw colErr;
+        }
+      }
     } catch (dbErr) {
       if (dbErr?.code !== '42P01') throw dbErr;
     }
@@ -236,6 +265,14 @@ export default async function handler(req, res) {
     res.status(200).json({ summary });
   } catch (err) {
     console.error('[client-portal-payment-summary]', err);
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/SSL|ECONNREFUSED|ENOTFOUND|timeout|internal/i.test(msg)) {
+      res.status(503).json({
+        error:
+          'No pudimos conectar a la base de datos. En Vercel configura DATABASE_URL con DATABASE_PUBLIC_URL de Railway.',
+      });
+      return;
+    }
     res.status(500).json({ error: 'Tuvimos un problema al leer tus pagos. Inténtalo de nuevo.' });
   } finally {
     await client.end().catch(() => {});
