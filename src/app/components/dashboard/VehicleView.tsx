@@ -142,7 +142,7 @@ export function VehicleView() {
             <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
               {gpsReport?.hasGpsLocation
                 ? 'Última ubicación reportada por el proveedor'
-                : 'Resumen del informe de telemetría (este vehículo no tiene rastreo GPS en vivo)'}
+                : 'Datos del último informe del proveedor (sin GPS en vivo en la app)'}
             </p>
           </div>
         </div>
@@ -190,17 +190,83 @@ export function VehicleView() {
                 </div>
               </div>
             )}
-            <ul className="text-sm space-y-2">
-              {(gpsReport.clientHighlights?.length
-                ? gpsReport.clientHighlights
-                : gpsReport.highlights.slice(0, 6)
-              ).map((h) => (
-                <li key={`${h.label}-${h.value}`} className="flex justify-between gap-4 py-1 border-b border-inherit/40">
-                  <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>{h.label}</span>
-                  <span className="font-medium tabular-nums text-right">{h.value}</span>
-                </li>
-              ))}
-            </ul>
+            {(() => {
+              const u = gpsReport.usageSummary;
+              const routeKm = u?.routeKm ?? gpsReport.totalDistanceKm;
+              const maxSp = u?.maxSpeedKmh ?? gpsReport.maxSpeedKmh;
+              const avgSp = u?.avgSpeedKmh ?? gpsReport.avgSpeedKmh;
+              const hasMainStats = routeKm != null || maxSp != null || avgSp != null;
+              return (
+                <>
+                  {hasMainStats && (
+                    <div className="grid sm:grid-cols-3 gap-3">
+                      {routeKm != null && (
+                        <div className={`rounded-xl p-3 ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}>
+                          <p className="text-xs text-gray-500">Km recorridos (periodo)</p>
+                          <p className="text-lg font-bold tabular-nums">{routeKm} km</p>
+                        </div>
+                      )}
+                      {maxSp != null && (
+                        <div className={`rounded-xl p-3 ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}>
+                          <p className="text-xs text-gray-500">Vel. máxima</p>
+                          <p className="text-lg font-bold tabular-nums">{Math.round(maxSp)} km/h</p>
+                        </div>
+                      )}
+                      {avgSp != null && (
+                        <div className={`rounded-xl p-3 ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}>
+                          <p className="text-xs text-gray-500">Vel. media</p>
+                          <p className="text-lg font-bold tabular-nums">{Math.round(avgSp)} km/h</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {(u?.movementDuration || u?.parkedDuration || u?.vehicleOdometerKm != null) && (
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      {u?.movementDuration && (
+                        <div className={`rounded-xl p-3 ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}>
+                          <p className="text-xs text-gray-500">Tiempo en movimiento</p>
+                          <p className="text-sm font-semibold tabular-nums">{u.movementDuration}</p>
+                        </div>
+                      )}
+                      {u?.parkedDuration && (
+                        <div className={`rounded-xl p-3 ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}>
+                          <p className="text-xs text-gray-500">Tiempo estacionado</p>
+                          <p className="text-sm font-semibold tabular-nums">{u.parkedDuration}</p>
+                        </div>
+                      )}
+                      {u?.vehicleOdometerKm != null && (
+                        <div
+                          className={`rounded-xl p-3 sm:col-span-2 ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}
+                        >
+                          <p className="text-xs text-gray-500">Kilometraje del vehículo (odómetro)</p>
+                          <p className="text-lg font-bold tabular-nums">{u.vehicleOdometerKm} km</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Total acumulado al cierre del periodo (odómetro fin del informe), no lo recorrido solo en
+                            esas fechas.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {u?.engineHours && (
+                    <div className={`rounded-xl p-3 ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}>
+                      <p className="text-xs text-gray-500">Horas del motor</p>
+                      <p className="text-sm font-semibold tabular-nums">{u.engineHours}</p>
+                    </div>
+                  )}
+                  {gpsReport.clientHighlights?.length > 0 && (
+                    <ul className="text-sm space-y-1 pt-1">
+                      {gpsReport.clientHighlights.map((h) => (
+                        <li key={`${h.label}-${h.value}`} className="flex justify-between gap-4">
+                          <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>{h.label}</span>
+                          <span className="font-medium tabular-nums text-right">{h.value}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              );
+            })()}
             {gpsReport.plate && (
               <p className="text-xs text-gray-500">Placa en informe: {gpsReport.plate}</p>
             )}
