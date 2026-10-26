@@ -1,6 +1,20 @@
-import { Battery, Star, MapPin, Navigation, Zap, TrendingUp, Shield, FileCheck } from 'lucide-react';
-import { useState } from 'react';
+import {
+  Battery,
+  Star,
+  MapPin,
+  Navigation,
+  Zap,
+  TrendingUp,
+  Shield,
+  FileCheck,
+  Loader2,
+  Satellite,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { getSessionUser } from '../../../lib/authRouting';
+import { fetchLatestClientGpsReport, formatGpsPeriod, type GpsReportSummary } from '../../../lib/clientGpsApi';
+import { fetchVehicleInspectionPlan, type VehicleInspectionPlan } from '../../../lib/inspectionsApi';
 
 export function VehicleView() {
   const { theme } = useTheme();
@@ -19,6 +33,32 @@ export function VehicleView() {
   };
 
   const [showMap, setShowMap] = useState(true);
+  const [plan, setPlan] = useState<VehicleInspectionPlan | null>(null);
+  const [gpsReport, setGpsReport] = useState<GpsReportSummary | null>(null);
+  const [gpsLoading, setGpsLoading] = useState(true);
+
+  useEffect(() => {
+    const user = getSessionUser({ refresh: false });
+    if (!user?.id) {
+      setGpsLoading(false);
+      return;
+    }
+    void (async () => {
+      try {
+        const [planRow, report] = await Promise.all([
+          fetchVehicleInspectionPlan(user.id).catch(() => null),
+          fetchLatestClientGpsReport().catch(() => null),
+        ]);
+        setPlan(planRow);
+        setGpsReport(report);
+      } finally {
+        setGpsLoading(false);
+      }
+    })();
+  }, []);
+
+  const displayModel = plan?.vehicleName ?? vehicleData.model;
+  const displayVin = plan?.vin ?? vehicleData.vin;
 
   // Calcular el porcentaje de cargas óptimas
   const optimalPercentage = Math.round(
@@ -77,8 +117,106 @@ export function VehicleView() {
       <div>
         <h1 className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Mi Vehículo</h1>
         <p className={`mt-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-          Información y estado actual de tu {vehicleData.model}
+          Información y estado actual de tu {displayModel}
         </p>
+      </div>
+
+      {/* GPS report from analyst upload */}
+      <div
+        className={`rounded-2xl shadow-lg p-6 border transition-colors ${
+          theme === 'dark' ? 'bg-[#0D0F2E]/50 border-blue-600/20 backdrop-blur-xl' : 'bg-white border-gray-100'
+        }`}
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 bg-[#1A1FE8]/10 rounded-lg flex items-center justify-center">
+            <Satellite className="w-5 h-5 text-[#1A1FE8]" />
+          </div>
+          <div>
+            <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              Rastreo GPS
+            </h3>
+            <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
+              Informe cargado por atoo desde tu proveedor de GPS
+            </p>
+          </div>
+        </div>
+        {gpsLoading ? (
+          <div className="flex justify-center py-6">
+            <Loader2 className="w-7 h-7 animate-spin text-[#1A1FE8]" />
+          </div>
+        ) : !gpsReport ? (
+          <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+            Aún no hay un informe GPS publicado para tu vehículo. Cuando atoo reciba el archivo del
+            proveedor, verás aquí ubicación y recorrido del periodo.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+              {formatGpsPeriod(gpsReport.periodFrom, gpsReport.periodTo)}
+              {gpsReport.lastReportAt && (
+                <span className="block text-xs mt-1">
+                  Última lectura:{' '}
+                  {new Date(gpsReport.lastReportAt).toLocaleString('es-CO', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                  })}
+                </span>
+              )}
+            </p>
+            <div className="flex gap-2 items-start">
+              <MapPin className="w-5 h-5 text-[#1A1FE8] shrink-0 mt-0.5" />
+              <div>
+                <p className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                  {gpsReport.lastLocation ?? 'Ubicación no disponible en el archivo'}
+                </p>
+                {gpsReport.plate && (
+                  <p className="text-xs text-gray-500">Placa en informe: {gpsReport.plate}</p>
+                )}
+                {gpsReport.lastLatitude != null && gpsReport.lastLongitude != null && (
+                  <a
+                    href={`https://www.google.com/maps?q=${gpsReport.lastLatitude},${gpsReport.lastLongitude}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm text-[#1A1FE8] font-medium hover:underline inline-flex items-center gap-1 mt-1"
+                  >
+                    <Navigation className="w-3.5 h-3.5" />
+                    Ver en mapa
+                  </a>
+                )}
+              </div>
+            </div>
+            <div className="grid sm:grid-cols-3 gap-3">
+              {gpsReport.totalDistanceKm != null && (
+                <div className={`rounded-xl p-3 ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}>
+                  <p className="text-xs text-gray-500">Distancia periodo</p>
+                  <p className="text-lg font-bold tabular-nums">{gpsReport.totalDistanceKm} km</p>
+                </div>
+              )}
+              {gpsReport.maxSpeedKmh != null && (
+                <div className={`rounded-xl p-3 ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}>
+                  <p className="text-xs text-gray-500">Vel. máxima</p>
+                  <p className="text-lg font-bold tabular-nums">{Math.round(gpsReport.maxSpeedKmh)} km/h</p>
+                </div>
+              )}
+              {gpsReport.avgSpeedKmh != null && (
+                <div className={`rounded-xl p-3 ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}>
+                  <p className="text-xs text-gray-500">Vel. promedio</p>
+                  <p className="text-lg font-bold tabular-nums">{Math.round(gpsReport.avgSpeedKmh)} km/h</p>
+                </div>
+              )}
+            </div>
+            {gpsReport.highlights.length > 0 && (
+              <ul className="text-sm space-y-1">
+                {gpsReport.highlights.slice(0, 6).map((h) => (
+                  <li key={`${h.label}-${h.value}`} className="flex justify-between gap-4">
+                    <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>{h.label}</span>
+                    <span className="font-medium tabular-nums">{h.value}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Vehicle Card */}
@@ -93,8 +231,8 @@ export function VehicleView() {
         <div className="relative z-10">
           <div className="flex justify-between items-start mb-6">
             <div>
-              <h2 className="text-2xl font-bold mb-1">{vehicleData.model}</h2>
-              <p className="text-gray-400 font-mono text-sm">VIN: {vehicleData.vin}</p>
+              <h2 className="text-2xl font-bold mb-1">{displayModel}</h2>
+              <p className="text-gray-400 font-mono text-sm">VIN: {displayVin}</p>
             </div>
             <div className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20">
               <span className="text-sm font-semibold">Rent to Own</span>

@@ -13,6 +13,7 @@ import {
   BarChart3,
   Car,
   Truck,
+  MapPin,
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { clearUserSession, getSessionUser } from '../../lib/authRouting';
@@ -22,6 +23,7 @@ import { ManualDeliveryView } from '../components/analyst/ManualDeliveryView';
 import { ApprovedApplicationsView } from '../components/analyst/ApprovedApplicationsView';
 import { RejectedApplicationsView } from '../components/analyst/RejectedApplicationsView';
 import { PaymentRegistrationView } from '../components/analyst/PaymentRegistrationView';
+import { GpsReportUploadView } from '../components/analyst/GpsReportUploadView';
 import { AppointmentsView } from '../components/advisor/AppointmentsView';
 import { DocumentGeneratorView } from '../components/advisor/DocumentGeneratorView';
 import { RejectedUsersView } from '../components/advisor/RejectedUsersView';
@@ -36,6 +38,7 @@ const menuItems = [
   { id: 'pending', label: 'Solicitudes pendientes', icon: ClipboardCheck },
   { id: 'manual-delivery', label: 'Alta manual entrega', icon: PlusCircle },
   { id: 'payments', label: 'Registro de pagos', icon: CreditCard },
+  { id: 'gps-reports', label: 'Informes GPS', icon: MapPin },
   { id: 'approved', label: 'Solicitudes aprobadas', icon: CheckCircle },
   { id: 'rejected-applications', label: 'Solicitudes denegadas', icon: XCircle },
   { id: 'deliveries', label: 'Entregas de vehículos', icon: Truck },
@@ -173,6 +176,7 @@ export function AnalystDashboard() {
           {activeView === 'pending' && <PendingApplicationsLiveView />}
           {activeView === 'manual-delivery' && <ManualDeliveryView />}
           {activeView === 'payments' && <PaymentRegistrationView />}
+          {activeView === 'gps-reports' && <GpsReportUploadView />}
           {activeView === 'approved' && <ApprovedApplicationsView />}
           {activeView === 'rejected-applications' && <RejectedApplicationsView />}
           {activeView === 'deliveries' && <DeliveryQueueView />}
