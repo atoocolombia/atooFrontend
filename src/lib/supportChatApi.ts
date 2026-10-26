@@ -52,6 +52,24 @@ export async function fetchSupportChatSession(): Promise<SupportChatSessionDto |
   return body.session;
 }
 
+export async function setSupportChatTopic(payload: {
+  topic: number;
+  sessionId?: string;
+}): Promise<SupportChatSessionDto> {
+  const res = await apiFetch('/api/v1/support/chat/set-topic', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const body = (await res.json().catch(() => ({}))) as {
+    error?: string;
+    session?: SupportChatSessionDto;
+  };
+  if (!res.ok) throw new Error(body.error ?? 'No se pudo cambiar el tema');
+  if (!body.session) throw new Error('No se recibió la conversación actualizada');
+  return body.session;
+}
+
 export async function askSupportChatWithMedia(payload: {
   topic: number;
   question: string;
