@@ -1,10 +1,21 @@
 import { apiFetch, parseErrorResponse } from './http';
 import type { GpsReportSummary } from './analystGpsApi';
 
+export type ClientGpsUsageSummary = {
+  routeKm: number | null;
+  maxSpeedKmh: number | null;
+  avgSpeedKmh: number | null;
+  vehicleOdometerKm: number | null;
+  movementDuration: string | null;
+  parkedDuration: string | null;
+  engineHours: string | null;
+};
+
 export type ClientGpsReportView = GpsReportSummary & {
   hasGpsLocation: boolean;
   summaryTitle: string;
   clientHighlights: Array<{ label: string; value: string }>;
+  usageSummary?: ClientGpsUsageSummary;
 };
 
 export type { GpsReportSummary };
