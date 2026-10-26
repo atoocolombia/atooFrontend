@@ -89,7 +89,7 @@ export function GpsReportUploadView() {
 
   const onSubmit = async () => {
     if (!clientUserId || !file) {
-      setError('Selecciona cliente y archivo CSV/TXT de la empresa GPS.');
+      setError('Selecciona cliente y el PDF (o CSV) de la empresa GPS.');
       return;
     }
     setUploading(true);
@@ -121,7 +121,7 @@ export function GpsReportUploadView() {
           Informes GPS
         </h1>
         <p className={`mt-2 text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-          Sube el archivo que envía la empresa de rastreo (CSV o TXT) y asígnalo al cliente del
+          Sube el informe PDF (o CSV) que envía la empresa de rastreo y asígnalo al cliente del
           vehículo. Extraemos ubicación, recorrido y métricas para mostrarlas en su dashboard.
         </p>
       </div>
@@ -201,13 +201,13 @@ export function GpsReportUploadView() {
           <label className="block text-xs font-medium mb-1">Archivo GPS</label>
           <input
             type="file"
-            accept=".csv,.txt,text/csv,text/plain"
+            accept=".pdf,.csv,.txt,application/pdf,text/csv,text/plain"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             className={`w-full text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
           />
           <p className="text-xs text-gray-500 mt-1">
-            Exporta desde la plataforma del proveedor como CSV. Columnas habituales: fecha, placa,
-            VIN, latitud, longitud, dirección, velocidad, kilometraje.
+            Lo habitual es el PDF de telemetría del proveedor. También aceptamos CSV. Buscamos placa,
+            VIN, fechas, ubicación, coordenadas, velocidad y kilometraje en el documento.
           </p>
         </div>
 

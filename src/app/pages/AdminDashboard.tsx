@@ -13,6 +13,7 @@ import {
   ClipboardCheck,
   GraduationCap,
   MessageCircle,
+  Sparkles,
 } from 'lucide-react';
 import { AdminMetricsView } from '../components/admin/AdminMetricsView';
 import { DeliveredVehiclesView } from '../components/admin/DeliveredVehiclesView';
@@ -25,6 +26,7 @@ import { WorkshopsAdminView } from '../components/admin/WorkshopsAdminView';
 import { ProceduresAdminView } from '../components/admin/ProceduresAdminView';
 import { TrainingVideosAdminView } from '../components/admin/TrainingVideosAdminView';
 import { SupportChatsAdminView } from '../components/admin/SupportChatsAdminView';
+import { ServiceOffersAdminView } from '../components/admin/ServiceOffersAdminView';
 import { AdminNotificationBell } from '../components/admin/AdminNotificationBell';
 import { MobileAppBar } from '../components/MobileAppBar';
 import { useTheme } from '../contexts/ThemeContext';
@@ -40,6 +42,7 @@ const menuItems = [
   { id: 'workshops', label: 'Talleres', icon: Wrench },
   { id: 'procedures', label: 'Procedimientos', icon: ClipboardCheck },
   { id: 'training', label: 'Capacitaciones', icon: GraduationCap },
+  { id: 'service-offers', label: 'Ofertas de servicio', icon: Sparkles },
   { id: 'support-chats', label: 'Chats soporte', icon: MessageCircle },
   { id: 'delivered', label: 'Vehículos Entregados', icon: Car },
   { id: 'risk', label: 'Pagos en Riesgo', icon: AlertTriangle },
@@ -254,6 +257,7 @@ export function AdminDashboard() {
             <ProceduresAdminView onPendingCountChange={setPendingProcedureCount} />
           )}
           {activeView === 'training' && <TrainingVideosAdminView />}
+          {activeView === 'service-offers' && <ServiceOffersAdminView />}
           {activeView === 'support-chats' && (
             <SupportChatsAdminView initialSessionId={supportChatFocusId} />
           )}
