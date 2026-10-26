@@ -83,3 +83,11 @@ export async function adminMarkNotificationRead(notificationId: string): Promise
   );
   if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
 }
+
+export async function adminMarkAllNotificationsRead(): Promise<void> {
+  const res = await fetchWithCreds(
+    apiUrl('/api/v1/admin/inspections/notifications/read-all'),
+    { method: 'PATCH', headers: { 'Content-Type': 'application/json' } },
+  );
+  if (!res.ok) throw new ApiError(await parseErrorResponse(res), res.status);
+}
