@@ -1,38 +1,65 @@
-import { Loader2, Receipt, Sparkles, X } from 'lucide-react';
-import { useState } from 'react';
+import { AlertCircle, AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Loader2, Receipt } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import {
   categoryLabel,
+  deferLineHint,
   formatCop,
-  respondToServiceOffer,
+  type BillingPeriodListItem,
   type ClientBillingStatement,
 } from '../../../lib/clientBillingApi';
 import { formatNextPaymentDate } from '../../../lib/clientPaymentsApi';
 
 type MonthlyBillingStatementProps = {
   statement: ClientBillingStatement | null;
+  periods: BillingPeriodListItem[];
   loading: boolean;
   error: string | null;
+  year: number;
+  month: number;
+  onPeriodChange: (year: number, month: number) => void;
   onReload: () => void;
-  onStatementChange: (next: ClientBillingStatement) => void;
 };
+
+function shiftMonth(year: number, month: number, delta: number): { year: number; month: number } {
+  const d = new Date(year, month - 1 + delta, 1);
+  return { year: d.getFullYear(), month: d.getMonth() + 1 };
+}
 
 export function MonthlyBillingStatement({
   statement,
+  periods,
   loading,
   error,
+  year,
+  month,
+  onPeriodChange,
   onReload,
-  onStatementChange,
 }: MonthlyBillingStatementProps) {
   const { theme } = useTheme();
-  const [offerOpen, setOfferOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [offerError, setOfferError] = useState<string | null>(null);
 
   const cardClass =
     theme === 'dark'
       ? 'bg-[#0D0F2E]/50 border-blue-600/20 backdrop-blur-xl'
       : 'bg-white border-gray-100';
+
+  const canGoPrev = periods.some(
+    (p) => p.year < year || (p.year === year && p.month < month),
+  );
+  const canGoNext = periods.some(
+    (p) => p.year > year || (p.year === year && p.month > month),
+  );
+
+  const goPrev = () => {
+    const target = shiftMonth(year, month, -1);
+    const exists = periods.some((p) => p.year === target.year && p.month === target.month);
+    if (exists) onPeriodChange(target.year, target.month);
+  };
+
+  const goNext = () => {
+    const target = shiftMonth(year, month, 1);
+    const exists = periods.some((p) => p.year === target.year && p.month === target.month);
+    if (exists) onPeriodChange(target.year, target.month);
+  };
 
   if (loading && !statement) {
     return (
@@ -42,69 +69,10 @@ export function MonthlyBillingStatement({
     );
   }
 
-  if (!statement) {
-    if (error) {
-      return (
-        <div className={`rounded-2xl border p-6 text-sm text-red-500 ${cardClass}`}>
-          {error}{' '}
-          <button type="button" className="underline" onClick={() => void onReload()}>
-            Reintentar
-          </button>
-        </div>
-      );
-    }
-    return null;
-  }
-
-  const offer = statement.pendingOffer;
-
-  const handleRespond = async (accept: boolean) => {
-    if (!offer || submitting) return;
-    setSubmitting(true);
-    setOfferError(null);
-    try {
-      const next = await respondToServiceOffer(offer.id, accept);
-      onStatementChange(next);
-      setOfferOpen(false);
-    } catch (err) {
-      setOfferError(err instanceof Error ? err.message : 'No se pudo guardar tu respuesta');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   return (
-    <>
-      {offer && (
-        <button
-          type="button"
-          onClick={() => setOfferOpen(true)}
-          className="w-full text-left rounded-2xl border border-[#1A1FE8]/40 bg-gradient-to-r from-[#1A1FE8]/15 to-indigo-500/10 p-5 shadow-md hover:shadow-lg transition-shadow"
-        >
-          <div className="flex items-start gap-3">
-            <div className="w-11 h-11 rounded-xl bg-[#1A1FE8] text-white flex items-center justify-center shrink-0">
-              <Sparkles className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#1A1FE8]">
-                Nuevo servicio disponible
-              </p>
-              <p className={`text-lg font-bold mt-0.5 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                {offer.bannerTitle}
-              </p>
-              {offer.bannerSubtitle && (
-                <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-                  {offer.bannerSubtitle}
-                </p>
-              )}
-              <p className="text-sm text-[#1A1FE8] font-medium mt-2">Toca para ver detalle y aceptar o rechazar</p>
-            </div>
-          </div>
-        </button>
-      )}
-
-      <div className={`rounded-2xl shadow-lg p-8 border ${cardClass}`}>
-        <div className="flex items-center gap-3 mb-6">
+    <div className={`rounded-2xl shadow-lg p-8 border ${cardClass}`}>
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-xl bg-[#1A1FE8]/10 flex items-center justify-center">
             <Receipt className="w-6 h-6 text-[#1A1FE8]" />
           </div>
@@ -113,157 +81,251 @@ export function MonthlyBillingStatement({
               Cuenta de cobro
             </h2>
             <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-              {statement.periodLabel}
+              Consulta mes a mes
             </p>
           </div>
         </div>
 
-        <div className="space-y-3">
-          <div className="flex justify-between gap-4 py-2 border-b border-inherit">
-            <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>
-              {statement.baseInstallmentLabel}
-            </span>
-            <span className={`font-semibold tabular-nums ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              {formatCop(statement.baseInstallmentCop)}
-            </span>
-          </div>
-
-          {statement.extras.length === 0 ? (
-            <p className={`text-sm py-2 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
-              Sin cargos adicionales activos en este periodo.
-            </p>
-          ) : (
-            statement.extras.map((line) => (
-              <div key={line.id} className="flex justify-between gap-4 py-2 border-b border-inherit/50">
-                <div>
-                  <p className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                    {line.label}
-                  </p>
-                  <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
-                    {categoryLabel(line.category)}
-                    {line.description ? ` · ${line.description}` : ''}
-                  </p>
-                </div>
-                <span className={`font-semibold tabular-nums shrink-0 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                  {formatCop(line.amountCop)}
-                </span>
-              </div>
-            ))
-          )}
-
-          {statement.extras.length > 0 && (
-            <div className="flex justify-between gap-4 py-2 text-sm">
-              <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Subtotal servicios extras</span>
-              <span className="font-medium tabular-nums">{formatCop(statement.extrasSubtotalCop)}</span>
-            </div>
-          )}
-
-          <div className="flex justify-between gap-4 pt-4 mt-2 border-t-2 border-[#1A1FE8]/30">
-            <span className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              Total del periodo
-            </span>
-            <span className="text-2xl font-bold text-[#1A1FE8] tabular-nums">
-              {formatCop(statement.totalDueCop)}
-            </span>
-          </div>
-
-          {statement.nextPaymentDueAt && (
-            <p className={`text-sm pt-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-              Referencia de vencimiento: {formatNextPaymentDate(statement.nextPaymentDueAt)}
-            </p>
-          )}
-        </div>
-
-        {error && (
-          <p className="text-sm text-red-500 mt-4">
-            {error}{' '}
-            <button type="button" className="underline" onClick={() => void onReload()}>
-              Reintentar
-            </button>
-          </p>
-        )}
-      </div>
-
-      {offerOpen && offer && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="offer-title"
-            className={`w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl border p-6 ${
-              theme === 'dark' ? 'bg-[#0D0F2E] border-blue-600/30 text-white' : 'bg-white border-gray-200'
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={!canGoPrev}
+            onClick={goPrev}
+            className="p-2 rounded-lg border border-inherit disabled:opacity-30"
+            aria-label="Mes anterior"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <select
+            value={`${year}-${month}`}
+            onChange={(e) => {
+              const [y, m] = e.target.value.split('-').map(Number);
+              if (y && m) onPeriodChange(y, m);
+            }}
+            className={`rounded-xl border px-3 py-2 text-sm font-medium min-w-[10rem] ${
+              theme === 'dark' ? 'bg-white/5 border-blue-600/30' : 'border-gray-200'
             }`}
           >
-            <div className="flex items-start justify-between gap-3 mb-4">
-              <div>
-                <p className="text-xs font-semibold uppercase text-[#1A1FE8]">{offer.title}</p>
-                <h3 id="offer-title" className="text-xl font-bold mt-1">
-                  {offer.bannerTitle}
-                </h3>
-              </div>
-              <button
-                type="button"
-                aria-label="Cerrar"
-                className="p-1 rounded-lg opacity-70 hover:opacity-100"
-                onClick={() => setOfferOpen(false)}
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <p className={`text-sm whitespace-pre-wrap mb-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-              {offer.detailBody}
-            </p>
-
-            <h4 className="font-semibold mb-3">Costos adicionales en tu cuenta de cobro</h4>
-            <ul className="space-y-2 mb-6">
-              {offer.extraItems.map((item) => (
-                <li
-                  key={`${item.label}-${item.amountCop}`}
-                  className={`rounded-xl px-4 py-3 ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}
-                >
-                  <div className="flex justify-between gap-3 font-medium">
-                    <span>{item.label}</span>
-                    <span className="tabular-nums">{formatCop(item.amountCop)}</span>
-                  </div>
-                  {item.description && (
-                    <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                      {item.description}
-                    </p>
-                  )}
-                </li>
-              ))}
-            </ul>
-
-            {offerError && <p className="text-sm text-red-500 mb-4">{offerError}</p>}
-
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                type="button"
-                disabled={submitting}
-                onClick={() => void handleRespond(false)}
-                className={`flex-1 py-3 rounded-xl border font-semibold disabled:opacity-50 ${
-                  theme === 'dark' ? 'border-blue-600/40' : 'border-gray-300'
-                }`}
-              >
-                No, gracias
-              </button>
-              <button
-                type="button"
-                disabled={submitting}
-                onClick={() => void handleRespond(true)}
-                className="flex-1 py-3 rounded-xl bg-[#1A1FE8] text-white font-semibold disabled:opacity-50"
-              >
-                {submitting ? 'Guardando…' : 'Aceptar servicio'}
-              </button>
-            </div>
-            <p className={`text-xs mt-4 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
-              Al aceptar, los cargos se suman a tu cuenta de cobro mensual. Puedes consultar el detalle arriba en todo
-              momento.
-            </p>
-          </div>
+            {periods.map((p) => (
+              <option key={`${p.year}-${p.month}`} value={`${p.year}-${p.month}`}>
+                {p.label}
+                {p.isCurrent ? ' (actual)' : ''}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            disabled={!canGoNext}
+            onClick={goNext}
+            className="p-2 rounded-lg border border-inherit disabled:opacity-30"
+            aria-label="Mes siguiente"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
         </div>
+      </div>
+
+      {error && !statement && (
+        <p className="text-sm text-red-500">
+          {error}{' '}
+          <button type="button" className="underline" onClick={() => void onReload()}>
+            Reintentar
+          </button>
+        </p>
       )}
-    </>
+
+      {statement && (
+        <>
+          <p className={`text-sm mb-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+            {statement.periodLabel}
+            {!statement.isCurrentPeriod && (
+              <span className="ml-2 text-xs opacity-80">(historial)</span>
+            )}
+          </p>
+
+          {statement.collection.alertTitle && statement.collection.alertMessage && (
+            <CollectionAlert collection={statement.collection} theme={theme} />
+          )}
+
+          <div className="space-y-3">
+            <div className="flex justify-between gap-4 py-2 border-b border-inherit">
+              <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>
+                {statement.baseInstallmentLabel}
+              </span>
+              <span className={`font-semibold tabular-nums ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                {formatCop(statement.baseInstallmentCop)}
+              </span>
+            </div>
+
+            {(statement.workshopCharges?.length ?? 0) > 0 && (
+              <>
+                <p
+                  className={`text-xs font-semibold uppercase tracking-wide pt-2 ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                  }`}
+                >
+                  Taller (procedimientos autorizados)
+                </p>
+                {statement.workshopCharges.map((line) => (
+                  <div key={line.id} className="flex justify-between gap-4 py-2 border-b border-inherit/50">
+                    <div>
+                      <p className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                        {line.title}
+                      </p>
+                      <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
+                        {line.workshopName}
+                        {line.paymentMode === 'deferred'
+                          ? ` · Diferido ${line.deferMonths} meses · Total ${formatCop(line.totalCostCop)}`
+                          : ` · Pago único · Total ${formatCop(line.totalCostCop)}`}
+                      </p>
+                      {line.installmentLabel && (
+                        <p className="text-xs text-[#1A1FE8] mt-0.5">{line.installmentLabel}</p>
+                      )}
+                    </div>
+                    <span
+                      className={`font-semibold tabular-nums shrink-0 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+                    >
+                      {formatCop(line.amountCop)}
+                    </span>
+                  </div>
+                ))}
+                <div className="flex justify-between gap-4 py-2 text-sm">
+                  <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
+                    Subtotal taller
+                  </span>
+                  <span className="font-medium tabular-nums">
+                    {formatCop(statement.workshopSubtotalCop ?? 0)}
+                  </span>
+                </div>
+              </>
+            )}
+
+            {statement.extras.length === 0 && (statement.workshopCharges?.length ?? 0) === 0 ? (
+              <p className={`text-sm py-2 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
+                Sin cargos adicionales en este mes.
+              </p>
+            ) : statement.extras.length > 0 ? (
+              statement.extras.map((line) => {
+                const deferHint = deferLineHint(line);
+                return (
+                  <div key={line.id} className="flex justify-between gap-4 py-2 border-b border-inherit/50">
+                    <div>
+                      <p className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                        {line.label}
+                      </p>
+                      <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
+                        {categoryLabel(line.category)}
+                        {line.description ? ` · ${line.description}` : ''}
+                      </p>
+                      {deferHint && (
+                        <p className="text-xs text-[#1A1FE8] mt-0.5">{deferHint}</p>
+                      )}
+                    </div>
+                    <span
+                      className={`font-semibold tabular-nums shrink-0 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+                    >
+                      {formatCop(line.amountCop)}
+                    </span>
+                  </div>
+                );
+              })
+            ) : null}
+
+            {statement.extras.length > 0 && (
+              <div className="flex justify-between gap-4 py-2 text-sm">
+                <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
+                  Subtotal servicios extras
+                </span>
+                <span className="font-medium tabular-nums">{formatCop(statement.extrasSubtotalCop)}</span>
+              </div>
+            )}
+
+            <div className="flex justify-between gap-4 pt-4 mt-2 border-t-2 border-[#1A1FE8]/30">
+              <span className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                Total a pagar del mes
+              </span>
+              <span className="text-2xl font-bold text-[#1A1FE8] tabular-nums">
+                {formatCop(statement.totalDueCop)}
+              </span>
+            </div>
+
+            <div className="flex justify-between gap-4 py-2 text-sm border-b border-inherit/50">
+              <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>
+                Pagos registrados por atoo (este mes)
+              </span>
+              <span className="font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                {formatCop(statement.collection.paidRegisteredCop)}
+              </span>
+            </div>
+
+            {statement.collection.remainingDueCop > 0 && (
+              <div className="flex justify-between gap-4 py-2 text-sm">
+                <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>Saldo pendiente</span>
+                <span className="font-semibold tabular-nums text-amber-700 dark:text-amber-300">
+                  {formatCop(statement.collection.remainingDueCop)}
+                </span>
+              </div>
+            )}
+
+            {(statement.collection.dueAt || statement.nextPaymentDueAt) && (
+              <p className={`text-sm pt-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                Fecha de referencia:{' '}
+                {formatNextPaymentDate(statement.collection.dueAt ?? statement.nextPaymentDueAt)}
+              </p>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function CollectionAlert({
+  collection,
+  theme,
+}: {
+  collection: import('../../../lib/clientBillingApi').BillingCollection;
+  theme: string;
+}) {
+  const styles: Record<
+    import('../../../lib/clientBillingApi').BillingCollectionStatus,
+    { box: string; Icon: typeof AlertCircle }
+  > = {
+    paid: {
+      box: 'bg-emerald-50 border-emerald-200 text-emerald-900 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-100',
+      Icon: CheckCircle2,
+    },
+    partial: {
+      box: 'bg-amber-50 border-amber-200 text-amber-950 dark:bg-amber-500/10 dark:border-amber-500/30 dark:text-amber-100',
+      Icon: AlertTriangle,
+    },
+    pending: {
+      box: 'bg-blue-50 border-blue-200 text-blue-900 dark:bg-blue-500/10 dark:border-blue-500/30 dark:text-blue-100',
+      Icon: AlertCircle,
+    },
+    due_soon: {
+      box: 'bg-amber-50 border-amber-300 text-amber-950 dark:bg-amber-500/15 dark:border-amber-400/40 dark:text-amber-50',
+      Icon: AlertTriangle,
+    },
+    overdue: {
+      box: 'bg-red-50 border-red-200 text-red-900 dark:bg-red-500/10 dark:border-red-500/40 dark:text-red-100',
+      Icon: AlertCircle,
+    },
+  };
+
+  const { box, Icon } = styles[collection.status];
+
+  return (
+    <div className={`rounded-xl border p-4 mb-5 ${box}`}>
+      <div className="flex gap-3">
+        <Icon className="w-5 h-5 shrink-0 mt-0.5" />
+        <div>
+          <p className="font-semibold">{collection.alertTitle}</p>
+          <p className={`text-sm mt-1 ${theme === 'dark' ? 'opacity-90' : 'opacity-95'}`}>
+            {collection.alertMessage}
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
