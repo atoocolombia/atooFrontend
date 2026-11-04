@@ -40,10 +40,16 @@ export async function listUserDocuments(userId: string): Promise<UserDocumentMet
   return (await res.json()) as UserDocumentMeta[];
 }
 
+export type UploadUserDocumentOptions = {
+  /** Paso 3: declaración sí/no conducción de vehículo eléctrico en apps */
+  mobilityElectricVehicle?: boolean;
+};
+
 export async function uploadUserDocument(
   userId: string,
   documentKind: string,
   file: File,
+  options?: UploadUserDocumentOptions,
 ): Promise<UserDocumentMeta> {
   if (!isApiConfigured()) {
     throw new ApiError(
@@ -55,6 +61,9 @@ export async function uploadUserDocument(
   const form = new FormData();
   form.append('file', file);
   form.append('documentKind', documentKind);
+  if (options?.mobilityElectricVehicle !== undefined) {
+    form.append('mobilityElectricVehicle', options.mobilityElectricVehicle ? 'true' : 'false');
+  }
 
   const url = apiUrl(`/api/v1/users/${encodeURIComponent(userId)}/documents`);
 
@@ -73,4 +82,52 @@ export async function uploadUserDocument(
   }
 
   return (await res.json()) as UserDocumentMeta;
+}
+
+export type PlatformSlotMeta = {
+  complete: boolean;
+  missing: string[];
+};
+
+export type WorkAddressStepMeta = {
+  mobilityDrivenElectricVehicle: boolean | null;
+  mobilityElectricExperienceText: string | null;
+  platformSlot1Complete: boolean;
+  platformSlot2Complete: boolean;
+  platformSlot3Complete: boolean;
+  platformSlots: Record<'1' | '2' | '3', PlatformSlotMeta>;
+};
+
+export type PatchWorkAddressStepMetaInput = {
+  mobilityDrivenElectricVehicle?: boolean;
+  mobilityElectricExperienceText?: string | null;
+};
+
+export async function fetchWorkAddressStepMeta(userId: string): Promise<WorkAddressStepMeta> {
+  const url = apiUrl(`/api/v1/users/${encodeURIComponent(userId)}/work-address-step-meta`);
+  const res = await fetchWithCreds(url);
+  if (!res.ok) {
+    throw new ApiError(await parseErrorResponse(res), res.status);
+  }
+  return (await res.json()) as WorkAddressStepMeta;
+}
+
+export async function patchWorkAddressStepMeta(
+  userId: string,
+  patch: PatchWorkAddressStepMetaInput,
+): Promise<WorkAddressStepMeta> {
+  const url = apiUrl(`/api/v1/users/${encodeURIComponent(userId)}/work-address-step-meta`);
+  const res = await fetchWithCreds(url, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(patch),
+  });
+  if (!res.ok) {
+    throw new ApiError(await parseErrorResponse(res), res.status);
+  }
+  return (await res.json()) as WorkAddressStepMeta;
+}
+
+export async function saveMobilityElectricVehicle(userId: string, value: boolean): Promise<WorkAddressStepMeta> {
+  return patchWorkAddressStepMeta(userId, { mobilityDrivenElectricVehicle: value });
 }
