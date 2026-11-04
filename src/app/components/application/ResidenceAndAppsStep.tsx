@@ -11,8 +11,13 @@ import {
 } from '../../../lib/documentsApi';
 import { isResidenceStepComplete } from '../../../lib/applicationProgress';
 import {
-  isPlatformPhotoKind,
-  platformPhotoKindsForSlot,
+  isPlatformAttachmentKind,
+  MAX_PLATFORM_PHOTO_INDEX_PER_SLOT,
+  pdfKindForSlot,
+  photoIndicesUsedInDocuments,
+  photoKindForSlotIndex,
+  PLATFORM_MOBILITY_MULTI_APP_PDF,
+  videoKindForSlot,
   type PlatformUiSlot,
 } from '../../../lib/platformPhotoKinds';
 
@@ -60,8 +65,31 @@ function PlatformMobilitySlot({
   onUpload: (kind: string, file: File) => void;
   theme: string;
 }) {
-  const kinds = platformPhotoKindsForSlot(slot);
   const slotKey = String(slot) as '1' | '2' | '3';
+  const usedIndices = photoIndicesUsedInDocuments(documents, slot);
+  const maxUsedIndex = usedIndices.length > 0 ? Math.max(...usedIndices) : 0;
+
+  const [photoRowCount, setPhotoRowCount] = useState(() => (required ? 1 : 0));
+
+  useEffect(() => {
+    if (maxUsedIndex === 0) {
+      if (required) setPhotoRowCount((c) => Math.max(c, 1));
+      return;
+    }
+    const lastKind = photoKindForSlotIndex(slot, maxUsedIndex);
+    const addEmptyRow = Boolean(documents[lastKind]);
+    setPhotoRowCount((c) => {
+      const min = Math.max(c, maxUsedIndex, addEmptyRow ? maxUsedIndex + 1 : maxUsedIndex);
+      return Math.min(MAX_PLATFORM_PHOTO_INDEX_PER_SLOT, min);
+    });
+  }, [documents, slot, maxUsedIndex, required]);
+
+  const showMediaExtras =
+    photoRowCount > 0 ||
+    Boolean(documents[videoKindForSlot(slot)]) ||
+    Boolean(documents[pdfKindForSlot(slot)]);
+
+  const photoIndices = Array.from({ length: photoRowCount }, (_, i) => i + 1);
 
   return (
     <div
@@ -80,24 +108,73 @@ function PlatformMobilitySlot({
         )}
       </div>
       <p className={`text-xs mb-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-        Puedes subir hasta 4 capturas de la <strong>misma app</strong> (nombre, calificación y experiencia pueden estar
-        en pantallas distintas). Si alguna muestra categorías Comfort o Black, también las guardamos.
+        Agrega las capturas que necesites (imagen o PDF por archivo), opcionalmente un video o un PDF de la app. Los
+        datos pueden estar en archivos distintos.
       </p>
+
+      {photoRowCount === 0 && !required && (
+        <button
+          type="button"
+          onClick={() => setPhotoRowCount(1)}
+          className="mb-3 text-sm font-semibold text-[#1A1FE8] hover:underline"
+        >
+          + Agregar capturas de esta app
+        </button>
+      )}
+
       <div className="space-y-3">
-        {kinds.map((kind, index) => (
-          <PersistedFileUpload
-            key={kind}
-            id={`${slotKey}-photo-${index + 1}`}
-            label={index === 0 ? 'Captura 1' : `Captura ${index + 1} (opcional)`}
-            icon={Smartphone}
-            accept="image/*,.pdf"
-            required={required && index === 0}
-            saved={documents[kind]}
-            uploading={isUploading(kind)}
-            error={getError(kind)}
-            onFileSelected={(file) => onUpload(kind, file)}
-          />
-        ))}
+        {photoIndices.map((index) => {
+          const kind = photoKindForSlotIndex(slot, index);
+          return (
+            <PersistedFileUpload
+              key={kind}
+              id={`${slotKey}-photo-${index}`}
+              label={index === 1 ? 'Captura 1' : `Captura ${index}`}
+              icon={Smartphone}
+              accept="image/*,.pdf"
+              required={required && index === 1}
+              saved={documents[kind]}
+              uploading={isUploading(kind)}
+              error={getError(kind)}
+              onFileSelected={(file) => onUpload(kind, file)}
+            />
+          );
+        })}
+
+        {photoRowCount > 0 && photoRowCount < MAX_PLATFORM_PHOTO_INDEX_PER_SLOT && (
+          <button
+            type="button"
+            onClick={() => setPhotoRowCount((c) => Math.min(MAX_PLATFORM_PHOTO_INDEX_PER_SLOT, c + 1))}
+            className="text-sm font-semibold text-[#1A1FE8] hover:underline"
+          >
+            + Agregar otra captura
+          </button>
+        )}
+
+        {showMediaExtras && (
+          <>
+            <PersistedFileUpload
+              id={`${slotKey}-video`}
+              label="Video de pantallas (opcional)"
+              icon={Smartphone}
+              accept="video/mp4,video/webm,video/quicktime,.mp4,.mov,.webm"
+              saved={documents[videoKindForSlot(slot)]}
+              uploading={isUploading(videoKindForSlot(slot))}
+              error={getError(videoKindForSlot(slot))}
+              onFileSelected={(file) => onUpload(videoKindForSlot(slot), file)}
+            />
+            <PersistedFileUpload
+              id={`${slotKey}-pdf`}
+              label="PDF de esta app (opcional)"
+              icon={Smartphone}
+              accept=".pdf,application/pdf"
+              saved={documents[pdfKindForSlot(slot)]}
+              uploading={isUploading(pdfKindForSlot(slot))}
+              error={getError(pdfKindForSlot(slot))}
+              onFileSelected={(file) => onUpload(pdfKindForSlot(slot), file)}
+            />
+          </>
+        )}
       </div>
       {!slotMeta.complete && slotMeta.missing.length > 0 && mobilityElectric !== null && (
         <p className={`text-xs mt-3 ${theme === 'dark' ? 'text-amber-300' : 'text-amber-800'}`}>
@@ -146,7 +223,7 @@ export function ResidenceAndAppsStep({
   const handleDocumentUploaded = useCallback(
     (doc: UserDocumentMeta) => {
       onDocumentUploaded(doc);
-      if (isPlatformPhotoKind(doc.documentKind)) {
+      if (isPlatformAttachmentKind(doc.documentKind)) {
         void refreshMeta();
       }
     },
@@ -155,7 +232,7 @@ export function ResidenceAndAppsStep({
 
   const getUploadOptions = useCallback(
     (documentKind: string) => {
-      if (!isPlatformPhotoKind(documentKind)) {
+      if (!isPlatformAttachmentKind(documentKind)) {
         return undefined;
       }
       if (mobilityElectric === null) {
@@ -372,6 +449,30 @@ export function ResidenceAndAppsStep({
               )}
             </div>
           )}
+        </div>
+
+        <div
+          className={`mb-6 rounded-lg border p-4 ${
+            theme === 'dark' ? 'border-purple-500/30 bg-purple-500/5' : 'border-purple-200 bg-purple-50/50'
+          }`}
+        >
+          <h4 className={`font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+            PDF con varias apps (opcional)
+          </h4>
+          <p className={`text-xs mb-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+            Un solo PDF puede incluir capturas de <strong>varias plataformas</strong>; las asignamos a Plataforma 1, 2 o
+            3 según lo que se distinga en el documento.
+          </p>
+          <PersistedFileUpload
+            id="platform-multi-app-pdf"
+            label="PDF multi-app"
+            icon={Smartphone}
+            accept=".pdf,application/pdf"
+            saved={documents[PLATFORM_MOBILITY_MULTI_APP_PDF]}
+            uploading={isUploading(PLATFORM_MOBILITY_MULTI_APP_PDF)}
+            error={getError(PLATFORM_MOBILITY_MULTI_APP_PDF)}
+            onFileSelected={(file) => uploadPlatform(PLATFORM_MOBILITY_MULTI_APP_PDF, file)}
+          />
         </div>
 
         <div className="space-y-4">
