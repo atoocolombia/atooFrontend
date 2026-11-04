@@ -4,7 +4,14 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { useTheme } from '../contexts/ThemeContext';
-import { type CatalogVehicle, formatCop, getVehicleSpecSheetFilename, getVehicleSpecSheetPdf } from '../data/vehicles';
+import {
+  applyLandingVehicleDefaults,
+  type CatalogVehicle,
+  formatCop,
+  getVehicleSpecSheetFilename,
+  getVehicleSpecSheetPdf,
+} from '../data/vehicles';
+import { SoldOutRibbon } from './landing/SoldOutRibbon';
 import {
   Carousel,
   CarouselContent,
@@ -24,7 +31,9 @@ export function VehicleDetailModal({ vehicle, open, onClose }: VehicleDetailModa
   const [activeImage, setActiveImage] = useState(0);
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
 
-  const gallery = vehicle ? (vehicle.gallery.length > 0 ? vehicle.gallery : [vehicle.image]) : [];
+  const gallery = vehicle
+    ? (vehicle.gallery.length > 0 ? vehicle.gallery : [vehicle.image])
+    : [];
 
   useEffect(() => {
     if (!carouselApi) return;
@@ -45,8 +54,9 @@ export function VehicleDetailModal({ vehicle, open, onClose }: VehicleDetailModa
 
   if (!vehicle) return null;
 
-  const specSheetPdf = getVehicleSpecSheetPdf(vehicle);
-  const specSheetFilename = getVehicleSpecSheetFilename(vehicle);
+  const v = applyLandingVehicleDefaults(vehicle);
+  const specSheetPdf = getVehicleSpecSheetPdf(v);
+  const specSheetFilename = getVehicleSpecSheetFilename(v);
 
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
@@ -76,6 +86,7 @@ export function VehicleDetailModal({ vehicle, open, onClose }: VehicleDetailModa
           </div>
 
           <div className="relative bg-black/5 -mt-[3.25rem]">
+            {v.soldOut && <SoldOutRibbon />}
             {gallery.length > 0 ? (
               <Carousel
                 setApi={setCarouselApi}
@@ -245,19 +256,21 @@ export function VehicleDetailModal({ vehicle, open, onClose }: VehicleDetailModa
               <div>
                 <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Desde</p>
                 <p className="text-2xl font-bold text-[#1A1FE8]">
-                  {formatCop(vehicle.weeklyPriceCop)}
+                  {formatCop(v.weeklyPriceCop)}
                   <span className={`text-sm font-normal ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}> / semana</span>
                 </p>
               </div>
               <button
                 type="button"
+                disabled={v.soldOut}
                 onClick={() => {
+                  if (v.soldOut) return;
                   onClose();
                   navigate('/solicitud');
                 }}
-                className="px-6 py-3 bg-[#1A1FE8] text-white rounded-xl font-semibold hover:bg-[#1217C8] transition-colors shadow-[0_0_25px_rgba(26,31,232,0.35)]"
+                className="px-6 py-3 bg-[#1A1FE8] text-white rounded-xl font-semibold hover:bg-[#1217C8] transition-colors shadow-[0_0_25px_rgba(26,31,232,0.35)] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-[#1A1FE8]"
               >
-                Solicitar este vehículo
+                {v.soldOut ? 'Agotado' : 'Solicitar este vehículo'}
               </button>
             </div>
           </div>
