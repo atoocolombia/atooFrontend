@@ -17,6 +17,8 @@ export interface CatalogVehicle {
   specs: VehicleSpec[];
   badge: string | null;
   popular: boolean;
+  /** Cintilla «Agotado» en la landing (p. ej. Nammi sin cupo). */
+  soldOut?: boolean;
   weeklyPriceCop: number;
   /** PDF de ficha técnica (desde API o ruta estática) */
   specSheetPdf?: string | null;
@@ -57,6 +59,7 @@ export const catalogVehicles: CatalogVehicle[] = [
     ],
     badge: 'Más Popular',
     popular: true,
+    soldOut: true,
     weeklyPriceCop: 900_000,
   },
   {
@@ -99,6 +102,14 @@ export const catalogVehicles: CatalogVehicle[] = [
 
 export function getVehicleById(id: string): CatalogVehicle | undefined {
   return catalogVehicles.find((v) => v.id === id);
+}
+
+/** Flags de presentación en landing (p. ej. Nammi agotado aunque venga del API). */
+export function applyLandingVehicleDefaults(vehicle: CatalogVehicle): CatalogVehicle {
+  return {
+    ...vehicle,
+    soldOut: vehicle.soldOut ?? vehicle.slug === 'dongfeng-nammi',
+  };
 }
 
 export function formatCop(value: number): string {

@@ -8,6 +8,7 @@ import { landingLightSurfaces, landingLightType } from '../styles/landingSurface
 import { LandingEyebrow } from './landing/LandingEyebrow';
 import { useLandingVehicles } from '../../lib/useLandingVehicles';
 import { formatCop, type CatalogVehicle } from '../data/vehicles';
+import { SoldOutRibbon } from './landing/SoldOutRibbon';
 
 export function VehiclesSection() {
   const { theme } = useTheme();
@@ -71,6 +72,8 @@ export function VehiclesSection() {
                     : 'rounded-3xl bg-white border-gray-200/90 shadow-[0_1px_0_rgba(26,31,232,0.06)] hover:border-[#1A1FE8]/40 hover:shadow-[0_12px_40px_rgba(26,31,232,0.08)]'
               }`}>
 
+                {vehicle.soldOut && <SoldOutRibbon />}
+
                 {vehicle.badge && (
                   <div className="absolute top-4 right-4 z-10 flex items-center gap-1.5 bg-[#1A1FE8] text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-[0_0_20px_rgba(26,31,232,0.6)]">
                     <Zap className="w-3 h-3 fill-current" />
@@ -131,7 +134,10 @@ export function VehiclesSection() {
                   <div className={`pt-4 border-t ${
                     theme === 'dark' ? 'border-white/[0.07]' : 'border-gray-100'
                   }`}>
-                    <div className="flex items-baseline gap-1 mb-4">
+                    <div className="flex items-baseline gap-1.5 mb-4 flex-wrap">
+                      <span className={`text-sm font-semibold ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                        Desde
+                      </span>
                       <span className="text-2xl font-bold text-[#1A1FE8]">{formatCop(vehicle.weeklyPriceCop)}</span>
                       <span className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>COP / semana</span>
                     </div>
@@ -150,17 +156,24 @@ export function VehiclesSection() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => navigate('/solicitud')}
-                        className={`group/btn relative flex-1 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
-                          vehicle.popular
-                            ? 'bg-[#1A1FE8] text-white shadow-[0_0_25px_rgba(26,31,232,0.4)] hover:shadow-[0_0_40px_rgba(26,31,232,0.6)]'
-                            : theme === 'dark'
-                              ? 'border border-[#1A1FE8]/30 text-[#6B70F5] hover:bg-[#1A1FE8]/10'
-                              : 'border border-[#1A1FE8]/25 text-[#1A1FE8] hover:bg-[#1A1FE8]/8'
+                        disabled={vehicle.soldOut}
+                        onClick={() => !vehicle.soldOut && navigate('/solicitud')}
+                        className={`group/btn relative flex-1 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed ${
+                          vehicle.soldOut
+                            ? theme === 'dark'
+                              ? 'border border-gray-600 text-gray-400 bg-white/5'
+                              : 'border border-gray-300 text-gray-500 bg-gray-50'
+                            : vehicle.popular
+                              ? 'bg-[#1A1FE8] text-white shadow-[0_0_25px_rgba(26,31,232,0.4)] hover:shadow-[0_0_40px_rgba(26,31,232,0.6)]'
+                              : theme === 'dark'
+                                ? 'border border-[#1A1FE8]/30 text-[#6B70F5] hover:bg-[#1A1FE8]/10'
+                                : 'border border-[#1A1FE8]/25 text-[#1A1FE8] hover:bg-[#1A1FE8]/8'
                         }`}
                       >
-                        <span className="relative z-10">Solicitar</span>
-                        <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform relative z-10" />
+                        <span className="relative z-10">{vehicle.soldOut ? 'Agotado' : 'Solicitar'}</span>
+                        {!vehicle.soldOut && (
+                          <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform relative z-10" />
+                        )}
                       </button>
                     </div>
                   </div>
