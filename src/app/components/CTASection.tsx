@@ -114,7 +114,7 @@ export function CTASection() {
             ].map(({ icon: Icon, label, value, href }) => (
               <a key={label} href={href} className="group relative block">
                 <div className={`absolute inset-0 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity ${isBrandCta ? 'bg-white/20' : 'bg-[#1A1FE8]/15'}`} />
-                <div className={`relative flex items-center gap-4 rounded-2xl p-5 border transition-all ${
+                <div className={`relative flex items-start gap-4 rounded-2xl p-5 border transition-all overflow-hidden ${
                   isBrandCta
                     ? 'bg-white/12 border-white/25 hover:border-white/45 hover:bg-white/18'
                     : theme === 'dark'
@@ -126,9 +126,15 @@ export function CTASection() {
                   }`}>
                     <Icon className="w-5 h-5" />
                   </div>
-                  <div className="text-left">
+                  <div className="text-left min-w-0 flex-1">
                     <div className={`text-xs font-medium mb-0.5 ${isBrandCta ? 'text-white/75' : theme === 'dark' ? 'text-[#6B70F5]' : 'text-[#1A1FE8]'}`}>{label}</div>
-                    <div className={`font-bold ${isBrandCta ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{value}</div>
+                    <div
+                      className={`font-bold leading-snug break-words [overflow-wrap:anywhere] ${
+                        href.startsWith('mailto:') ? 'text-sm sm:text-base' : 'text-base'
+                      } ${isBrandCta ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+                    >
+                      {value}
+                    </div>
                   </div>
                 </div>
               </a>
