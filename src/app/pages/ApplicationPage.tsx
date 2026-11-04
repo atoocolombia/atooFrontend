@@ -26,7 +26,8 @@ import { listUserDocuments, type UserDocumentMeta } from '../../lib/documentsApi
 export function ApplicationPage() {
   const { theme } = useTheme();
   const navigate = useNavigate();
-  const user = getSessionUser()!;
+  const user = getSessionUser();
+  const userId = user?.id ?? '';
 
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -36,17 +37,18 @@ export function ApplicationPage() {
   const { currentStep, showBackgroundCheck, showFinalMessage } = progress;
 
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
 
     let cancelled = false;
+    setReady(false);
 
     (async () => {
       try {
-        const docs = await listUserDocuments(user.id);
+        const docs = await listUserDocuments(userId);
         if (cancelled) return;
 
         const byKind = Object.fromEntries(docs.map((d) => [d.documentKind, d]));
-        const saved = loadApplicationProgress(user.id);
+        const saved = loadApplicationProgress(userId);
         const authValidated =
           byKind.dataTreatmentSigned?.validationStatus === 'VALIDATED';
         const inferred = inferProgressFromDocuments(
@@ -74,13 +76,13 @@ export function ApplicationPage() {
 
         let adjusted = initial;
         try {
-          const test = await fetchApplicationKnowledgeTest(user.id);
+          const test = await fetchApplicationKnowledgeTest(userId);
           const hasBanking = docs.some((d) => d.documentKind === 'bankDocument' || d.documentKind === 'creditReport');
-          if (hasBanking) {
+          if (hasBanking && test.completed) {
             adjusted = { ...adjusted, currentStep: Math.max(adjusted.currentStep, 4) };
           } else if (test.completed) {
             adjusted = { ...adjusted, currentStep: Math.max(adjusted.currentStep, 3) };
-          } else if (adjusted.currentStep > 3) {
+          } else if (hasBanking || adjusted.currentStep > 3) {
             adjusted = { ...adjusted, currentStep: 3 };
           }
         } catch {
@@ -101,12 +103,12 @@ export function ApplicationPage() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [userId]);
 
   useEffect(() => {
-    if (!user || !ready) return;
-    saveApplicationProgress(user.id, progress);
-  }, [user, progress, ready]);
+    if (!userId || !ready) return;
+    saveApplicationProgress(userId, progress);
+  }, [userId, progress, ready]);
 
   const handleDocumentUploaded = (doc: UserDocumentMeta) => {
     setDocuments((prev) => ({ ...prev, [doc.documentKind]: doc }));
@@ -136,9 +138,9 @@ export function ApplicationPage() {
       setProgress((p) => ({ ...p, currentStep: p.currentStep + 1 }));
     } else {
       setProgress((p) => ({ ...p, showFinalMessage: true }));
-      if (user) {
-        markApplicationCompleted(user.id);
-        void submitUserApplication(user.id).catch(() => {
+      if (userId) {
+        markApplicationCompleted(userId);
+        void submitUserApplication(userId).catch(() => {
           /* localStorage ya marca completado; reintento en siguiente visita si falla red */
         });
       }
@@ -168,6 +170,14 @@ export function ApplicationPage() {
     if (showBackgroundCheck) return currentStep;
     return currentStep;
   };
+
+  if (!user) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${theme === 'dark' ? 'bg-[#06071A]' : 'bg-gray-50'}`}>
+        <p className="text-gray-500 text-center px-4">Inicia sesión para continuar tu solicitud.</p>
+      </div>
+    );
+  }
 
   if (!ready) {
     return (

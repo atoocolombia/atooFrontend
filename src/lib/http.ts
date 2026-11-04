@@ -62,6 +62,19 @@ export async function parseErrorResponse(res: Response): Promise<string> {
   return `Error del servidor (${res.status})`;
 }
 
+const DEFAULT_FETCH_TIMEOUT_MS = 25_000;
+
+/** Señal de aborto por tiempo; evita pantallas de carga infinitas si el API no responde. */
+export function fetchTimeoutSignal(ms = DEFAULT_FETCH_TIMEOUT_MS): AbortSignal | undefined {
+  if (typeof AbortSignal === 'undefined') return undefined;
+  const timeoutFn = (AbortSignal as typeof AbortSignal & { timeout?: (ms: number) => AbortSignal })
+    .timeout;
+  if (typeof timeoutFn === 'function') {
+    return timeoutFn(ms);
+  }
+  return undefined;
+}
+
 /** Fetch autenticado: cookie HttpOnly + Bearer (Safari bloquea cookies de terceros). */
 export async function fetchWithCreds(
   input: RequestInfo | URL,
@@ -73,7 +86,10 @@ export async function fetchWithCreds(
   if (token && !headers.has('Authorization')) {
     headers.set('Authorization', `Bearer ${token}`);
   }
-  return fetch(input, { ...init, credentials: 'include', headers });
+  const verb = (init.method ?? 'GET').toUpperCase();
+  const signal =
+    init.signal ?? (verb === 'GET' || verb === 'HEAD' ? fetchTimeoutSignal() : undefined);
+  return fetch(input, { ...init, credentials: 'include', headers, signal });
 }
 
 export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {

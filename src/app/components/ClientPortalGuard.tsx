@@ -32,6 +32,10 @@ export function ClientPortalGuard({ children }: ClientPortalGuardProps) {
     }
 
     let cancelled = false;
+    const timeout = window.setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 28_000);
+
     void fetchClientAccess(user.id)
       .then((state) => {
         if (!cancelled) setAccess(state);
@@ -40,11 +44,13 @@ export function ClientPortalGuard({ children }: ClientPortalGuardProps) {
         if (!cancelled) setAccess(null);
       })
       .finally(() => {
+        window.clearTimeout(timeout);
         if (!cancelled) setLoading(false);
       });
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timeout);
     };
   }, [user?.id, location.pathname]);
 
