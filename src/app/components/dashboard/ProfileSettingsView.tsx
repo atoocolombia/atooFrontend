@@ -4,6 +4,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { changeAuthPassword, updateAuthProfile } from '../../../lib/authApi';
 import { PASSWORD_POLICY_HINT, validatePassword } from '../../../lib/passwordPolicy';
 import type { UserProfile } from '../../../lib/userProfileApi';
+import { VehicleHistorySection } from './VehicleHistorySection';
+import { GeofenceExitPanel } from './GeofenceExitPanel';
 
 interface ProfileSettingsViewProps {
   profile: UserProfile | null;
@@ -240,6 +242,9 @@ export function ProfileSettingsView({
           </button>
         </div>
       </div>
+
+      <VehicleHistorySection />
+      <GeofenceExitPanel />
     </div>
   );
 }

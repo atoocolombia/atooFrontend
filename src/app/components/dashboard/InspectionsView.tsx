@@ -603,7 +603,9 @@ export function InspectionsView() {
             <h2 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
               Historial del vehículo
             </h2>
-            <p className="text-sm text-gray-500">Revisiones anteriores, resultados y procedimientos.</p>
+            <p className="text-sm text-gray-500">
+              Vista resumida. El historial completo (daños, piezas, tecnomecánica) está en Configuración.
+            </p>
           </div>
         </div>
 
