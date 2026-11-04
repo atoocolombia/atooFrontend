@@ -38,6 +38,15 @@ export interface VehicleDeliveryRecord {
   updatedAt: string;
 }
 
+export interface AnalystKnowledgeTestSummary {
+  includeEvSection: boolean;
+  evScore: number | null;
+  vialScore: number;
+  customerServiceScore: number;
+  weightedScore: number;
+  completedAt: string;
+}
+
 export interface PendingApplication {
   id: string;
   userId: string;
@@ -48,6 +57,17 @@ export interface PendingApplication {
   email: string;
   phone: string | null;
   address: string | null;
+  dwellingType: string | null;
+  addressComplement: string | null;
+  utilityBillHolderMatchesApplicant: boolean | null;
+  utilityBillHolderName: string | null;
+  mobilityDrivenElectricVehicle: boolean | null;
+  mobilityElectricExperienceText: string | null;
+  bankHolderMatchesIdentity: boolean | null;
+  platformSlot1Complete: boolean;
+  platformSlot2Complete: boolean;
+  platformSlot3Complete: boolean;
+  knowledgeTest: AnalystKnowledgeTestSummary | null;
 }
 
 export async function fetchAdvisorDeliveries(): Promise<VehicleDeliveryRecord[]> {
