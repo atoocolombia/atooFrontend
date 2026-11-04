@@ -69,19 +69,41 @@ export function hasLocalApplicationInProgress(userId: string): boolean {
 export const IDENTITY_DOCUMENT_KINDS = [
   'idFront',
   'idBack',
+  'idBothSides',
   'licenseFront',
   'licenseBack',
+  'licenseBothSides',
   'selfieWhiteBackground',
 ] as const;
 
 export type IdentityDocumentKind = (typeof IDENTITY_DOCUMENT_KINDS)[number];
 
-/** Paso 2 completo cuando los cinco archivos quedaron VALIDATED por la IA. */
+function isValidated(doc: { validationStatus?: string } | undefined): boolean {
+  return doc?.validationStatus === 'VALIDATED';
+}
+
+export function isIdentityDocumentComplete(
+  documents: Record<string, { validationStatus?: string } | undefined>,
+): boolean {
+  if (isValidated(documents.idBothSides)) return true;
+  return isValidated(documents.idFront) && isValidated(documents.idBack);
+}
+
+export function isLicenseDocumentComplete(
+  documents: Record<string, { validationStatus?: string } | undefined>,
+): boolean {
+  if (isValidated(documents.licenseBothSides)) return true;
+  return isValidated(documents.licenseFront) && isValidated(documents.licenseBack);
+}
+
+/** Paso 2 completo: identidad + licencia + selfie (frente/reverso por separado o en un solo archivo). */
 export function isIdentityStepComplete(
   documents: Record<string, { validationStatus?: string } | undefined>,
 ): boolean {
-  return IDENTITY_DOCUMENT_KINDS.every(
-    (kind) => documents[kind]?.validationStatus === 'VALIDATED',
+  return (
+    isIdentityDocumentComplete(documents) &&
+    isLicenseDocumentComplete(documents) &&
+    isValidated(documents.selfieWhiteBackground)
   );
 }
 
@@ -93,6 +115,16 @@ const RESIDENCE_KINDS = [
 ] as const;
 
 const BANKING_KINDS = ['bankDocument', 'creditReport'] as const;
+
+const IDENTITY_STEP_KINDS = new Set<string>([
+  'idFront',
+  'idBack',
+  'idBothSides',
+  'licenseFront',
+  'licenseBack',
+  'licenseBothSides',
+  'selfieWhiteBackground',
+]);
 
 /** Infiere el paso actual a partir de documentos ya subidos (si no hay progreso guardado). */
 export function inferProgressFromDocuments(
@@ -109,7 +141,7 @@ export function inferProgressFromDocuments(
     return { currentStep: 2, step0Completed: true };
   }
 
-  if (IDENTITY_DOCUMENT_KINDS.some((k) => kinds.has(k))) {
+  if ([...kinds].some((k) => IDENTITY_STEP_KINDS.has(k))) {
     return { currentStep: 1, step0Completed: true };
   }
 
@@ -118,4 +150,20 @@ export function inferProgressFromDocuments(
   }
 
   return { currentStep: 0, step0Completed: false };
+}
+
+export function inferIdUploadMode(
+  documents: Record<string, { validationStatus?: string } | undefined>,
+): 'separate' | 'combined' {
+  if (documents.idBothSides) return 'combined';
+  if (documents.idFront || documents.idBack) return 'separate';
+  return 'separate';
+}
+
+export function inferLicenseUploadMode(
+  documents: Record<string, { validationStatus?: string } | undefined>,
+): 'separate' | 'combined' {
+  if (documents.licenseBothSides) return 'combined';
+  if (documents.licenseFront || documents.licenseBack) return 'separate';
+  return 'separate';
 }
