@@ -99,10 +99,20 @@ export function CTASection() {
           {/* Contact cards */}
           <div className="grid md:grid-cols-2 gap-5 max-w-2xl mx-auto mb-12">
             {[
-              { icon: Phone, label: contact.phoneLabel, value: contact.phone },
-              { icon: Mail, label: contact.emailLabel, value: contact.email },
-            ].map(({ icon: Icon, label, value }) => (
-              <div key={label} className="group relative">
+              {
+                icon: Phone,
+                label: contact.phoneLabel,
+                value: contact.phone,
+                href: `tel:${contact.phone.replace(/\s/g, '')}`,
+              },
+              {
+                icon: Mail,
+                label: contact.emailLabel,
+                value: contact.email,
+                href: `mailto:${contact.email}`,
+              },
+            ].map(({ icon: Icon, label, value, href }) => (
+              <a key={label} href={href} className="group relative block">
                 <div className={`absolute inset-0 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity ${isBrandCta ? 'bg-white/20' : 'bg-[#1A1FE8]/15'}`} />
                 <div className={`relative flex items-center gap-4 rounded-2xl p-5 border transition-all ${
                   isBrandCta
@@ -121,7 +131,7 @@ export function CTASection() {
                     <div className={`font-bold ${isBrandCta ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{value}</div>
                   </div>
                 </div>
-              </div>
+              </a>
             ))}
           </div>
 
