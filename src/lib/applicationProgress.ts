@@ -96,6 +96,14 @@ export function isLicenseDocumentComplete(
   return isValidated(documents.licenseFront) && isValidated(documents.licenseBack);
 }
 
+/** Paso 3: recibo validado y plataforma 1 completa (varias fotos agregadas en servidor). */
+export function isResidenceStepComplete(
+  documents: Record<string, { validationStatus?: string } | undefined>,
+  workAddressMeta?: { platformSlot1Complete?: boolean } | null,
+): boolean {
+  return isValidated(documents.utilityAddressReceipt) && workAddressMeta?.platformSlot1Complete === true;
+}
+
 /** Paso 2 completo: identidad + licencia + selfie (frente/reverso por separado o en un solo archivo). */
 export function isIdentityStepComplete(
   documents: Record<string, { validationStatus?: string } | undefined>,
@@ -110,8 +118,17 @@ export function isIdentityStepComplete(
 const RESIDENCE_KINDS = [
   'utilityAddressReceipt',
   'platformWork1',
+  'platformWork1Photo2',
+  'platformWork1Photo3',
+  'platformWork1Photo4',
   'platformWork2',
+  'platformWork2Photo2',
+  'platformWork2Photo3',
+  'platformWork2Photo4',
   'platformWork3',
+  'platformWork3Photo2',
+  'platformWork3Photo3',
+  'platformWork3Photo4',
 ] as const;
 
 const BANKING_KINDS = ['bankDocument', 'creditReport'] as const;

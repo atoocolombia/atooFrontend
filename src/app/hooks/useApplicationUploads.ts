@@ -1,10 +1,15 @@
 import { useState } from 'react';
 import { ApiError } from '../../lib/api';
-import { uploadUserDocument, type UserDocumentMeta } from '../../lib/documentsApi';
+import {
+  uploadUserDocument,
+  type UploadUserDocumentOptions,
+  type UserDocumentMeta,
+} from '../../lib/documentsApi';
 
 export function useApplicationUploads(
   userId: string,
   onDocumentUploaded: (doc: UserDocumentMeta) => void,
+  getUploadOptions?: (documentKind: string) => UploadUserDocumentOptions | undefined,
 ) {
   const [uploadingKinds, setUploadingKinds] = useState<Set<string>>(() => new Set());
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -18,7 +23,7 @@ export function useApplicationUploads(
     });
 
     try {
-      const doc = await uploadUserDocument(userId, documentKind, file);
+      const doc = await uploadUserDocument(userId, documentKind, file, getUploadOptions?.(documentKind));
       onDocumentUploaded(doc);
     } catch (err) {
       const message =
