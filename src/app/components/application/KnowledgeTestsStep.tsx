@@ -46,25 +46,27 @@ export function KnowledgeTestsStep({ userId, onNext, onBack }: KnowledgeTestsSte
   }, [state]);
 
   const allAnswered = allQuestionIds.length > 0 && allQuestionIds.every((id) => answers[id] !== undefined);
+  const alreadyCompleted = state?.completed === true;
 
-  const handleSubmit = async () => {
+  const handleContinue = async () => {
+    if (alreadyCompleted) {
+      onNext();
+      return;
+    }
     if (!allAnswered) {
-      setError('Responde todas las preguntas antes de enviar.');
+      setError('Responde todas las preguntas antes de continuar.');
       return;
     }
     setSubmitting(true);
     setError(null);
     try {
-      const data = await submitApplicationKnowledgeTest(userId, answers);
-      setState(data);
+      await submitApplicationKnowledgeTest(userId, answers);
+      onNext();
     } catch {
       setError('No pudimos guardar tus respuestas. Inténtalo de nuevo.');
-    } finally {
       setSubmitting(false);
     }
   };
-
-  const canContinue = state?.completed === true;
 
   if (loading) {
     return (
@@ -78,6 +80,44 @@ export function KnowledgeTestsStep({ userId, onNext, onBack }: KnowledgeTestsSte
     return <p className="text-center text-red-500">{error ?? 'Error al cargar.'}</p>;
   }
 
+  if (alreadyCompleted) {
+    return (
+      <div className="space-y-8">
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#1A1FE8]/20 border-2 border-[#1A1FE8] mb-4">
+            <BookOpen className="w-8 h-8 text-[#1A1FE8]" />
+          </div>
+          <h2 className={`text-3xl font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+            Evaluaciones teóricas
+          </h2>
+          <p className={`text-lg ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+            Ya registramos tus respuestas. Puedes continuar con tu solicitud.
+          </p>
+        </div>
+        <div className="flex justify-between pt-4">
+          <button
+            type="button"
+            onClick={onBack}
+            className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+              theme === 'dark'
+                ? 'bg-white/5 text-gray-300 hover:bg-white/10'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Volver
+          </button>
+          <button
+            type="button"
+            onClick={onNext}
+            className="px-8 py-3 rounded-lg font-semibold bg-[#1A1FE8] text-white hover:bg-[#1217C8]"
+          >
+            Continuar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <div className="text-center mb-6">
@@ -88,36 +128,9 @@ export function KnowledgeTestsStep({ userId, onNext, onBack }: KnowledgeTestsSte
           Evaluaciones teóricas
         </h2>
         <p className={`text-lg ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-          Responde con calma; registramos tu puntaje por categoría y un puntaje ponderado.
+          Responde con calma todas las preguntas y luego continúa con el siguiente paso.
         </p>
       </div>
-
-      {state.scores && (
-        <div
-          className={`rounded-xl border p-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center ${
-            theme === 'dark' ? 'border-green-500/40 bg-green-500/10' : 'border-green-200 bg-green-50'
-          }`}
-        >
-          {state.includeEvSection && state.scores.evScore != null && (
-            <div>
-              <p className="text-xs text-gray-500">EV</p>
-              <p className="font-bold text-green-600">{state.scores.evScore}%</p>
-            </div>
-          )}
-          <div>
-            <p className="text-xs text-gray-500">Vial</p>
-            <p className="font-bold text-green-600">{state.scores.vialScore}%</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">Servicio</p>
-            <p className="font-bold text-green-600">{state.scores.customerServiceScore}%</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">Ponderado</p>
-            <p className="font-bold text-[#1A1FE8]">{state.scores.weightedScore}%</p>
-          </div>
-        </div>
-      )}
 
       {state.sections.map((section) => (
         <div
@@ -154,7 +167,7 @@ export function KnowledgeTestsStep({ userId, onNext, onBack }: KnowledgeTestsSte
                         type="radio"
                         name={q.id}
                         checked={answers[q.id] === oi}
-                        disabled={state.completed}
+                        disabled={submitting}
                         onChange={() => setAnswers((prev) => ({ ...prev, [q.id]: oi }))}
                         className="mt-1"
                       />
@@ -170,26 +183,11 @@ export function KnowledgeTestsStep({ userId, onNext, onBack }: KnowledgeTestsSte
 
       {error && <p className="text-sm text-red-500 text-center">{error}</p>}
 
-      {!state.completed && (
-        <div className="flex justify-center">
-          <button
-            type="button"
-            disabled={submitting || !allAnswered}
-            onClick={() => void handleSubmit()}
-            className={`px-8 py-3 rounded-lg font-semibold ${
-              allAnswered && !submitting
-                ? 'bg-[#1A1FE8] text-white hover:bg-[#1217C8]'
-                : 'bg-gray-400 text-gray-200 cursor-not-allowed'
-            }`}
-          >
-            {submitting ? 'Guardando…' : 'Enviar respuestas'}
-          </button>
-        </div>
-      )}
-
       <div className="flex justify-between pt-4">
         <button
+          type="button"
           onClick={onBack}
+          disabled={submitting}
           className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
             theme === 'dark'
               ? 'bg-white/5 text-gray-300 hover:bg-white/10'
@@ -199,15 +197,16 @@ export function KnowledgeTestsStep({ userId, onNext, onBack }: KnowledgeTestsSte
           Volver
         </button>
         <button
-          onClick={onNext}
-          disabled={!canContinue}
+          type="button"
+          disabled={submitting || !allAnswered}
+          onClick={() => void handleContinue()}
           className={`px-8 py-3 rounded-lg font-semibold transition-colors ${
-            canContinue
+            allAnswered && !submitting
               ? 'bg-[#1A1FE8] text-white hover:bg-[#1217C8]'
               : 'bg-gray-500/40 text-gray-400 cursor-not-allowed'
           }`}
         >
-          Continuar
+          {submitting ? 'Guardando…' : 'Continuar'}
         </button>
       </div>
     </div>

@@ -14,18 +14,10 @@ export type KnowledgeSectionPublic = {
   questions: KnowledgeQuestionPublic[];
 };
 
-export type KnowledgeTestScores = {
-  evScore: number | null;
-  vialScore: number;
-  customerServiceScore: number;
-  weightedScore: number;
-};
-
 export type ApplicationKnowledgeTestState = {
   completed: boolean;
   includeEvSection: boolean;
   sections: KnowledgeSectionPublic[];
-  scores: KnowledgeTestScores | null;
 };
 
 export async function fetchApplicationKnowledgeTest(userId: string): Promise<ApplicationKnowledgeTestState> {
