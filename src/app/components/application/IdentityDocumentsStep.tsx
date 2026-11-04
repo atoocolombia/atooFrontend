@@ -1,10 +1,12 @@
+import { useEffect, useState } from 'react';
 import { CreditCard, Camera } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { PersistedFileUpload } from './PersistedFileUpload';
 import { useApplicationUploads } from '../../hooks/useApplicationUploads';
 import type { UserDocumentMeta } from '../../../lib/documentsApi';
 import {
-  IDENTITY_DOCUMENT_KINDS,
+  inferIdUploadMode,
+  inferLicenseUploadMode,
   isIdentityStepComplete,
 } from '../../../lib/applicationProgress';
 
@@ -14,6 +16,49 @@ interface IdentityDocumentsStepProps {
   onDocumentUploaded: (doc: UserDocumentMeta) => void;
   onNext: () => void;
   onBack: () => void;
+}
+
+type UploadMode = 'separate' | 'combined';
+
+function ModeToggle({
+  mode,
+  onChange,
+  separateLabel,
+  combinedLabel,
+}: {
+  mode: UploadMode;
+  onChange: (mode: UploadMode) => void;
+  separateLabel: string;
+  combinedLabel: string;
+}) {
+  const { theme } = useTheme();
+  const base =
+    theme === 'dark'
+      ? 'border-blue-600/30 bg-[#06071A]/80 text-gray-300'
+      : 'border-gray-200 bg-white text-gray-700';
+  const active =
+    theme === 'dark'
+      ? 'border-[#1A1FE8] bg-[#1A1FE8]/20 text-white'
+      : 'border-[#1A1FE8] bg-blue-50 text-[#1A1FE8]';
+
+  return (
+    <div className="flex flex-col sm:flex-row gap-2 mb-4">
+      <button
+        type="button"
+        onClick={() => onChange('separate')}
+        className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors text-left ${mode === 'separate' ? active : base}`}
+      >
+        {separateLabel}
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange('combined')}
+        className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors text-left ${mode === 'combined' ? active : base}`}
+      >
+        {combinedLabel}
+      </button>
+    </div>
+  );
 }
 
 export function IdentityDocumentsStep({
@@ -26,8 +71,25 @@ export function IdentityDocumentsStep({
   const { theme } = useTheme();
   const { upload, isUploading, getError } = useApplicationUploads(userId, onDocumentUploaded);
 
+  const [idMode, setIdMode] = useState<UploadMode>(() => inferIdUploadMode(documents));
+  const [licenseMode, setLicenseMode] = useState<UploadMode>(() => inferLicenseUploadMode(documents));
+
+  useEffect(() => {
+    setIdMode(inferIdUploadMode(documents));
+    setLicenseMode(inferLicenseUploadMode(documents));
+  }, [documents.idBothSides, documents.idFront, documents.idBack, documents.licenseBothSides, documents.licenseFront, documents.licenseBack]);
+
   const stepComplete = isIdentityStepComplete(documents);
-  const anyUploadInProgress = IDENTITY_DOCUMENT_KINDS.some((kind) => isUploading(kind));
+
+  const anyUploadInProgress =
+    isUploading('idFront') ||
+    isUploading('idBack') ||
+    isUploading('idBothSides') ||
+    isUploading('licenseFront') ||
+    isUploading('licenseBack') ||
+    isUploading('licenseBothSides') ||
+    isUploading('selfieWhiteBackground');
+
   const canContinue = stepComplete && !anyUploadInProgress;
 
   return (
@@ -52,30 +114,47 @@ export function IdentityDocumentsStep({
         <h3 className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
           Documento de Identidad
         </h3>
-        <div className="grid md:grid-cols-2 gap-4">
+        <ModeToggle
+          mode={idMode}
+          onChange={setIdMode}
+          separateLabel="Frente y reverso por separado (foto o archivo)"
+          combinedLabel="Un solo archivo con frente y reverso (foto, PDF o escaneo)"
+        />
+        {idMode === 'separate' ? (
+          <div className="grid md:grid-cols-2 gap-4">
+            <PersistedFileUpload
+              id="id-front"
+              label="Frente del documento"
+              icon={CreditCard}
+              saved={documents.idFront}
+              uploading={isUploading('idFront')}
+              error={getError('idFront')}
+              onFileSelected={(file) => upload('idFront', file)}
+            />
+            <PersistedFileUpload
+              id="id-back"
+              label="Reverso del documento"
+              icon={CreditCard}
+              saved={documents.idBack}
+              uploading={isUploading('idBack')}
+              error={getError('idBack')}
+              onFileSelected={(file) => upload('idBack', file)}
+            />
+          </div>
+        ) : (
           <PersistedFileUpload
-            id="id-front"
-            label="Frente del documento"
+            id="id-both"
+            label="Cédula o pasaporte (frente y reverso)"
             icon={CreditCard}
-            saved={documents.idFront}
-            uploading={isUploading('idFront')}
-            error={getError('idFront')}
-            onFileSelected={(file) => upload('idFront', file)}
+            saved={documents.idBothSides}
+            uploading={isUploading('idBothSides')}
+            error={getError('idBothSides')}
+            onFileSelected={(file) => upload('idBothSides', file)}
           />
-          <PersistedFileUpload
-            id="id-back"
-            label="Reverso del documento"
-            icon={CreditCard}
-            saved={documents.idBack}
-            uploading={isUploading('idBack')}
-            error={getError('idBack')}
-            onFileSelected={(file) => upload('idBack', file)}
-          />
-        </div>
+        )}
         <p className={`mt-3 text-sm ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>
-          Aceptamos cédula colombiana, cédula venezolana o pasaporte. La revisión automática comprueba que
-          coincida con el número de tu autorización de datos y extrae nombres, apellidos, sexo, fecha de
-          nacimiento y tipo de sangre cuando figure en el documento.
+          Aceptamos cédula colombiana, cédula venezolana o pasaporte. Puedes tomar fotos por cara o subir un
+          documento donde se vean las dos.
         </p>
       </div>
 
@@ -87,30 +166,47 @@ export function IdentityDocumentsStep({
         <h3 className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
           Licencia de Conducción
         </h3>
-        <div className="grid md:grid-cols-2 gap-4">
+        <ModeToggle
+          mode={licenseMode}
+          onChange={setLicenseMode}
+          separateLabel="Frente y reverso por separado"
+          combinedLabel="Un archivo con frente y reverso del pase"
+        />
+        {licenseMode === 'separate' ? (
+          <div className="grid md:grid-cols-2 gap-4">
+            <PersistedFileUpload
+              id="license-front"
+              label="Frente de la licencia"
+              icon={CreditCard}
+              saved={documents.licenseFront}
+              uploading={isUploading('licenseFront')}
+              error={getError('licenseFront')}
+              onFileSelected={(file) => upload('licenseFront', file)}
+            />
+            <PersistedFileUpload
+              id="license-back"
+              label="Reverso de la licencia"
+              icon={CreditCard}
+              saved={documents.licenseBack}
+              uploading={isUploading('licenseBack')}
+              error={getError('licenseBack')}
+              onFileSelected={(file) => upload('licenseBack', file)}
+            />
+          </div>
+        ) : (
           <PersistedFileUpload
-            id="license-front"
-            label="Frente de la licencia"
+            id="license-both"
+            label="Licencia colombiana (frente y reverso)"
             icon={CreditCard}
-            saved={documents.licenseFront}
-            uploading={isUploading('licenseFront')}
-            error={getError('licenseFront')}
-            onFileSelected={(file) => upload('licenseFront', file)}
+            saved={documents.licenseBothSides}
+            uploading={isUploading('licenseBothSides')}
+            error={getError('licenseBothSides')}
+            onFileSelected={(file) => upload('licenseBothSides', file)}
           />
-          <PersistedFileUpload
-            id="license-back"
-            label="Reverso de la licencia"
-            icon={CreditCard}
-            saved={documents.licenseBack}
-            uploading={isUploading('licenseBack')}
-            error={getError('licenseBack')}
-            onFileSelected={(file) => upload('licenseBack', file)}
-          />
-        </div>
+        )}
         <p className={`mt-3 text-sm ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>
-          Licencia de conducción colombiana: los datos deben coincidir con tu documento de identidad. En el
-          reverso debe verse vigente la categoría B1, B2 o B3. Comparamos la foto de la licencia con la cédula
-          y con tu selfie.
+          Licencia de conducción colombiana: datos alineados con tu identidad y categoría B1, B2 o B3 vigente en
+          el reverso. Comparamos las fotos con tu cédula y selfie.
         </p>
       </div>
 
@@ -150,6 +246,7 @@ export function IdentityDocumentsStep({
 
       <div className="flex justify-between pt-4">
         <button
+          type="button"
           onClick={onBack}
           className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
             theme === 'dark'
@@ -165,7 +262,7 @@ export function IdentityDocumentsStep({
           disabled={!canContinue}
           title={
             !stepComplete
-              ? 'Sube y valida todos los documentos de identidad, licencia y foto de rostro'
+              ? 'Valida identidad, licencia y selfie (por separado o en un archivo con ambas caras)'
               : undefined
           }
           className="px-8 py-3 bg-[#1A1FE8] text-white rounded-lg hover:bg-[#1217C8] transition-colors font-semibold shadow-[0_0_20px_rgba(26,31,232,0.3)] hover:shadow-[0_0_30px_rgba(26,31,232,0.5)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-[0_0_20px_rgba(26,31,232,0.3)]"
