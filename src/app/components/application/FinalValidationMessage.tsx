@@ -1,4 +1,4 @@
-import { CheckCircle, MessageCircle, Clock, Sparkles } from 'lucide-react';
+import { CheckCircle, Mail, Clock, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -46,14 +46,14 @@ export function FinalValidationMessage() {
 
           <div className="flex items-start gap-4">
             <div className="p-3 rounded-full bg-green-500/20 flex-shrink-0">
-              <MessageCircle className="w-6 h-6 text-green-500" />
+              <Mail className="w-6 h-6 text-green-500" />
             </div>
             <div className="text-left">
               <h3 className={`font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                Nos comunicaremos por WhatsApp
+                Nos comunicaremos por Gmail
               </h3>
               <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                Nuestro equipo está revisando cuidadosamente toda tu información. Te contactaremos cuando tu solicitud esté lista para continuar con los siguientes pasos.
+                Nuestro equipo está revisando cuidadosamente toda tu información. Te escribiremos al correo que registraste en tu solicitud cuando tengamos novedades.
               </p>
             </div>
           </div>
@@ -67,7 +67,7 @@ export function FinalValidationMessage() {
                 Tiempo de respuesta
               </h3>
               <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                El proceso de validación completo puede tomar entre 24 y 48 horas hábiles. Te mantendremos informado en cada etapa.
+                El tiempo de respuesta es de hasta 5 días hábiles. Te avisaremos por Gmail en cuanto avance tu caso.
               </p>
             </div>
           </div>
@@ -97,7 +97,7 @@ export function FinalValidationMessage() {
         </button>
 
         <p className={`text-sm ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>
-          Revisa tu WhatsApp periódicamente para estar al tanto de las actualizaciones
+          Revisa tu bandeja de Gmail (y spam) para no perder nuestra respuesta
         </p>
       </div>
     </div>
