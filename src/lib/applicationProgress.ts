@@ -66,13 +66,24 @@ export function hasLocalApplicationInProgress(userId: string): boolean {
   );
 }
 
-const IDENTITY_KINDS = [
+export const IDENTITY_DOCUMENT_KINDS = [
   'idFront',
   'idBack',
   'licenseFront',
   'licenseBack',
   'selfieWhiteBackground',
 ] as const;
+
+export type IdentityDocumentKind = (typeof IDENTITY_DOCUMENT_KINDS)[number];
+
+/** Paso 2 completo cuando los cinco archivos quedaron VALIDATED por la IA. */
+export function isIdentityStepComplete(
+  documents: Record<string, { validationStatus?: string } | undefined>,
+): boolean {
+  return IDENTITY_DOCUMENT_KINDS.every(
+    (kind) => documents[kind]?.validationStatus === 'VALIDATED',
+  );
+}
 
 const RESIDENCE_KINDS = [
   'utilityAddressReceipt',
@@ -98,7 +109,7 @@ export function inferProgressFromDocuments(
     return { currentStep: 2, step0Completed: true };
   }
 
-  if (IDENTITY_KINDS.some((k) => kinds.has(k))) {
+  if (IDENTITY_DOCUMENT_KINDS.some((k) => kinds.has(k))) {
     return { currentStep: 1, step0Completed: true };
   }
 

@@ -3,6 +3,10 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { PersistedFileUpload } from './PersistedFileUpload';
 import { useApplicationUploads } from '../../hooks/useApplicationUploads';
 import type { UserDocumentMeta } from '../../../lib/documentsApi';
+import {
+  IDENTITY_DOCUMENT_KINDS,
+  isIdentityStepComplete,
+} from '../../../lib/applicationProgress';
 
 interface IdentityDocumentsStepProps {
   userId: string;
@@ -21,6 +25,10 @@ export function IdentityDocumentsStep({
 }: IdentityDocumentsStepProps) {
   const { theme } = useTheme();
   const { upload, isUploading, getError } = useApplicationUploads(userId, onDocumentUploaded);
+
+  const stepComplete = isIdentityStepComplete(documents);
+  const anyUploadInProgress = IDENTITY_DOCUMENT_KINDS.some((kind) => isUploading(kind));
+  const canContinue = stepComplete && !anyUploadInProgress;
 
   return (
     <div className="space-y-8">
@@ -100,7 +108,9 @@ export function IdentityDocumentsStep({
           />
         </div>
         <p className={`mt-3 text-sm ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>
-          💡 Verifica que tu licencia esté vigente y sea categoría B1 o superior
+          Licencia de conducción colombiana: los datos deben coincidir con tu documento de identidad. En el
+          reverso debe verse vigente la categoría B1, B2 o B3. Comparamos la foto de la licencia con la cédula
+          y con tu selfie.
         </p>
       </div>
 
@@ -150,8 +160,15 @@ export function IdentityDocumentsStep({
           Volver
         </button>
         <button
+          type="button"
           onClick={onNext}
-          className="px-8 py-3 bg-[#1A1FE8] text-white rounded-lg hover:bg-[#1217C8] transition-colors font-semibold shadow-[0_0_20px_rgba(26,31,232,0.3)] hover:shadow-[0_0_30px_rgba(26,31,232,0.5)]"
+          disabled={!canContinue}
+          title={
+            !stepComplete
+              ? 'Sube y valida todos los documentos de identidad, licencia y foto de rostro'
+              : undefined
+          }
+          className="px-8 py-3 bg-[#1A1FE8] text-white rounded-lg hover:bg-[#1217C8] transition-colors font-semibold shadow-[0_0_20px_rgba(26,31,232,0.3)] hover:shadow-[0_0_30px_rgba(26,31,232,0.5)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-[0_0_20px_rgba(26,31,232,0.3)]"
         >
           Continuar
         </button>
