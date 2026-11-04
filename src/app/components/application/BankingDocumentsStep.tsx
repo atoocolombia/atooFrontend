@@ -82,22 +82,6 @@ export function BankingDocumentsStep({
         </p>
       </div>
 
-      <div
-        className={`p-6 rounded-xl border ${
-          theme === 'dark' ? 'bg-blue-600/10 border-blue-600/30' : 'bg-blue-50 border-blue-200'
-        }`}
-      >
-        <h4 className={`font-semibold mb-3 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-950'}`}>
-          ¿Por qué necesitamos esta información?
-        </h4>
-        <ul className={`text-sm space-y-2 ${theme === 'dark' ? 'text-blue-200' : 'text-blue-900'}`}>
-          <li>• Evaluar tu capacidad de pago para los $207,000 COP semanales</li>
-          <li>• Verificar tu historial financiero y comportamiento de pago</li>
-          <li>• Cumplir con las regulaciones financieras vigentes</li>
-          <li>• Ofrecerte las mejores condiciones según tu perfil</li>
-        </ul>
-      </div>
-
       <div className="flex justify-between pt-4">
         <button
           onClick={onBack}
