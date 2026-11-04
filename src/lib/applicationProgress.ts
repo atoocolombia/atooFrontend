@@ -164,6 +164,8 @@ export function inferLicenseUploadMode(
   documents: Record<string, { validationStatus?: string } | undefined>,
 ): 'separate' | 'combined' {
   if (documents.licenseBothSides) return 'combined';
-  if (documents.licenseFront || documents.licenseBack) return 'separate';
+  if (documents.licenseFront || documents.licenseBack) {
+    return 'separate';
+  }
   return 'separate';
 }

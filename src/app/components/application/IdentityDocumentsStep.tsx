@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CreditCard, Camera } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { PersistedFileUpload } from './PersistedFileUpload';
@@ -73,15 +73,47 @@ export function IdentityDocumentsStep({
   onBack,
 }: IdentityDocumentsStepProps) {
   const { theme } = useTheme();
-  const { upload, isUploading, getError } = useApplicationUploads(userId, onDocumentUploaded);
 
   const [idMode, setIdMode] = useState<UploadMode>(() => inferIdUploadMode(documents));
   const [licenseMode, setLicenseMode] = useState<UploadMode>(() => inferLicenseUploadMode(documents));
+  const inferredModeFromServer = useRef(false);
 
+  /** Solo al cargar documentos del servidor; no pisar si el usuario eligió «un solo archivo». */
   useEffect(() => {
+    if (inferredModeFromServer.current) return;
+    const hasAny =
+      documents.idFront ||
+      documents.idBack ||
+      documents.idBothSides ||
+      documents.licenseFront ||
+      documents.licenseBack ||
+      documents.licenseBothSides;
+    if (!hasAny) return;
     setIdMode(inferIdUploadMode(documents));
     setLicenseMode(inferLicenseUploadMode(documents));
-  }, [documents.idBothSides, documents.idFront, documents.idBack, documents.licenseBothSides, documents.licenseFront, documents.licenseBack]);
+    inferredModeFromServer.current = true;
+  }, [
+    documents.idBothSides,
+    documents.idFront,
+    documents.idBack,
+    documents.licenseBothSides,
+    documents.licenseFront,
+    documents.licenseBack,
+  ]);
+
+  const handleDocumentUploaded = (doc: UserDocumentMeta) => {
+    if (doc.documentKind === 'idBothSides') setIdMode('combined');
+    if (doc.documentKind === 'licenseBothSides') setLicenseMode('combined');
+    if ((doc.documentKind === 'idFront' || doc.documentKind === 'idBack') && !documents.idBothSides) {
+      setIdMode('separate');
+    }
+    if (doc.documentKind === 'licenseFront' || doc.documentKind === 'licenseBack') {
+      if (!documents.licenseBothSides) setLicenseMode('separate');
+    }
+    onDocumentUploaded(doc);
+  };
+
+  const { upload, isUploading, getError } = useApplicationUploads(userId, handleDocumentUploaded);
 
   const stepComplete = isIdentityStepComplete(documents);
 
