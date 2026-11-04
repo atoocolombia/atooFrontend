@@ -96,8 +96,8 @@ export function CTASection() {
             </button>
           </div>
 
-          {/* Contact cards */}
-          <div className="grid md:grid-cols-2 gap-5 max-w-2xl mx-auto mb-12">
+          {/* Contact cards — ancho según contenido, una línea por dato */}
+          <div className="flex flex-col sm:flex-row flex-wrap justify-center items-center gap-4 mb-12 px-2">
             {[
               {
                 icon: Phone,
@@ -112,26 +112,26 @@ export function CTASection() {
                 href: `mailto:${contact.email}`,
               },
             ].map(({ icon: Icon, label, value, href }) => (
-              <a key={label} href={href} className="group relative block">
+              <a key={label} href={href} className="group relative inline-block max-w-full">
                 <div className={`absolute inset-0 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity ${isBrandCta ? 'bg-white/20' : 'bg-[#1A1FE8]/15'}`} />
-                <div className={`relative flex items-start gap-4 rounded-2xl p-5 border transition-all overflow-hidden ${
+                <div className={`relative inline-flex items-center gap-3 sm:gap-4 rounded-2xl px-4 py-3.5 sm:px-5 sm:py-4 border transition-all max-w-full ${
                   isBrandCta
                     ? 'bg-white/12 border-white/25 hover:border-white/45 hover:bg-white/18'
                     : theme === 'dark'
                       ? 'bg-white/[0.04] border-white/[0.08] hover:border-[#1A1FE8]/40'
                       : 'bg-white border-gray-100 shadow-sm hover:border-[#1A1FE8]/30 hover:shadow-[0_4px_20px_rgba(26,31,232,0.1)]'
                 }`}>
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                  <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
                     isBrandCta ? 'bg-white text-[#1A1FE8]' : 'bg-[#1A1FE8] text-white shadow-[0_0_20px_rgba(26,31,232,0.4)]'
                   }`}>
                     <Icon className="w-5 h-5" />
                   </div>
-                  <div className="text-left min-w-0 flex-1">
+                  <div className="text-left shrink-0">
                     <div className={`text-xs font-medium mb-0.5 ${isBrandCta ? 'text-white/75' : theme === 'dark' ? 'text-[#6B70F5]' : 'text-[#1A1FE8]'}`}>{label}</div>
                     <div
-                      className={`font-bold leading-snug break-words [overflow-wrap:anywhere] ${
-                        href.startsWith('mailto:') ? 'text-sm sm:text-base' : 'text-base'
-                      } ${isBrandCta ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+                      className={`font-bold whitespace-nowrap text-sm sm:text-base ${
+                        isBrandCta ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+                      }`}
                     >
                       {value}
                     </div>
