@@ -20,6 +20,7 @@ import {
 } from '../../../lib/clientGpsApi';
 import { fetchVehicleInspectionPlan, type VehicleInspectionPlan } from '../../../lib/inspectionsApi';
 import { GeofenceExitPanel } from './GeofenceExitPanel';
+import { VehicleHistorySection } from './VehicleHistorySection';
 
 export function VehicleView() {
   const { theme } = useTheme();
@@ -532,6 +533,8 @@ export function VehicleView() {
         </div>
       </div>
 
+      <VehicleHistorySection />
+
       {/* Charging Stations */}
       <div className={`rounded-2xl shadow-lg p-8 border transition-colors ${theme === 'dark' ? 'bg-[#0D0F2E]/50 border-blue-600/20 backdrop-blur-xl' : 'bg-white border-gray-100'}`}>
         <div className="flex items-center justify-between mb-6">
@@ -629,11 +632,6 @@ export function VehicleView() {
       </div>
 
       <GeofenceExitPanel compact />
-
-      <p className={`text-sm text-center ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>
-        El historial completo del vehículo (daños, talleres, revisiones y piezas) está en{' '}
-        <strong>Configuración</strong> de tu panel.
-      </p>
     </div>
   );
 }

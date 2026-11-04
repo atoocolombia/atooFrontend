@@ -604,7 +604,7 @@ export function InspectionsView() {
               Historial del vehículo
             </h2>
             <p className="text-sm text-gray-500">
-              Vista resumida. El historial completo (daños, piezas, tecnomecánica) está en Configuración.
+              Vista resumida. El historial completo (daños, piezas, tecnomecánica) está en Mi vehículo.
             </p>
           </div>
         </div>
