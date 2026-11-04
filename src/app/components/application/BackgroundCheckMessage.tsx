@@ -1,4 +1,4 @@
-import { Shield, MessageCircle, Clock } from 'lucide-react';
+import { Shield, Mail, Clock } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface BackgroundCheckMessageProps {
@@ -7,11 +7,6 @@ interface BackgroundCheckMessageProps {
 
 export function BackgroundCheckMessage({ onContinue }: BackgroundCheckMessageProps) {
   const { theme } = useTheme();
-
-  // Simulamos un delay de 3 segundos antes de permitir continuar
-  setTimeout(() => {
-    // El componente mostrará el mensaje inmediatamente
-  }, 0);
 
   return (
     <div className="space-y-8 text-center py-12">
@@ -52,14 +47,14 @@ export function BackgroundCheckMessage({ onContinue }: BackgroundCheckMessagePro
 
           <div className="flex items-start gap-4">
             <div className="p-3 rounded-full bg-green-500/20 flex-shrink-0">
-              <MessageCircle className="w-6 h-6 text-green-500" />
+              <Mail className="w-6 h-6 text-green-500" />
             </div>
             <div className="text-left">
               <h3 className={`font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                Te contactaremos por WhatsApp
+                Te contactaremos por correo
               </h3>
               <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                Nuestro equipo de analistas está revisando tu información. Te notificaremos el resultado de la verificación en las próximas horas.
+                Nuestro equipo de analistas está revisando tu información. Te escribiremos al correo que registraste con el resultado de la verificación en las próximas horas.
               </p>
             </div>
           </div>
@@ -72,7 +67,7 @@ export function BackgroundCheckMessage({ onContinue }: BackgroundCheckMessagePro
           : 'bg-blue-50 border-blue-200'
       }`}>
         <p className={`text-sm ${theme === 'dark' ? 'text-blue-200' : 'text-blue-900'}`}>
-          ⏱️ <strong>Tiempo estimado:</strong> Este proceso puede tomar entre 2 y 24 horas. Te mantendremos informado en cada paso.
+          ⏱️ <strong>Tiempo estimado:</strong> Este proceso puede demorar de uno a dos días hábiles. Te mantendremos informado en cada paso.
         </p>
       </div>
 
