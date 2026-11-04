@@ -65,7 +65,9 @@ export function IdentityDocumentsStep({
           />
         </div>
         <p className={`mt-3 text-sm ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>
-          💡 Asegúrate de que los datos sean legibles y la foto esté completa
+          Aceptamos cédula colombiana, cédula venezolana o pasaporte. La revisión automática comprueba que
+          coincida con el número de tu autorización de datos y extrae nombres, apellidos, sexo, fecha de
+          nacimiento y tipo de sangre cuando figure en el documento.
         </p>
       </div>
 

@@ -167,7 +167,7 @@ export function DataAuthorizationStep({
               </p>
               <p className={`text-sm ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>
                 Realizaremos consultas en bases de datos públicas (Policía, Procuraduría, SIMIT) para verificar tu
-                historial
+                historial y revisar si tienes comparendos o multas de tránsito pendientes
               </p>
             </div>
           </div>
