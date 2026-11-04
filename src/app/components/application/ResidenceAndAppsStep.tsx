@@ -352,7 +352,10 @@ export function ResidenceAndAppsStep({
             Requisitos del recibo:
           </h4>
           <ul className={`text-sm space-y-1 ${theme === 'dark' ? 'text-blue-200' : 'text-blue-800'}`}>
-            <li>• Debe estar a tu nombre, igual que en tu documento de identidad</li>
+            <li>
+              • Preferible a tu nombre; si está a nombre de otra persona, puedes continuar y lo registramos para
+              revisión
+            </li>
             <li>• Fecha de emisión no mayor a 3 meses</li>
             <li>• Dirección completa legible; si es apartamento, debe verse torre, apto o complemento</li>
             <li>• Si es casa, incluye el complemento que identifique la vivienda cuando aparezca en el recibo</li>
