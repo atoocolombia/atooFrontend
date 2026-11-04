@@ -89,6 +89,55 @@ export function PendingApplicationsLiveView() {
               <p className="text-sm text-gray-500">{app.email}</p>
               <p className="text-sm text-gray-500">{app.phone ?? 'Sin celular'}</p>
               <p className="text-sm text-gray-500">{app.address ?? 'Sin dirección'}</p>
+              {(app.dwellingType || app.addressComplement) && (
+                <p className="text-sm text-gray-500">
+                  {[app.dwellingType, app.addressComplement].filter(Boolean).join(' · ')}
+                </p>
+              )}
+              {app.utilityBillHolderName && (
+                <p className="text-sm text-gray-500">
+                  Recibo a nombre de: {app.utilityBillHolderName}
+                  {app.utilityBillHolderMatchesApplicant === false ? ' (tercero)' : ''}
+                </p>
+              )}
+              <p className="text-sm text-gray-500 mt-2">
+                EV en apps:{' '}
+                {app.mobilityDrivenElectricVehicle === true
+                  ? `Sí${app.mobilityElectricExperienceText ? ` (${app.mobilityElectricExperienceText})` : ''}`
+                  : app.mobilityDrivenElectricVehicle === false
+                    ? 'No'
+                    : '—'}
+              </p>
+              <p className="text-sm text-gray-500">
+                Plataformas: 1{app.platformSlot1Complete ? '✓' : '○'}
+                {app.platformSlot2Complete ? ' · 2✓' : ''}
+                {app.platformSlot3Complete ? ' · 3✓' : ''}
+                {app.bankHolderMatchesIdentity != null &&
+                  ` · Banco titular ${app.bankHolderMatchesIdentity ? 'coincide' : 'no coincide'}`}
+              </p>
+              {app.knowledgeTest ? (
+                <div
+                  className={`mt-3 rounded-lg border p-3 text-sm ${
+                    theme === 'dark' ? 'border-blue-600/30 bg-white/5' : 'border-gray-200 bg-gray-50'
+                  }`}
+                >
+                  <p className={`font-semibold mb-1 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}`}>
+                    Evaluaciones teóricas
+                  </p>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-gray-500">
+                    {app.knowledgeTest.includeEvSection && app.knowledgeTest.evScore != null && (
+                      <span>EV: {app.knowledgeTest.evScore}%</span>
+                    )}
+                    <span>Vial: {app.knowledgeTest.vialScore}%</span>
+                    <span>Servicio: {app.knowledgeTest.customerServiceScore}%</span>
+                    <span className="font-medium text-[#1A1FE8]">
+                      Ponderado: {app.knowledgeTest.weightedScore}%
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-amber-600 mt-2">Evaluaciones teóricas: pendiente / no registradas</p>
+              )}
               <div className="flex gap-2 mt-4">
                 <button
                   type="button"
