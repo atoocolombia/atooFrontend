@@ -1,3 +1,5 @@
+import { isPlatformAttachmentKind } from './platformPhotoKinds';
+
 export interface ApplicationProgress {
   currentStep: number;
   showBackgroundCheck: boolean;
@@ -115,21 +117,9 @@ export function isIdentityStepComplete(
   );
 }
 
-const RESIDENCE_KINDS = [
-  'utilityAddressReceipt',
-  'platformWork1',
-  'platformWork1Photo2',
-  'platformWork1Photo3',
-  'platformWork1Photo4',
-  'platformWork2',
-  'platformWork2Photo2',
-  'platformWork2Photo3',
-  'platformWork2Photo4',
-  'platformWork3',
-  'platformWork3Photo2',
-  'platformWork3Photo3',
-  'platformWork3Photo4',
-] as const;
+function isResidenceDocumentKind(kind: string): boolean {
+  return kind === 'utilityAddressReceipt' || isPlatformAttachmentKind(kind);
+}
 
 const BANKING_KINDS = ['bankDocument', 'creditReport'] as const;
 
@@ -154,7 +144,7 @@ export function inferProgressFromDocuments(
     return { currentStep: 3, step0Completed: true };
   }
 
-  if (RESIDENCE_KINDS.some((k) => kinds.has(k))) {
+  if ([...kinds].some((k) => isResidenceDocumentKind(k))) {
     return { currentStep: 2, step0Completed: true };
   }
 
