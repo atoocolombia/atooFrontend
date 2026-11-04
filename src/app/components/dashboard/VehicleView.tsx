@@ -19,6 +19,7 @@ import {
   type ClientGpsReportView,
 } from '../../../lib/clientGpsApi';
 import { fetchVehicleInspectionPlan, type VehicleInspectionPlan } from '../../../lib/inspectionsApi';
+import { GeofenceExitPanel } from './GeofenceExitPanel';
 
 export function VehicleView() {
   const { theme } = useTheme();
@@ -626,6 +627,13 @@ export function VehicleView() {
           </p>
         </div>
       </div>
+
+      <GeofenceExitPanel compact />
+
+      <p className={`text-sm text-center ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>
+        El historial completo del vehículo (daños, talleres, revisiones y piezas) está en{' '}
+        <strong>Configuración</strong> de tu panel.
+      </p>
     </div>
   );
 }

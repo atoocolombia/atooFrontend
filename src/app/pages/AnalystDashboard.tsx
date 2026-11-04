@@ -14,6 +14,7 @@ import {
   Car,
   Truck,
   MapPin,
+  MapPinOff,
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { clearUserSession, getSessionUser } from '../../lib/authRouting';
@@ -25,6 +26,7 @@ import { ApprovedApplicationsView } from '../components/analyst/ApprovedApplicat
 import { RejectedApplicationsView } from '../components/analyst/RejectedApplicationsView';
 import { PaymentRegistrationView } from '../components/analyst/PaymentRegistrationView';
 import { GpsReportUploadView } from '../components/analyst/GpsReportUploadView';
+import { GeofenceRequestsView } from '../components/analyst/GeofenceRequestsView';
 import { AppointmentsView } from '../components/advisor/AppointmentsView';
 import { DocumentGeneratorView } from '../components/advisor/DocumentGeneratorView';
 import { RejectedUsersView } from '../components/advisor/RejectedUsersView';
@@ -41,6 +43,7 @@ const menuItems = [
   { id: 'manual-delivery', label: 'Alta manual entrega', icon: PlusCircle },
   { id: 'payments', label: 'Registro de pagos', icon: CreditCard },
   { id: 'gps-reports', label: 'Informes GPS', icon: MapPin },
+  { id: 'geofence-exit', label: 'Salidas geocerca', icon: MapPinOff },
   { id: 'approved', label: 'Solicitudes aprobadas', icon: CheckCircle },
   { id: 'rejected-applications', label: 'Solicitudes denegadas', icon: XCircle },
   { id: 'deliveries', label: 'Entregas de vehículos', icon: Truck },
@@ -180,6 +183,7 @@ export function AnalystDashboard() {
           {activeView === 'manual-delivery' && <ManualDeliveryView />}
           {activeView === 'payments' && <PaymentRegistrationView />}
           {activeView === 'gps-reports' && <GpsReportUploadView />}
+          {activeView === 'geofence-exit' && <GeofenceRequestsView />}
           {activeView === 'approved' && <ApprovedApplicationsView />}
           {activeView === 'rejected-applications' && <RejectedApplicationsView />}
           {activeView === 'deliveries' && <DeliveryQueueView />}
