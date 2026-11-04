@@ -6,6 +6,7 @@ import {
   submitGeofenceExitRequest,
   type GeofenceExitRequest,
 } from '../../../lib/geofenceExitApi';
+import { formatGeofenceDate } from '../../../lib/formatGeofenceDates';
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING: 'En revisión',
@@ -20,6 +21,8 @@ export function GeofenceExitPanel({ compact }: { compact?: boolean }) {
   const [loading, setLoading] = useState(true);
   const [reason, setReason] = useState('');
   const [destination, setDestination] = useState('');
+  const [requestedFrom, setRequestedFrom] = useState('');
+  const [requestedUntil, setRequestedUntil] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +40,16 @@ export function GeofenceExitPanel({ compact }: { compact?: boolean }) {
 
   const hasPending = requests.some((r) => r.status === 'PENDING');
 
+  const datesValid =
+    requestedFrom &&
+    requestedUntil &&
+    requestedUntil >= requestedFrom;
+
   const submit = async () => {
+    if (!datesValid) {
+      setError('Indica fecha de salida y de regreso; el regreso no puede ser antes que la salida.');
+      return;
+    }
     setSubmitting(true);
     setError(null);
     setMessage(null);
@@ -45,10 +57,14 @@ export function GeofenceExitPanel({ compact }: { compact?: boolean }) {
       await submitGeofenceExitRequest({
         reason,
         destination: destination.trim() || undefined,
+        requestedFrom,
+        requestedUntil,
       });
       setReason('');
       setDestination('');
-      setMessage('Solicitud enviada. Te avisaremos por correo cuando sea revisada.');
+      setRequestedFrom('');
+      setRequestedUntil('');
+      setMessage('Solicitud enviada al analista. Te avisaremos cuando sea revisada.');
       load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo enviar');
@@ -64,6 +80,36 @@ export function GeofenceExitPanel({ compact }: { compact?: boolean }) {
       ? 'bg-white/5 border-blue-600/30 text-white'
       : 'bg-white border-gray-200 text-gray-900';
 
+  const dateGrid = (
+    <div className={`grid gap-2 mb-2 ${compact ? 'grid-cols-1 sm:grid-cols-2' : 'sm:grid-cols-2 gap-3 mb-3'}`}>
+      <label className="block text-sm">
+        <span className={`font-medium mb-1 block ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+          Fecha de salida *
+        </span>
+        <input
+          type="date"
+          className={`w-full border rounded-lg px-3 py-2 text-sm ${inputClass}`}
+          value={requestedFrom}
+          disabled={hasPending || submitting}
+          onChange={(e) => setRequestedFrom(e.target.value)}
+        />
+      </label>
+      <label className="block text-sm">
+        <span className={`font-medium mb-1 block ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+          Fecha de regreso *
+        </span>
+        <input
+          type="date"
+          className={`w-full border rounded-lg px-3 py-2 text-sm ${inputClass}`}
+          value={requestedUntil}
+          min={requestedFrom || undefined}
+          disabled={hasPending || submitting}
+          onChange={(e) => setRequestedUntil(e.target.value)}
+        />
+      </label>
+    </div>
+  );
+
   return (
     <section className={`rounded-2xl border p-6 ${cardClass}`}>
       <div className="flex items-start gap-3 mb-4">
@@ -73,7 +119,8 @@ export function GeofenceExitPanel({ compact }: { compact?: boolean }) {
             Salida de geocerca
           </h2>
           <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            Solicita autorización temporal para circular fuera del perímetro acordado.
+            Solicita autorización temporal para circular fuera del perímetro acordado. El analista recibirá tu
+            solicitud con las fechas indicadas.
           </p>
         </div>
       </div>
@@ -84,6 +131,9 @@ export function GeofenceExitPanel({ compact }: { compact?: boolean }) {
             <div key={r.id} className={`text-sm rounded-lg p-3 ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}>
               <span className="font-medium">{STATUS_LABEL[r.status] ?? r.status}</span>
               <span className="text-gray-500 ml-2">{r.reason}</span>
+              <p className="text-xs text-gray-500 mt-1">
+                Salida: {formatGeofenceDate(r.requestedFrom)} · Regreso: {formatGeofenceDate(r.requestedUntil)}
+              </p>
               {r.reviewNotes && <p className="text-xs text-gray-500 mt-1">atoo: {r.reviewNotes}</p>}
             </div>
           ))}
@@ -94,6 +144,7 @@ export function GeofenceExitPanel({ compact }: { compact?: boolean }) {
         <Loader2 className="w-5 h-5 animate-spin text-[#1A1FE8]" />
       ) : (
         <>
+          {dateGrid}
           <textarea
             className={`w-full border rounded-lg px-3 py-2 text-sm mb-2 ${inputClass}`}
             rows={compact ? 2 : 3}
@@ -114,7 +165,7 @@ export function GeofenceExitPanel({ compact }: { compact?: boolean }) {
           )}
           <button
             type="button"
-            disabled={submitting || hasPending || !reason.trim()}
+            disabled={submitting || hasPending || !reason.trim() || !datesValid}
             onClick={() => void submit()}
             className="px-4 py-2 rounded-lg bg-[#1A1FE8] text-white text-sm font-semibold disabled:opacity-50"
           >

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
 import {
   ClipboardCheck,
   CheckCircle,
@@ -54,8 +54,15 @@ const menuItems = [
   { id: 'vehicles', label: 'Vehículos disponibles', icon: Car },
 ];
 
+const ANALYST_VIEW_IDS = new Set(menuItems.map((item) => item.id));
+
 export function AnalystDashboard() {
-  const [activeView, setActiveView] = useState('pending');
+  const [searchParams] = useSearchParams();
+  const initialView = useMemo(() => {
+    const fromQuery = searchParams.get('view');
+    return fromQuery && ANALYST_VIEW_IDS.has(fromQuery) ? fromQuery : 'pending';
+  }, [searchParams]);
+  const [activeView, setActiveView] = useState(initialView);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const { theme } = useTheme();
