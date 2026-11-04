@@ -6,6 +6,8 @@ import { IdentityDocumentsStep } from '../components/application/IdentityDocumen
 import { BackgroundCheckMessage } from '../components/application/BackgroundCheckMessage';
 import { ResidenceAndAppsStep } from '../components/application/ResidenceAndAppsStep';
 import { BankingDocumentsStep } from '../components/application/BankingDocumentsStep';
+import { KnowledgeTestsStep } from '../components/application/KnowledgeTestsStep';
+import { fetchApplicationKnowledgeTest } from '../../lib/applicationKnowledgeTestApi';
 import { FinalValidationMessage } from '../components/application/FinalValidationMessage';
 import { Check, Loader2 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
@@ -69,7 +71,23 @@ export function ApplicationPage() {
         }
 
         setDocuments(byKind);
-        setProgress(initial);
+
+        let adjusted = initial;
+        try {
+          const test = await fetchApplicationKnowledgeTest(user.id);
+          const hasBanking = docs.some((d) => d.documentKind === 'bankDocument' || d.documentKind === 'creditReport');
+          if (hasBanking) {
+            adjusted = { ...adjusted, currentStep: Math.max(adjusted.currentStep, 4) };
+          } else if (test.completed) {
+            adjusted = { ...adjusted, currentStep: Math.max(adjusted.currentStep, 3) };
+          } else if (adjusted.currentStep > 3) {
+            adjusted = { ...adjusted, currentStep: 3 };
+          }
+        } catch {
+          /* tests API optional for infer */
+        }
+
+        setProgress(adjusted);
         setLoadError(null);
       } catch {
         if (!cancelled) {
@@ -101,7 +119,8 @@ export function ApplicationPage() {
     { id: 0, title: 'Paso 1', label: 'Autorización de Datos' },
     { id: 1, title: 'Paso 2', label: 'Documentos de Identidad' },
     { id: 2, title: 'Paso 3', label: 'Domicilio y Experiencia' },
-    { id: 3, title: 'Paso 4', label: 'Información Bancaria' },
+    { id: 3, title: 'Paso 4', label: 'Evaluaciones' },
+    { id: 4, title: 'Paso 5', label: 'Información Bancaria' },
   ];
 
   const handleNext = () => {
@@ -278,6 +297,9 @@ export function ApplicationPage() {
                 />
               )}
               {currentStep === 3 && (
+                <KnowledgeTestsStep userId={user.id} onNext={handleNext} onBack={handleBack} />
+              )}
+              {currentStep === 4 && (
                 <BankingDocumentsStep
                   userId={user.id}
                   documents={documents}

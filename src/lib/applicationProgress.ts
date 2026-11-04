@@ -50,7 +50,7 @@ export function isApplicationCompleted(userId: string): boolean {
 
 export function markApplicationCompleted(userId: string): void {
   saveApplicationProgress(userId, {
-    currentStep: 3,
+    currentStep: 4,
     showBackgroundCheck: false,
     showFinalMessage: true,
     step0Completed: true,
@@ -141,7 +141,7 @@ export function inferProgressFromDocuments(
   const kinds = new Set(documentKinds);
 
   if (BANKING_KINDS.some((k) => kinds.has(k))) {
-    return { currentStep: 3, step0Completed: true };
+    return { currentStep: 4, step0Completed: true };
   }
 
   if ([...kinds].some((k) => isResidenceDocumentKind(k))) {
