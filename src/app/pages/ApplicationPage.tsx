@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router';
 import { ApplicationHeader } from '../components/application/ApplicationHeader';
 import { DataAuthorizationStep } from '../components/application/DataAuthorizationStep';
 import { IdentityDocumentsStep } from '../components/application/IdentityDocumentsStep';
-import { BackgroundCheckMessage } from '../components/application/BackgroundCheckMessage';
 import { ResidenceAndAppsStep } from '../components/application/ResidenceAndAppsStep';
 import { BankingDocumentsStep } from '../components/application/BankingDocumentsStep';
 import { KnowledgeTestsStep } from '../components/application/KnowledgeTestsStep';
@@ -34,7 +33,7 @@ export function ApplicationPage() {
   const [documents, setDocuments] = useState<Record<string, UserDocumentMeta>>({});
   const [progress, setProgress] = useState<ApplicationProgress>(DEFAULT_APPLICATION_PROGRESS);
 
-  const { currentStep, showBackgroundCheck, showFinalMessage } = progress;
+  const { currentStep, showFinalMessage } = progress;
 
   useEffect(() => {
     if (!userId) return;
@@ -89,6 +88,14 @@ export function ApplicationPage() {
           /* tests API optional for infer */
         }
 
+        if (adjusted.showBackgroundCheck) {
+          adjusted = {
+            ...adjusted,
+            showBackgroundCheck: false,
+            currentStep: Math.max(adjusted.currentStep, 2),
+          };
+        }
+
         setProgress(adjusted);
         setLoadError(null);
       } catch {
@@ -132,8 +139,6 @@ export function ApplicationPage() {
         step0Completed: true,
         currentStep: 1,
       }));
-    } else if (currentStep === 1) {
-      setProgress((p) => ({ ...p, showBackgroundCheck: true }));
     } else if (currentStep < steps.length - 1) {
       setProgress((p) => ({ ...p, currentStep: p.currentStep + 1 }));
     } else {
@@ -152,22 +157,12 @@ export function ApplicationPage() {
       setProgress((p) => ({
         ...p,
         currentStep: p.currentStep - 1,
-        showBackgroundCheck: false,
       }));
     }
   };
 
-  const handleContinueAfterBackgroundCheck = () => {
-    setProgress((p) => ({
-      ...p,
-      showBackgroundCheck: false,
-      currentStep: 2,
-    }));
-  };
-
   const getProgressStep = () => {
     if (showFinalMessage) return steps.length;
-    if (showBackgroundCheck) return currentStep;
     return currentStep;
   };
 
@@ -276,8 +271,6 @@ export function ApplicationPage() {
         >
           {showFinalMessage ? (
             <FinalValidationMessage />
-          ) : showBackgroundCheck ? (
-            <BackgroundCheckMessage onContinue={handleContinueAfterBackgroundCheck} />
           ) : (
             <>
               {currentStep === 0 && (

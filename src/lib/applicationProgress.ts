@@ -61,11 +61,7 @@ export function markApplicationCompleted(userId: string): void {
 export function hasLocalApplicationInProgress(userId: string): boolean {
   const progress = loadApplicationProgress(userId);
   if (!progress || progress.showFinalMessage) return false;
-  return (
-    progress.step0Completed ||
-    progress.currentStep > 0 ||
-    progress.showBackgroundCheck
-  );
+  return progress.step0Completed || progress.currentStep > 0;
 }
 
 export const IDENTITY_DOCUMENT_KINDS = [
