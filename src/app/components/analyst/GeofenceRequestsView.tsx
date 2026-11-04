@@ -6,6 +6,7 @@ import {
   reviewGeofenceExitRequest,
   type AnalystGeofenceRequest,
 } from '../../../lib/geofenceExitApi';
+import { formatGeofenceDate } from '../../../lib/formatGeofenceDates';
 
 export function GeofenceRequestsView() {
   const { theme } = useTheme();
@@ -64,8 +65,15 @@ export function GeofenceRequestsView() {
             <div key={row.id} className={`rounded-xl border p-4 ${cardClass}`}>
               <p className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{row.clientName}</p>
               <p className="text-sm text-gray-500">{row.email}</p>
+              <p className="text-sm mt-2 font-medium text-[#1A1FE8]">
+                Salida: {formatGeofenceDate(row.requestedFrom)} · Regreso: {formatGeofenceDate(row.requestedUntil)}
+              </p>
               <p className="text-sm mt-2">{row.reason}</p>
               {row.destination && <p className="text-sm text-gray-500">Destino: {row.destination}</p>}
+              <p className="text-xs text-gray-400 mt-1">
+                Recibida:{' '}
+                {new Date(row.createdAt).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
+              </p>
               <div className="flex gap-2 mt-3">
                 <button
                   type="button"

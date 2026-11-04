@@ -24,8 +24,8 @@ export async function fetchMyGeofenceExitRequests(): Promise<GeofenceExitRequest
 export async function submitGeofenceExitRequest(input: {
   reason: string;
   destination?: string;
-  requestedFrom?: string;
-  requestedUntil?: string;
+  requestedFrom: string;
+  requestedUntil: string;
 }): Promise<GeofenceExitRequest> {
   const res = await apiFetch('/api/v1/client/geofence-exit/requests', {
     method: 'POST',
