@@ -11,6 +11,7 @@ import { AnalystDashboard } from "./pages/AnalystDashboard";
 import { WorkshopDashboard } from "./pages/WorkshopDashboard";
 import { DeliveryConfirmPage } from "./pages/DeliveryConfirmPage";
 import { WaitingDeliveryPage } from "./pages/WaitingDeliveryPage";
+import { PracticalTestBookingPage } from "./pages/PracticalTestBookingPage";
 import { AccountSetupPage } from "./pages/AccountSetupPage";
 
 function ErrorBoundary() {
@@ -40,6 +41,16 @@ export const router = createBrowserRouter([
           <RequireAuth>
             <ClientPortalGuard>
               <ApplicationPage />
+            </ClientPortalGuard>
+          </RequireAuth>
+        ),
+      },
+      {
+        path: "prueba-practica",
+        element: (
+          <RequireAuth allowedTypes={['USER']}>
+            <ClientPortalGuard>
+              <PracticalTestBookingPage />
             </ClientPortalGuard>
           </RequireAuth>
         ),
