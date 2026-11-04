@@ -45,18 +45,28 @@ export function ApplicationPage() {
 
         const byKind = Object.fromEntries(docs.map((d) => [d.documentKind, d]));
         const saved = loadApplicationProgress(user.id);
+        const authValidated =
+          byKind.dataTreatmentSigned?.validationStatus === 'VALIDATED';
         const inferred = inferProgressFromDocuments(
           docs.map((d) => d.documentKind),
-          saved?.step0Completed,
+          saved?.step0Completed || authValidated,
         );
 
-        const initial: ApplicationProgress = saved
+        let initial: ApplicationProgress = saved
           ? saved
           : {
               ...DEFAULT_APPLICATION_PROGRESS,
               currentStep: inferred.currentStep,
               step0Completed: inferred.step0Completed,
             };
+
+        if (authValidated) {
+          initial = {
+            ...initial,
+            step0Completed: true,
+            currentStep: initial.currentStep < 1 ? 1 : initial.currentStep,
+          };
+        }
 
         setDocuments(byKind);
         setProgress(initial);
@@ -82,6 +92,9 @@ export function ApplicationPage() {
 
   const handleDocumentUploaded = (doc: UserDocumentMeta) => {
     setDocuments((prev) => ({ ...prev, [doc.documentKind]: doc }));
+    if (doc.documentKind === 'dataTreatmentSigned' && doc.validationStatus === 'VALIDATED') {
+      setProgress((p) => ({ ...p, step0Completed: true }));
+    }
   };
 
   const steps = [
@@ -238,7 +251,14 @@ export function ApplicationPage() {
             <BackgroundCheckMessage onContinue={handleContinueAfterBackgroundCheck} />
           ) : (
             <>
-              {currentStep === 0 && <DataAuthorizationStep onNext={handleNext} />}
+              {currentStep === 0 && (
+                <DataAuthorizationStep
+                  userId={user.id}
+                  documents={documents}
+                  onDocumentUploaded={handleDocumentUploaded}
+                  onNext={handleNext}
+                />
+              )}
               {currentStep === 1 && (
                 <IdentityDocumentsStep
                   userId={user.id}

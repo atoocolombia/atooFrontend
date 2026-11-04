@@ -102,7 +102,7 @@ export function inferProgressFromDocuments(
     return { currentStep: 1, step0Completed: true };
   }
 
-  if (step0Completed || kinds.has('dataTreatmentSigned')) {
+  if (step0Completed) {
     return { currentStep: 1, step0Completed: true };
   }
 

@@ -9,6 +9,7 @@ export interface UserDocumentMeta {
   originalName: string;
   mimeType: string;
   sizeBytes: number;
+  signedAt: string | null;
   createdAt: string;
 }
 
