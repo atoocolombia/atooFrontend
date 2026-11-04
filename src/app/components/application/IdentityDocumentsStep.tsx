@@ -20,6 +20,10 @@ interface IdentityDocumentsStepProps {
 
 type UploadMode = 'separate' | 'combined';
 
+/** Fotos o PDF (escaneo); igual que otros pasos de la solicitud. */
+const DOCUMENT_IMAGE_OR_PDF_ACCEPT = 'image/*,.pdf,application/pdf';
+const SELFIE_ACCEPT = 'image/*';
+
 function ModeToggle({
   mode,
   onChange,
@@ -126,6 +130,7 @@ export function IdentityDocumentsStep({
               id="id-front"
               label="Frente del documento"
               icon={CreditCard}
+              accept={DOCUMENT_IMAGE_OR_PDF_ACCEPT}
               saved={documents.idFront}
               uploading={isUploading('idFront')}
               error={getError('idFront')}
@@ -135,6 +140,7 @@ export function IdentityDocumentsStep({
               id="id-back"
               label="Reverso del documento"
               icon={CreditCard}
+              accept={DOCUMENT_IMAGE_OR_PDF_ACCEPT}
               saved={documents.idBack}
               uploading={isUploading('idBack')}
               error={getError('idBack')}
@@ -146,6 +152,7 @@ export function IdentityDocumentsStep({
             id="id-both"
             label="Cédula o pasaporte (frente y reverso)"
             icon={CreditCard}
+            accept={DOCUMENT_IMAGE_OR_PDF_ACCEPT}
             saved={documents.idBothSides}
             uploading={isUploading('idBothSides')}
             error={getError('idBothSides')}
@@ -178,6 +185,7 @@ export function IdentityDocumentsStep({
               id="license-front"
               label="Frente de la licencia"
               icon={CreditCard}
+              accept={DOCUMENT_IMAGE_OR_PDF_ACCEPT}
               saved={documents.licenseFront}
               uploading={isUploading('licenseFront')}
               error={getError('licenseFront')}
@@ -187,6 +195,7 @@ export function IdentityDocumentsStep({
               id="license-back"
               label="Reverso de la licencia"
               icon={CreditCard}
+              accept={DOCUMENT_IMAGE_OR_PDF_ACCEPT}
               saved={documents.licenseBack}
               uploading={isUploading('licenseBack')}
               error={getError('licenseBack')}
@@ -198,6 +207,7 @@ export function IdentityDocumentsStep({
             id="license-both"
             label="Licencia colombiana (frente y reverso)"
             icon={CreditCard}
+            accept={DOCUMENT_IMAGE_OR_PDF_ACCEPT}
             saved={documents.licenseBothSides}
             uploading={isUploading('licenseBothSides')}
             error={getError('licenseBothSides')}
@@ -222,6 +232,7 @@ export function IdentityDocumentsStep({
           id="face-photo"
           label="Foto con buena iluminación"
           icon={Camera}
+          accept={SELFIE_ACCEPT}
           saved={documents.selfieWhiteBackground}
           uploading={isUploading('selfieWhiteBackground')}
           error={getError('selfieWhiteBackground')}
