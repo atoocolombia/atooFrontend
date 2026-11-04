@@ -19,6 +19,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { clearUserSession, getSessionUser } from '../../lib/authRouting';
 import { MobileAppBar } from '../components/MobileAppBar';
 import { PendingApplicationsLiveView } from '../components/analyst/PendingApplicationsLiveView';
+import { PracticalTestCalendarView } from '../components/analyst/PracticalTestCalendarView';
 import { ManualDeliveryView } from '../components/analyst/ManualDeliveryView';
 import { ApprovedApplicationsView } from '../components/analyst/ApprovedApplicationsView';
 import { RejectedApplicationsView } from '../components/analyst/RejectedApplicationsView';
@@ -36,6 +37,7 @@ const mobileSidebarScrollStyle = { WebkitOverflowScrolling: 'touch' as const };
 
 const menuItems = [
   { id: 'pending', label: 'Solicitudes pendientes', icon: ClipboardCheck },
+  { id: 'practical-test', label: 'Prueba práctica EV', icon: Calendar },
   { id: 'manual-delivery', label: 'Alta manual entrega', icon: PlusCircle },
   { id: 'payments', label: 'Registro de pagos', icon: CreditCard },
   { id: 'gps-reports', label: 'Informes GPS', icon: MapPin },
@@ -174,6 +176,7 @@ export function AnalystDashboard() {
         />
         <div className="p-6 lg:p-8">
           {activeView === 'pending' && <PendingApplicationsLiveView />}
+          {activeView === 'practical-test' && <PracticalTestCalendarView />}
           {activeView === 'manual-delivery' && <ManualDeliveryView />}
           {activeView === 'payments' && <PaymentRegistrationView />}
           {activeView === 'gps-reports' && <GpsReportUploadView />}

@@ -68,6 +68,14 @@ export interface PendingApplication {
   platformSlot2Complete: boolean;
   platformSlot3Complete: boolean;
   knowledgeTest: AnalystKnowledgeTestSummary | null;
+  backgroundJudicialApproved: boolean | null;
+  backgroundProcuraduriaApproved: boolean | null;
+  backgroundSimitApproved: boolean | null;
+  backgroundJudicialComment: string | null;
+  backgroundProcuraduriaComment: string | null;
+  backgroundSimitComment: string | null;
+  practicalTestSchedulingEnabled: boolean;
+  practicalTestInviteSentAt: string | null;
 }
 
 export async function fetchAdvisorDeliveries(): Promise<VehicleDeliveryRecord[]> {

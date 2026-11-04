@@ -198,6 +198,7 @@ export async function resolvePostAuthPathAsync(user: RegisteredUser): Promise<st
   try {
     const access = await fetchClientAccess(user.id);
     if (access.phase === 'dashboard') return '/dashboard';
+    if (access.phase === 'practical_test') return '/prueba-practica';
     if (access.phase === 'waiting_delivery') return '/espera-entrega';
   } catch {
     // Si falla el API, continuar con heurísticas locales

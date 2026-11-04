@@ -2,7 +2,7 @@ import { captureAuthTokenFromPayload } from './authTokenStorage';
 import type { RegisteredUser } from './api';
 import { apiFetch } from './http';
 
-export type ClientPortalPhase = 'application' | 'waiting_delivery' | 'dashboard';
+export type ClientPortalPhase = 'application' | 'practical_test' | 'waiting_delivery' | 'dashboard';
 
 export interface ClientAccessState {
   phase: ClientPortalPhase;

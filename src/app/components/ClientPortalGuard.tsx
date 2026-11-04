@@ -77,12 +77,24 @@ export function ClientPortalGuard({ children }: ClientPortalGuardProps) {
     return <Navigate to="/espera-entrega" replace />;
   }
 
+  if (phase === 'practical_test' && path !== '/prueba-practica') {
+    return <Navigate to="/prueba-practica" replace />;
+  }
+
   if (phase === 'application' && path === '/dashboard') {
     return <Navigate to="/solicitud" replace />;
   }
 
   if (phase === 'application' && path === '/espera-entrega') {
     return <Navigate to="/solicitud" replace />;
+  }
+
+  if (phase === 'application' && path === '/prueba-practica') {
+    return <Navigate to="/solicitud" replace />;
+  }
+
+  if (phase === 'waiting_delivery' && path === '/prueba-practica') {
+    return <Navigate to="/espera-entrega" replace />;
   }
 
   return children;
