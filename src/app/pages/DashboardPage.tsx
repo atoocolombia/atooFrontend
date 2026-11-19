@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import {
   LayoutDashboard,
@@ -40,11 +40,17 @@ const menuItems = [
   { id: 'settings', label: 'Configuración', icon: Settings },
 ];
 
+const CLIENT_VIEW_IDS = new Set(menuItems.map((item) => item.id));
+
 export function DashboardPage() {
-  const [activeView, setActiveView] = useState('progress');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialView = useMemo(() => {
+    const fromQuery = searchParams.get('view');
+    return fromQuery && CLIENT_VIEW_IDS.has(fromQuery) ? fromQuery : 'progress';
+  }, [searchParams]);
+  const [activeView, setActiveView] = useState(initialView);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const [openSupportFromPush] = useState(
     () =>
       searchParams.get('openSupportChat') === '1' ||
@@ -55,6 +61,13 @@ export function DashboardPage() {
   const { summary: paymentSummary } = useClientPaymentSummary();
 
   useBodyScrollLock(isSidebarOpen);
+
+  useEffect(() => {
+    const fromQuery = searchParams.get('view');
+    if (fromQuery && CLIENT_VIEW_IDS.has(fromQuery) && fromQuery !== activeView) {
+      setActiveView(fromQuery);
+    }
+  }, [searchParams, activeView]);
 
   useEffect(() => {
     if (!openSupportFromPush) return;

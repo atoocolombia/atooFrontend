@@ -14,6 +14,7 @@ export type ClientPortalPaymentItem = {
 };
 
 export type ClientPaymentSummary = {
+  wompiEnabled?: boolean;
   weeklyPaymentCop: number;
   planWeeks: number;
   totalPaidCop: number;

@@ -1,14 +1,6 @@
-import { useState } from 'react';
-import {
-  CreditCard,
-  Wallet,
-  Building2,
-  Calendar,
-  CheckCircle,
-  Clock,
-  AlertCircle,
-  Loader2,
-} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router';
+import { CreditCard, Calendar, CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import {
   daysUntilDue,
@@ -20,6 +12,8 @@ import {
 import { useClientBilling, useCurrentBillingPeriod } from '../../../lib/clientBillingApi';
 import { MonthlyBillingStatement } from './MonthlyBillingStatement';
 import { ServiceOfferBanner } from './ServiceOfferBanner';
+import { createWompiWidgetSession, type WompiWidgetSession } from '../../../lib/wompiApi';
+import { WompiWidgetCheckout } from './WompiWidgetCheckout';
 
 export function PaymentsView() {
   const { theme } = useTheme();
@@ -55,12 +49,15 @@ export function PaymentsView() {
       />
     ) : null;
 
-  const [selectedMethod, setSelectedMethod] = useState<string>('');
-  const [showWompiWidget, setShowWompiWidget] = useState(false);
   const [paymentType, setPaymentType] = useState<'weekly' | 'deposit'>('weekly');
+  const [wompiSession, setWompiSession] = useState<WompiWidgetSession | null>(null);
+  const [wompiError, setWompiError] = useState<string | null>(null);
+  const [wompiLoading, setWompiLoading] = useState(false);
+  const [searchParams] = useSearchParams();
 
+  const wompiEnabled = summary?.wompiEnabled ?? false;
   const weeklyPayment = summary?.weeklyPaymentCop ?? 207_000;
-  const depositAmount = summary?.depositAmountCop ?? 2_000_000;
+  const depositAmount = summary?.depositAmountCop;
   const nextPaymentDate = formatNextPaymentDate(summary?.nextPaymentDueAt ?? null);
   const depositPaid = summary?.depositPaid ?? false;
   const depositDate = summary?.depositPaidAt
@@ -69,45 +66,38 @@ export function PaymentsView() {
   const paymentHistory = summary?.history ?? [];
   const daysLeft = daysUntilDue(summary?.nextPaymentDueAt ?? null);
 
-  const paymentMethods = [
-    {
-      id: 'credit',
-      name: 'Tarjeta de Crédito',
-      icon: CreditCard,
-      description: 'Visa, Mastercard, American Express',
-      color: 'blue',
-    },
-    {
-      id: 'debit',
-      name: 'Tarjeta de Débito',
-      icon: CreditCard,
-      description: 'Débito nacional e internacional',
-      color: 'green',
-    },
-    {
-      id: 'pse',
-      name: 'PSE',
-      icon: Building2,
-      description: 'Pago seguro en línea',
-      color: 'blue',
-    },
-    {
-      id: 'digital',
-      name: 'Carteras Digitales',
-      icon: Wallet,
-      description: 'Nequi, Daviplata, PayPal',
-      color: 'orange',
-    },
-  ];
+  const depositPayable =
+    !depositPaid && summary?.depositAmountCop != null && summary.depositAmountCop > 0;
+  const canPayOnlineWompi =
+    wompiEnabled &&
+    ((paymentType === 'weekly' && (summary?.remainingInstallments ?? 1) > 0) ||
+      (paymentType === 'deposit' && depositPayable));
 
-  const handlePaymentMethod = (methodId: string) => {
-    setSelectedMethod(methodId);
-    setShowWompiWidget(true);
-  };
+  useEffect(() => {
+    if (searchParams.get('wompi') === 'return') {
+      void reload();
+    }
+  }, [searchParams, reload]);
 
-  const getCurrentPaymentAmount = () => {
-    return paymentType === 'weekly' ? weeklyPayment : depositAmount;
-  };
+  useEffect(() => {
+    if (!canPayOnlineWompi) {
+      setWompiSession(null);
+      setWompiError(null);
+      return;
+    }
+    setWompiLoading(true);
+    setWompiError(null);
+    const kind = paymentType === 'deposit' ? 'deposit' : 'installment';
+    void createWompiWidgetSession(kind)
+      .then((session) => {
+        setWompiSession(session);
+      })
+      .catch((err) => {
+        setWompiError(err instanceof Error ? err.message : 'No se pudo preparar Wompi');
+        setWompiSession(null);
+      })
+      .finally(() => setWompiLoading(false));
+  }, [canPayOnlineWompi, paymentType]);
 
   const formatCurrency = (amount: number) => formatCop(amount);
 
@@ -181,6 +171,34 @@ export function PaymentsView() {
           )}
         </div>
 
+        {canPayOnlineWompi && paymentType === 'weekly' && (
+          <div
+            className={`rounded-2xl shadow-lg p-8 border transition-colors ${theme === 'dark' ? 'bg-[#0D0F2E]/50 border-blue-600/20 backdrop-blur-xl' : 'bg-white border-gray-100'}`}
+          >
+            <h3 className={`text-xl font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              Pagar siguiente cuota con Wompi
+            </h3>
+            <p className={`text-sm mb-6 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+              Una transacción = una cuota de {formatCurrency(cuota)}. El monto viene del servidor y no se puede
+              modificar en el checkout.
+            </p>
+            {wompiError && <p className="text-sm text-red-500 mb-4">{wompiError}</p>}
+            {searchParams.get('wompi') === 'return' && (
+              <p className="text-sm text-emerald-600 mb-4">
+                Si ya completaste el pago, el historial se actualizará en unos instantes cuando Wompi confirme la
+                transacción.
+              </p>
+            )}
+            {wompiLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin text-[#1A1FE8]" />
+              </div>
+            ) : (
+              <WompiWidgetCheckout session={wompiSession} />
+            )}
+          </div>
+        )}
+
         <div
           className={`rounded-2xl shadow-lg p-8 border transition-colors ${theme === 'dark' ? 'bg-[#0D0F2E]/50 border-blue-600/20 backdrop-blur-xl' : 'bg-white border-gray-100'}`}
         >
@@ -233,8 +251,8 @@ export function PaymentsView() {
             <AlertCircle className="w-6 h-6 text-blue-600 flex-shrink-0" />
             <div className="text-sm text-blue-800">
               <p>
-                Este panel refleja únicamente los pagos confirmados por el equipo de atoo (transferencia,
-                consignación, etc.). Si acabas de pagar y no aparece, contáctanos por soporte.
+                Los pagos con Wompi aparecen aquí cuando el servidor recibe la confirmación. Las transferencias las
+                registra el equipo de atoo. Si acabas de pagar y no ves el movimiento, contáctanos por soporte.
               </p>
             </div>
           </div>
@@ -278,11 +296,7 @@ export function PaymentsView() {
       {/* Payment Type Tabs */}
       <div className={`flex gap-3 rounded-2xl p-2 shadow-lg transition-colors ${theme === 'dark' ? 'bg-[#0D0F2E]/50 border border-blue-600/20 backdrop-blur-xl' : 'bg-white'}`}>
         <button
-          onClick={() => {
-            setPaymentType('weekly');
-            setShowWompiWidget(false);
-            setSelectedMethod('');
-          }}
+          onClick={() => setPaymentType('weekly')}
           className={`flex-1 py-4 px-6 rounded-xl font-semibold transition-all ${
             paymentType === 'weekly'
               ? 'bg-blue-600 text-white shadow-lg'
@@ -294,11 +308,7 @@ export function PaymentsView() {
           💳 Cuota Semanal
         </button>
         <button
-          onClick={() => {
-            setPaymentType('deposit');
-            setShowWompiWidget(false);
-            setSelectedMethod('');
-          }}
+          onClick={() => setPaymentType('deposit')}
           className={`flex-1 py-4 px-6 rounded-xl font-semibold transition-all ${
             paymentType === 'deposit'
               ? 'bg-blue-600 text-white shadow-lg'
@@ -385,7 +395,9 @@ export function PaymentsView() {
 
           <div className="mb-6">
             <p className="text-blue-100 mb-2">Monto del Depósito</p>
-            <p className="text-5xl font-bold">{formatCurrency(depositAmount)}</p>
+            <p className="text-5xl font-bold">
+              {depositAmount != null ? formatCurrency(depositAmount) : 'Por confirmar'}
+            </p>
             <p className="text-blue-100 text-sm mt-2">Pago único al inicio del contrato</p>
           </div>
 
@@ -420,69 +432,16 @@ export function PaymentsView() {
         </div>
       )}
 
-      {/* Payment Methods */}
-      {!showWompiWidget && !depositPaid && paymentType === 'deposit' && (
+      {!depositPaid && paymentType === 'deposit' && !canPayOnlineWompi && (
         <div className={`rounded-2xl shadow-lg p-8 border transition-colors ${theme === 'dark' ? 'bg-[#0D0F2E]/50 border-blue-600/20 backdrop-blur-xl' : 'bg-white border-gray-100'}`}>
-          <h3 className={`text-xl font-bold mb-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            Realiza tu Depósito Inicial
-          </h3>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            {paymentMethods.map((method) => {
-              const Icon = method.icon;
-              return (
-                <button
-                  key={method.id}
-                  onClick={() => handlePaymentMethod(method.id)}
-                  className={`p-6 border-2 rounded-xl transition-all hover:shadow-lg ${
-                    selectedMethod === method.id
-                      ? theme === 'dark'
-                        ? 'border-blue-600 bg-blue-600/10'
-                        : 'border-blue-700 bg-blue-50'
-                      : theme === 'dark'
-                        ? 'border-blue-600/30 hover:border-blue-600/50'
-                        : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-start gap-4">
-                    <div
-                      className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                        method.color === 'blue'
-                          ? 'bg-blue-100'
-                          : method.color === 'green'
-                          ? 'bg-green-100'
-                          : method.color === 'blue'
-                          ? 'bg-blue-100'
-                          : 'bg-orange-100'
-                      }`}
-                    >
-                      <Icon
-                        className={`w-6 h-6 ${
-                          method.color === 'blue'
-                            ? 'text-blue-600'
-                            : method.color === 'green'
-                            ? 'text-green-600'
-                            : method.color === 'blue'
-                            ? 'text-blue-700'
-                            : 'text-orange-600'
-                        }`}
-                      />
-                    </div>
-                    <div className="flex-1 text-left">
-                      <h4 className={`font-semibold mb-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                        {method.name}
-                      </h4>
-                      <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>{method.description}</p>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+          <p className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>
+            El pago en línea no está disponible. Si ya transferiste el depósito, el equipo atoo lo registrará en tu
+            historial.
+          </p>
         </div>
       )}
 
-      {!showWompiWidget && depositPaid && paymentType === 'deposit' && (
+      {depositPaid && paymentType === 'deposit' && (
         <div className={`rounded-2xl shadow-lg p-8 border transition-colors ${theme === 'dark' ? 'bg-[#0D0F2E]/50 border-blue-600/20 backdrop-blur-xl' : 'bg-white border-gray-100'}`}>
           <div className="text-center py-8">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -492,7 +451,8 @@ export function PaymentsView() {
               ¡Depósito Pagado!
             </h3>
             <p className={`mb-6 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-              Tu depósito de {formatCurrency(depositAmount)} fue recibido exitosamente
+              Tu depósito
+              {depositAmount != null ? ` de ${formatCurrency(depositAmount)}` : ''} fue recibido exitosamente
               el {depositDate}
             </p>
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 max-w-md mx-auto">
@@ -508,285 +468,45 @@ export function PaymentsView() {
         </div>
       )}
 
-      {!showWompiWidget && paymentType === 'weekly' && (
+      {canPayOnlineWompi && (
         <div className={`rounded-2xl shadow-lg p-8 border transition-colors ${theme === 'dark' ? 'bg-[#0D0F2E]/50 border-blue-600/20 backdrop-blur-xl' : 'bg-white border-gray-100'}`}>
-          <h3 className={`text-xl font-bold mb-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            Selecciona tu Método de Pago
+          <h3 className={`text-xl font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+            Pagar con Wompi
           </h3>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            {paymentMethods.map((method) => {
-              const Icon = method.icon;
-              return (
-                <button
-                  key={method.id}
-                  onClick={() => handlePaymentMethod(method.id)}
-                  className={`p-6 border-2 rounded-xl transition-all hover:shadow-lg ${
-                    selectedMethod === method.id
-                      ? theme === 'dark'
-                        ? 'border-blue-500 bg-blue-500/10'
-                        : 'border-blue-600 bg-blue-50'
-                      : theme === 'dark'
-                        ? 'border-blue-600/30 hover:border-blue-600/50'
-                        : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-start gap-4">
-                    <div
-                      className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                        method.color === 'blue'
-                          ? 'bg-blue-100'
-                          : method.color === 'green'
-                          ? 'bg-green-100'
-                          : method.color === 'blue'
-                          ? 'bg-blue-100'
-                          : 'bg-orange-100'
-                      }`}
-                    >
-                      <Icon
-                        className={`w-6 h-6 ${
-                          method.color === 'blue'
-                            ? 'text-blue-600'
-                            : method.color === 'green'
-                            ? 'text-green-600'
-                            : method.color === 'blue'
-                            ? 'text-blue-700'
-                            : 'text-orange-600'
-                        }`}
-                      />
-                    </div>
-                    <div className="flex-1 text-left">
-                      <h4 className={`font-semibold mb-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                        {method.name}
-                      </h4>
-                      <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>{method.description}</p>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+          <p className={`text-sm mb-6 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+            {paymentType === 'deposit'
+              ? 'Depósito inicial — monto fijo definido por atoo.'
+              : 'Una cuota por transacción — el monto lo fijamos según tu plan (no puedes editarlo).'}
+          </p>
+          {wompiError && <p className="text-sm text-red-500 mb-4">{wompiError}</p>}
+          {searchParams.get('wompi') === 'return' && (
+            <p className="text-sm text-emerald-600 mb-4">
+              Si ya completaste el pago, el historial se actualizará en unos instantes cuando Wompi confirme la
+              transacción.
+            </p>
+          )}
+          {wompiLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin text-[#1A1FE8]" />
+            </div>
+          ) : (
+            <WompiWidgetCheckout session={wompiSession} />
+          )}
         </div>
       )}
 
-      {/* Wompi Payment Widget */}
-      {showWompiWidget && (
-        <div className={`rounded-2xl shadow-lg p-8 border transition-colors ${theme === 'dark' ? 'bg-[#0D0F2E]/50 border-blue-600/20 backdrop-blur-xl' : 'bg-white border-gray-100'}`}>
-          <div className="flex items-center justify-between mb-6">
-            <h3 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Portal de Pago Wompi</h3>
-            <button
-              onClick={() => {
-                setShowWompiWidget(false);
-                setSelectedMethod('');
-              }}
-              className={`text-sm transition-colors ${theme === 'dark' ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
-            >
-              Cambiar método
-            </button>
-          </div>
-
-          {/* Wompi Widget Simulation */}
-          <div className="border-2 border-gray-200 rounded-xl p-6 bg-gray-50">
-            {/* Wompi Header */}
-            <div className="flex items-center justify-between mb-6 pb-4 border-b">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-[#1A1FE8] to-[#3D42F0] rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">W</span>
-                </div>
-                <div>
-                  <h4 className="font-bold text-gray-900">Wompi</h4>
-                  <p className="text-xs text-gray-500">Pago seguro</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <img
-                  src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg"
-                  alt="Visa"
-                  className="h-6"
-                />
-                <img
-                  src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg"
-                  alt="Mastercard"
-                  className="h-6"
-                />
-              </div>
-            </div>
-
-            {/* Payment Amount */}
-            <div className="bg-white rounded-lg p-4 mb-6">
-              <p className="text-sm text-gray-600 mb-1">Monto a pagar</p>
-              <p className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                {formatCurrency(getCurrentPaymentAmount())}
-              </p>
-              <p className="text-sm text-gray-500 mt-1">
-                {paymentType === 'weekly' ? 'Cuota semanal' : 'Depósito inicial'} - DriveOwn
-              </p>
-            </div>
-
-            {/* Payment Form */}
-            {selectedMethod === 'credit' || selectedMethod === 'debit' ? (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Número de Tarjeta
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="1234 5678 9012 3456"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Fecha de Vencimiento
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="MM/AA"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      CVV
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="123"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nombre del Titular
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="JUAN PEREZ"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Cuotas
-                  </label>
-                  <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none">
-                    <option>1 cuota - Sin interés</option>
-                    <option>3 cuotas - 2.5% mensual</option>
-                    <option>6 cuotas - 2.5% mensual</option>
-                    <option>12 cuotas - 2.5% mensual</option>
-                  </select>
-                </div>
-              </div>
-            ) : selectedMethod === 'pse' ? (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Selecciona tu Banco
-                  </label>
-                  <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none">
-                    <option value="">Selecciona un banco</option>
-                    <option>Bancolombia</option>
-                    <option>Banco de Bogotá</option>
-                    <option>BBVA Colombia</option>
-                    <option>Davivienda</option>
-                    <option>Banco Popular</option>
-                    <option>Colpatria</option>
-                    <option>Banco de Occidente</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tipo de Persona
-                  </label>
-                  <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none">
-                    <option>Persona Natural</option>
-                    <option>Persona Jurídica</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tipo de Documento
-                  </label>
-                  <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none">
-                    <option>Cédula de Ciudadanía</option>
-                    <option>Cédula de Extranjería</option>
-                    <option>NIT</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Número de Documento
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="1234567890"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Selecciona tu Cartera Digital
-                  </label>
-                  <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none">
-                    <option value="">Selecciona una opción</option>
-                    <option>Nequi</option>
-                    <option>Daviplata</option>
-                    <option>PayPal</option>
-                    <option>Movii</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Número de Celular
-                  </label>
-                  <input
-                    type="tel"
-                    placeholder="300 123 4567"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Security Info */}
-            <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-green-800">
-                  <p className="font-semibold mb-1">Pago 100% seguro</p>
-                  <p>
-                    Tu información está protegida con encriptación de nivel bancario.
-                    Wompi cumple con los estándares PCI DSS.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Payment Button */}
-            <button className="w-full mt-6 py-4 bg-gradient-to-r from-[#1A1FE8] to-[#3D42F0] text-white rounded-lg font-bold text-lg hover:from-[#1217C8] hover:to-[#1A1FE8] transition-all shadow-lg">
-              Pagar {formatCurrency(getCurrentPaymentAmount())}
-            </button>
-
-            {/* Powered by Wompi */}
-            <p className="text-center text-xs text-gray-500 mt-4">
-              Powered by <span className="font-semibold">Wompi</span>
+      {!canPayOnlineWompi &&
+        wompiEnabled &&
+        paymentType === 'weekly' &&
+        (summary?.remainingInstallments ?? 0) === 0 && (
+          <div
+            className={`rounded-2xl shadow-lg p-8 border transition-colors ${theme === 'dark' ? 'bg-[#0D0F2E]/50 border-blue-600/20 backdrop-blur-xl' : 'bg-white border-gray-100'}`}
+          >
+            <p className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>
+              Ya no tienes cuotas pendientes en tu plan. Si crees que es un error, contacta a soporte.
             </p>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Payment History */}
       <div className={`rounded-2xl shadow-lg p-8 border transition-colors ${theme === 'dark' ? 'bg-[#0D0F2E]/50 border-blue-600/20 backdrop-blur-xl' : 'bg-white border-gray-100'}`}>
@@ -844,8 +564,11 @@ export function PaymentsView() {
             <ul className="text-sm text-blue-800 space-y-1">
               <li>• <strong>Cuota semanal fija:</strong> {formatCurrency(weeklyPayment)} cada semana</li>
               <li>• <strong>Fecha de pago:</strong> Cada domingo</li>
-              <li>• Puedes pagar con cualquier método disponible</li>
-              <li>• Recibirás un recibo por email después de cada pago semanal</li>
+              <li>
+                • <strong>Pago en línea:</strong> usa el botón de Wompi; cada clic cobra exactamente una cuota (
+                {formatCurrency(weeklyPayment)}) definida por atoo
+              </li>
+              <li>• También puedes pagar por transferencia; el equipo lo registrará en tu historial</li>
               <li>• Los pagos atrasados pueden generar intereses de mora</li>
               <li>• Configura débito automático para no olvidar tus pagos</li>
             </ul>
