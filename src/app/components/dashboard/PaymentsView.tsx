@@ -56,6 +56,7 @@ export function PaymentsView() {
   const [searchParams] = useSearchParams();
 
   const wompiEnabled = summary?.wompiEnabled ?? false;
+  const wompiSandbox = summary?.wompiSandbox ?? false;
   const weeklyPayment = summary?.weeklyPaymentCop ?? 207_000;
   const depositAmount = summary?.depositAmountCop;
   const nextPaymentDate = formatNextPaymentDate(summary?.nextPaymentDueAt ?? null);
@@ -187,6 +188,11 @@ export function PaymentsView() {
           >
             <h3 className={`text-xl font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
               Pagar siguiente cuota con Wompi
+              {wompiSandbox && (
+                <span className="ml-2 text-xs font-semibold px-2 py-1 rounded-full bg-amber-100 text-amber-900 align-middle">
+                  Sandbox
+                </span>
+              )}
             </h3>
             <p className={`text-sm mb-6 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
               Una transacción = una cuota de {formatCurrency(cuota)}. El monto viene del servidor y no se puede
