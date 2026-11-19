@@ -171,6 +171,16 @@ export function PaymentsView() {
           )}
         </div>
 
+        {!wompiEnabled && (summary?.remainingInstallments ?? 0) > 0 && (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
+            <p className="font-semibold mb-1">Pago en línea (Wompi) no está activo</p>
+            <p>
+              El servidor aún no tiene configuradas las llaves Wompi (sandbox o producción). Cuando estén listas verás
+              aquí el botón para pagar {formatCurrency(cuota)}.
+            </p>
+          </div>
+        )}
+
         {canPayOnlineWompi && paymentType === 'weekly' && (
           <div
             className={`rounded-2xl shadow-lg p-8 border transition-colors ${theme === 'dark' ? 'bg-[#0D0F2E]/50 border-blue-600/20 backdrop-blur-xl' : 'bg-white border-gray-100'}`}

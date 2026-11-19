@@ -127,10 +127,10 @@ export default async function handler(req, res) {
   };
 
   const backendSummaryPaths = [
+    '/api/v1/client/payments/summary',
     `/api/v1/users/${encodeURIComponent(userId)}/client-access?includePayments=1`,
     `/api/v1/users/${encodeURIComponent(userId)}/payment-summary`,
     '/api/v1/auth/me/payment-summary',
-    '/api/v1/client/payments/summary',
     '/api/v1/auth/me?includePayments=1',
   ];
 
@@ -261,6 +261,23 @@ export default async function handler(req, res) {
       planInstallments,
       installmentPlan,
     });
+
+    try {
+      const wompiProbe = await fetch(`${RAILWAY_API}/api/v1/client/payments/summary`, {
+        headers: authForward,
+      });
+      if (wompiProbe.ok) {
+        const wBody = await wompiProbe.json().catch(() => null);
+        if (wBody?.summary) {
+          summary.wompiEnabled = Boolean(wBody.summary.wompiEnabled);
+          if (wBody.summary.depositAmountCop != null) {
+            summary.depositAmountCop = wBody.summary.depositAmountCop;
+          }
+        }
+      }
+    } catch {
+      summary.wompiEnabled = false;
+    }
 
     res.status(200).json({ summary });
   } catch (err) {
