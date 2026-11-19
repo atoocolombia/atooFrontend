@@ -8,7 +8,7 @@ const RAILWAY_API =
 
 const DEMO_EMAIL = 'cliente@gmail.com';
 const DEMO_ID_DOCUMENT = '1012345678';
-const DEMO_CUOTA = 700_000;
+const DEMO_CUOTA = 50_000;
 const DEMO_CUOTAS = 26;
 
 function readToken(req) {
