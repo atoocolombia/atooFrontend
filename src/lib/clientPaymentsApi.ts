@@ -15,6 +15,8 @@ export type ClientPortalPaymentItem = {
 
 export type ClientPaymentSummary = {
   wompiEnabled?: boolean;
+  /** true si el backend usa pub_test_ (sandbox Wompi) */
+  wompiSandbox?: boolean;
   weeklyPaymentCop: number;
   planWeeks: number;
   totalPaidCop: number;
