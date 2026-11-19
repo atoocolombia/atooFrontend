@@ -90,33 +90,8 @@ async function resolvePaymentsUserId(): Promise<string | undefined> {
 }
 
 export async function fetchClientPaymentSummary(userId?: string): Promise<ClientPaymentSummary> {
-  try {
-    const portalRes = await apiFetch('/api/client-portal-payment-summary', { cache: 'no-store' });
-    if (portalRes.status !== 404) {
-      return await readPaymentSummaryResponse(portalRes);
-    }
-  } catch (err) {
-    if (err instanceof Error) {
-      if (err.message.includes('sesión') || err.message.includes('Sesión')) {
-        throw err;
-      }
-      if (err.message.includes('DATABASE_URL') || err.message.includes('Plataforma:')) {
-        throw err;
-      }
-    }
-  }
-
-  try {
-    const fromAuthMe = await fetchPaymentSummaryFromAuthMe();
-    if (fromAuthMe) return fromAuthMe;
-  } catch (err) {
-    if (err instanceof Error && (err.message.includes('sesión') || err.message.includes('Sesión'))) {
-      throw err;
-    }
-  }
-
   const sessionUserId = userId?.trim() || (await resolvePaymentsUserId());
-  const candidates: string[] = ['/api/v1/auth/me/payment-summary'];
+  const candidates: string[] = ['/api/v1/client/payments/summary', '/api/v1/auth/me/payment-summary'];
 
   if (sessionUserId) {
     candidates.push(
@@ -124,7 +99,8 @@ export async function fetchClientPaymentSummary(userId?: string): Promise<Client
     );
     candidates.push(`/api/v1/users/${encodeURIComponent(sessionUserId)}/payment-summary`);
   }
-  candidates.push('/api/v1/client/payments/summary');
+
+  candidates.push('/api/client-portal-payment-summary');
 
   let lastError: Error | null = null;
   for (const path of candidates) {
